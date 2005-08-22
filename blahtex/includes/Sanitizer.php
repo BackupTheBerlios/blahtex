@@ -314,7 +314,12 @@ $wgHtmlEntities = array(
 	'Zeta'     => 918,
 	'zeta'     => 950,
 	'zwj'      => 8205,
-	'zwnj'     => 8204 );
+        'zwnj'     => 8204,
+        /* The below are needed for blahtex. They are defined in */
+        /* http://www.w3.org/TR/2003/REC-MathML2-20031021/chapter3.html#id.3.2.5.5 */
+        'af'       => 0x2061,  /* short for ApplyFunction */
+        'it'       => 0x2062   /* short for InvisibleTimes */
+);
 
 /** @package MediaWiki */
 class Sanitizer {
