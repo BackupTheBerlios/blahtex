@@ -1,0 +1,56 @@
+blahtex version 0.2.1  --  README file
+======================================
+
+The file blahtex-0.2.1.tar.gz contains the source code for blahtex version 0.2.1.
+It should contain the following files:
+
+  README
+  GNU-GPL
+  makefile
+  blahtex.h
+  main.cpp
+  layout.cpp
+  mathml.cpp
+  parser.ypp
+
+Blahtex is licensed under the GNU General Public License.
+See the file "GNU-GPL" and the source code for more details.
+
+For more information about blahtex, troubleshooting, bug reports, ....
+
+   http://meta.wikimedia.org/wiki/Blahtex
+
+
+COMPILING BLAHTEX
+=================
+
+Under Linux, just run "make" at the command line, or if you're feeling energetic, "make linux".
+
+For Mac OS X, use "make mac".
+
+I have compiled it on Solaris with additional effort. Please contact me if you are interested.
+
+*Please* contact me if you have trouble compiling on Linux or Mac OS X.
+
+
+RUNNING BLAHTEX
+===============
+
+Just type "blahtex -help" at the command line. It will carefully explain the syntax.
+
+
+A BRIEF HISTORY OF BLAHTEX
+==========================
+
+Version 0.2  --  2/Aug/2005
+- Initial release
+
+Version 0.2.1  --  8/Aug/2005
+- Now compiles under Linux (our main target platform!). Thanks very much JITSE NIESEN.
+- Input now from standard input instead of a file.
+- Output is now UTF-8 instead of ASCII.
+
+
+-----------------------
+David Harvey
+8th August 2005

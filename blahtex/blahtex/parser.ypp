@@ -36,6 +36,8 @@ void yyerror(const char *s) {
 	throw user_error(L"Parsing error: " + convert_utf8_to_wchar_t(s));
 }
 
+int yylex();
+
 %}
 
 %union {

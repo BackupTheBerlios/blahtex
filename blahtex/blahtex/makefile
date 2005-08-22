@@ -25,8 +25,7 @@ linux: parser.tab.h $(SOURCES)
 	g++ -O3 -o blahtex $(SOURCES)
 	
 mac: parser.tab.h $(SOURCES)
-#	g++ -O3 -o blahtex -liconv -DBLAHTEX_ICONV_CONST $(SOURCES)
-	g++ -g -o blahtex -liconv -DBLAHTEX_ICONV_CONST $(SOURCES)
+	g++ -O3 -o blahtex -liconv -DBLAHTEX_ICONV_CONST $(SOURCES)
 
 parser.tab.c parser.tab.h:   parser.ypp blahtex.h
 	yacc -d -b parser parser.ypp
