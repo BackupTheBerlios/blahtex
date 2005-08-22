@@ -147,7 +147,7 @@ class SkinTemplate extends Skin {
 		global $wgScript, $wgStylePath, $wgLanguageCode, $wgContLanguageCode, $wgUseNewInterlanguage;
 		global $wgMimeType, $wgJsMimeType, $wgOutputEncoding, $wgUseDatabaseMessages, $wgRequest;
 		global $wgDisableCounters, $wgLogo, $action, $wgFeedClasses, $wgHideInterlanguageLinks;
-		global $wgMaxCredits, $wgShowCreditsIfMax;
+		global $wgMaxCredits, $wgShowCreditsIfMax, $wgDocType, $wgDTD;;
 		global $wgPageShowWatchingUsers;
 		global $wgUseTrackbacks;
 
@@ -221,6 +221,17 @@ class SkinTemplate extends Skin {
 		if ($wgUseTrackbacks && $out->isArticleRelated())
 			$tpl->set( 'trackbackhtml', $wgTitle->trackbackRDF());
 
+                if ($wgMimeType == 'application/xhtml+xml') {
+                        $hdr = "<?xml version=\"1.0\"?>\n";
+                        if ($wgUser->getOption('math') == MW_MATH_MATHML) {
+                                $hdr = $hdr . "<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n";
+                        }
+                        $tpl->set( 'xmlheaders', $hdr );
+                } else {
+                        $tpl->set( 'xmlheaders', '' );
+                }
+                $tpl->setRef( 'doctype', $wgDocType );
+                $tpl->setRef( 'dtd', $wgDTD );
 		$tpl->setRef( 'mimetype', $wgMimeType );
 		$tpl->setRef( 'jsmimetype', $wgJsMimeType );
 		$tpl->setRef( 'charset', $wgOutputEncoding );
