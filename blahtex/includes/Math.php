@@ -185,7 +185,8 @@ class MathRenderer {
 		$mf   = htmlspecialchars( wfMsg( 'math_failure' ) );
 		$munk = htmlspecialchars( wfMsg( 'math_unknown_error' ) );
 		$errmsg = htmlspecialchars( wfMsg( $msg ) );
-		$source = htmlspecialchars($this->tex);
+                $source = htmlspecialchars(str_replace("\n", ' ', $this->tex));
+                # Note: the str_replace above is because the return value must not contain newlines
 		return "<strong class='error'>$mf ($errmsg$append): $source</strong>\n";
 	}
 	
