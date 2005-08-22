@@ -901,6 +901,8 @@ $wgWLCacheTimeout = 3600;
 $wgUseTeX = false;
 /** Location of the texvc binary */
 $wgTexvc = './math/texvc';
+/** Location of the blahtex binary. If empty, texvc is used instead */
+$wgBlahtex = '';
 
 #
 # Profiling / debugging
