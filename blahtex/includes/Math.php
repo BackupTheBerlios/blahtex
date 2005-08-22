@@ -32,7 +32,7 @@ class MathRenderer {
 
 	function render() {
 		global $wgMathDirectory, $wgTmpDirectory, $wgInputEncoding;
-		global $wgTexvc;
+		global $wgTexvc, $wgBlahtex;
 		$fname = 'MathRenderer::render';
 	
 		if( $this->mode == MW_MATH_SOURCE ) {
@@ -40,6 +40,35 @@ class MathRenderer {
 			return ('$ '.htmlspecialchars( $this->tex ).' $');
 		}
 		
+                if( $this->mode == MW_MATH_MATHML && $wgBlahtex) {
+                  # Write tex to file and call blahtex
+                  if (function_exists('is_executable') && !is_executable($wgBlahtex)) {
+                    return $this->_error( 'math_noblahtex', $wgBlahtex );
+                  }
+                  $descriptorspec = array(0 => array("pipe", "r"),
+                                          1 => array("pipe", "w"));
+                  $process = proc_open($wgBlahtex, $descriptorspec, $pipes);
+                  if (!$process) {
+                    return $this->_error( 'math_unknown_error' );
+                  }
+                  fwrite($pipes[0], $this->tex);
+                  fclose($pipes[0]);
+                  $contents = '';
+                  while (!feof($pipes[1])) {
+                    $contents .= fgets($pipes[1], 4096);
+                  }
+                  fclose($pipes[1]);
+                  if (proc_close($process) != 0) {
+                    # exit code of blahtex is not zero; this shouldn't happen
+                    return $this->_error( 'math_unknown_error' );
+                  }
+                  $str = 'blahtex error: ';
+                  if (substr($contents, 0, strlen($str)) == $str) {
+                    return $this->_error('math_blahtex_error', substr($contents, strlen($str)));
+                  }
+                  return ("<math xmlns='http://www.w3.org/1998/Math/MathML'>" . $contents . "</math>");
+                }
+
 		if( !$this->_recall() ) {
 			# Ensure that the temp and output directories are available before continuing...
 			if( !file_exists( $wgMathDirectory ) ) {
