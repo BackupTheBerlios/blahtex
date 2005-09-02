@@ -221,18 +221,43 @@ class SkinTemplate extends Skin {
 		if ($wgUseTrackbacks && $out->isArticleRelated())
 			$tpl->set( 'trackbackhtml', $wgTitle->trackbackRDF());
 
-                if ($wgMimeType == 'application/xhtml+xml') {
-                        $hdr = "<?xml version=\"1.0\"?>\n";
-                        if ($wgUser->getOption('math') == MW_MATH_MATHML) {
-                                $hdr = $hdr . "<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n";
-                        }
-                        $tpl->set( 'xmlheaders', $hdr );
-                } else {
-                        $tpl->set( 'xmlheaders', '' );
-                }
-                $tpl->setRef( 'doctype', $wgDocType );
-                $tpl->setRef( 'dtd', $wgDTD );
-		$tpl->setRef( 'mimetype', $wgMimeType );
+		switch ($wgUser->getOption('math')) {
+		case MW_MATH_PNG:
+		case MW_MATH_SIMPLE:
+		case MW_MATH_HTML:
+		case MW_MATH_SOURCE:
+		case MW_MATH_MODERN:
+		  $tpl->set( 'mimetype', 'text/html' );
+		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.0 Transitional//EN' );
+		  $tpl->set( 'dtd', 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd' );
+		  $tpl->set( 'xmlheaders', '' );
+		  break;
+		case MW_MATH_MATHML_TH:
+		  $tpl->set( 'mimetype', 'text/html' );
+		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
+		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
+		  $tpl->set( 'xmlheaders', '' );
+		  break;
+		case MW_MATH_MATHML_TX:
+		  $tpl->set( 'mimetype', 'text/xml' );
+		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
+		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
+		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n" );
+		  break;
+		case MW_MATH_MATHML_AX:
+		  $tpl->set( 'mimetype', 'application/xml' );
+		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
+		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
+		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n" );
+		  break;
+		case MW_MATH_MATHML_AXX:
+		  $tpl->set( 'mimetype', 'application/xhtml+xml' );
+		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
+		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
+		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n" );
+		  break;
+		}
+
 		$tpl->setRef( 'jsmimetype', $wgJsMimeType );
 		$tpl->setRef( 'charset', $wgOutputEncoding );
 		$tpl->set( 'headlinks', $out->getHeadLinks() );

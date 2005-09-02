@@ -40,7 +40,9 @@ class MathRenderer {
 			return ('$ '.htmlspecialchars( $this->tex ).' $');
 		}
 		
-                if( $this->mode == MW_MATH_MATHML && $wgBlahtex) {
+                if( ($this->mode == MW_MATH_MATHML_TH || $this->mode == MW_MATH_MATHML_TX
+                     || $this->mode == MW_MATH_MATHML_AX || $this->mode == MW_MATH_MATHML_AXX
+		    ) && $wgBlahtex) {
                   # Write tex to file and call blahtex
                   if (function_exists('is_executable') && !is_executable($wgBlahtex)) {
                     return $this->_error( 'math_noblahtex', $wgBlahtex );

@@ -451,7 +451,19 @@ class OutputPage {
 		# Disable temporary placeholders, so that the skin produces HTML
 		$sk->postParseLinkColour( false );
 
-		header( "Content-type: $wgMimeType; charset={$wgOutputEncoding}" );
+		switch ($wgUser->getOption('math')) {
+		case MW_MATH_PNG:
+		case MW_MATH_SIMPLE:
+		case MW_MATH_HTML:
+		case MW_MATH_SOURCE:
+		case MW_MATH_MODERN: 
+		case MW_MATH_MATHML_TH: $mimeType = 'text/html'; break;
+		case MW_MATH_MATHML_TX: $mimeType = 'text/xml'; break;
+		case MW_MATH_MATHML_AX: $mimeType = 'application/xml'; break;
+		case MW_MATH_MATHML_AXX: $mimeType = 'application/xhtml+xml'; break;
+		}
+
+		header( "Content-type: $mimeType; charset={$wgOutputEncoding}" );
 		header( 'Content-language: '.$wgContLanguageCode );
 
 		$exp = time() + $wgCookieExpiration;
