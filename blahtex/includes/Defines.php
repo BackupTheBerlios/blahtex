@@ -71,7 +71,7 @@ define( 'MW_MATH_MATHML_TH', 6 );
 define( 'MW_MATH_MATHML_TX', 7 );
 define( 'MW_MATH_MATHML_AX', 8 );
 define( 'MW_MATH_MATHML_AXX', 9 );
-define( 'MW_MATH_MATHML_UW', 10 );
+define( 'MW_MATH_MATHML_MIX', 10 );
 define( 'MW_MATH_MATHML', 11 );  // deprecated
 /**#@-*/
 

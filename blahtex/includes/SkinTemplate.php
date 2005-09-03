@@ -257,7 +257,7 @@ class SkinTemplate extends Skin {
 		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
 		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n<?xml-stylesheet type=\"text/xsl\" href=\"http://www.w3.org/Math/XSL/mathml.xsl\"?>\n" );
 		  break;
-		case MW_MATH_MATHML_UW:
+		case MW_MATH_MATHML_MIX:
 		  $tpl->set( 'mimetype', 'text/html' );
 		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
 		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
