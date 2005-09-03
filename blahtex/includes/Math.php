@@ -226,12 +226,12 @@ class MathRenderer {
 	 * Select among PNG, HTML, or MathML output depending on
 	 */
 	function _doRender() {
-		if( $this->mode == MW_MATH_MATHML && $this->mathml != '' ) {
+		if( $this->mode == MW_MATH_MATHML_OLD && $this->mathml != '' ) {
 			return "<math xmlns='http://www.w3.org/1998/Math/MathML'>{$this->mathml}</math>";
 		}
 		if (($this->mode == MW_MATH_PNG) || ($this->html == '') ||
 		   (($this->mode == MW_MATH_SIMPLE) && ($this->conservativeness != 2)) ||
-		   (($this->mode == MW_MATH_MODERN || $this->mode == MW_MATH_MATHML) && ($this->conservativeness == 0))) {
+		   (($this->mode == MW_MATH_MODERN || $this->mode == MW_MATH_MATHML_OLD) && ($this->conservativeness == 0))) {
 			return $this->_linkToMathImage();
 		} else {
 			return '<span class="texhtml">'.$this->html.'</span>';
