@@ -227,6 +227,7 @@ class SkinTemplate extends Skin {
 		case MW_MATH_HTML:
 		case MW_MATH_SOURCE:
 		case MW_MATH_MODERN:
+		case MW_MATH_MATHML_OLD:
 		  $tpl->set( 'mimetype', 'text/html' );
 		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.0 Transitional//EN' );
 		  $tpl->set( 'dtd', 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd' );

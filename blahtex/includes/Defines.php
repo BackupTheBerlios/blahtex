@@ -66,11 +66,12 @@ define( 'MW_MATH_SIMPLE', 1 );
 define( 'MW_MATH_HTML',   2 );
 define( 'MW_MATH_SOURCE', 3 );
 define( 'MW_MATH_MODERN', 4 );
-define( 'MW_MATH_MATHML_TH', 5 );
-define( 'MW_MATH_MATHML_TX', 6 );
-define( 'MW_MATH_MATHML_AX', 7 );
-define( 'MW_MATH_MATHML_AXX', 8 );
-define( 'MW_MATH_MATHML', 9 );  // deprecated
+define( 'MW_MATH_MATHML_OLD', 5 );
+define( 'MW_MATH_MATHML_TH', 6 );
+define( 'MW_MATH_MATHML_TX', 7 );
+define( 'MW_MATH_MATHML_AX', 8 );
+define( 'MW_MATH_MATHML_AXX', 9 );
+define( 'MW_MATH_MATHML', 10 );  // deprecated
 /**#@-*/
 
 /**

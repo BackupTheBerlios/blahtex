@@ -457,6 +457,7 @@ class OutputPage {
 		case MW_MATH_HTML:
 		case MW_MATH_SOURCE:
 		case MW_MATH_MODERN: 
+		case MW_MATH_MATHML_OLD:
 		case MW_MATH_MATHML_TH: $mimeType = 'text/html'; break;
 		case MW_MATH_MATHML_TX: $mimeType = 'text/xml'; break;
 		case MW_MATH_MATHML_AX: $mimeType = 'application/xml'; break;
