@@ -461,7 +461,8 @@ class OutputPage {
 		case MW_MATH_MATHML_TH: $mimeType = 'text/html'; break;
 		case MW_MATH_MATHML_TX: $mimeType = 'text/xml'; break;
 		case MW_MATH_MATHML_AX: $mimeType = 'application/xml'; break;
-		case MW_MATH_MATHML_AXX: $mimeType = 'application/xhtml+xml'; break;
+		case MW_MATH_MATHML_AXX: 
+		case MW_MATH_MATHML_UW: $mimeType = 'application/xhtml+xml'; break;
 		}
 
 		header( "Content-type: $mimeType; charset={$wgOutputEncoding}" );

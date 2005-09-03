@@ -113,7 +113,8 @@ if(isset($wgExtraNamespaces)) {
 	MW_MATH_MATHML_TH => 'mw_math_mathml_th',
 	MW_MATH_MATHML_TX => 'mw_math_mathml_tx',
 	MW_MATH_MATHML_AX => 'mw_math_mathml_ax',
-	MW_MATH_MATHML_AXX => 'mw_math_mathml_axx'
+	MW_MATH_MATHML_AXX => 'mw_math_mathml_axx',
+	MW_MATH_MATHML_UW => 'mw_math_mathml_uw'
 );
 
 # Whether to use user or default setting in Language::date()
@@ -1708,6 +1709,7 @@ article [[Train]].
 'mw_math_mathml_tx' => 'MathML with media type text/xml',
 'mw_math_mathml_ax' => 'MathML with media type application/xml',
 'mw_math_mathml_axx' => 'MathML with media type application/xhtml+xml',
+'mw_math_mathml_uw' => 'MathML with application/xhtml+xml and text/html',
 
 # Patrolling
 'markaspatrolleddiff'   => "Mark as patrolled",

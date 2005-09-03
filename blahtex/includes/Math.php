@@ -42,6 +42,7 @@ class MathRenderer {
 		
                 if( ($this->mode == MW_MATH_MATHML_TH || $this->mode == MW_MATH_MATHML_TX
                      || $this->mode == MW_MATH_MATHML_AX || $this->mode == MW_MATH_MATHML_AXX
+                     || $this->mode == MW_MATH_MATHML_UW
 		    ) && $wgBlahtex) {
                   # Write tex to file and call blahtex
                   if (function_exists('is_executable') && !is_executable($wgBlahtex)) {
