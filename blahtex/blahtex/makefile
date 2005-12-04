@@ -1,7 +1,7 @@
 #
 # makefile
 #
-# blahtex (version 0.2.1): a LaTeX to MathML converter designed specifically for MediaWiki
+# blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
 # Copyright (C) 2005, David Harvey
 #
 # This program is free software; you can redistribute it and/or modify
@@ -19,19 +19,24 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-SOURCES = parser.tab.c  layout.cpp  mathml.cpp  main.cpp
+SOURCES = \
+	Exception.cpp \
+	Parser.cpp \
+	MacroProcessor.cpp \
+	ParseTree.cpp \
+	LayoutTree.cpp \
+	XmlNode.cpp \
+	Instance.cpp \
+	md5.c \
+	md5Wrapper.cpp \
+	UnicodeConverter.cpp \
+	main.cpp
 
-linux: parser.tab.h $(SOURCES)
+linux:  $(SOURCES)  blahtex.h  md5Wrapper.h  md5.h  UnicodeConverter.h
 	g++ -O3 -o blahtex $(SOURCES)
 	
-mac: parser.tab.h $(SOURCES)
+mac: $(SOURCES)
 	g++ -O3 -o blahtex -liconv -DBLAHTEX_ICONV_CONST $(SOURCES)
 
-parser.tab.c parser.tab.h:   parser.ypp blahtex.h
-	yacc -d -b parser parser.ypp
-
 clean:
-	rm -f parser.tab.c
-	rm -f parser.tab.h
-	rm -f parser.output
 	rm -f blahtex

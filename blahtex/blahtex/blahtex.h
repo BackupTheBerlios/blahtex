@@ -1,843 +1,1006 @@
-/*
-File "blahtex.h"
+// File "blahtex.h"
+// 
+// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// Copyright (C) 2005, David Harvey
+// 
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-blahtex (version 0.2.1): a LaTeX to MathML converter designed specifically for MediaWiki
-Copyright (C) 2005, David Harvey
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+// FIX: there's a bug when the input is just "\sqrt[]"; wrong error message is generated
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+// FIX: check md5 code doesn't care about endianness of wchar_t....?
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+// FIX: need to change GNU GPL headers on all files
 
-#include <string>
-#include <list>
-#include <vector>
-#include <map>
-#include <stack>
+// FIX: need to add "\odot"
+
 #include <iostream>
-#include <sstream>
-#include <iconv.h>
+#include <string>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <list>
+#include <set>
+#include <map>
 
-using namespace std;
+// FIX: need to prevent non-ascii chars making it to latex if we don't get the unicode packages sorted out
 
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Some globals - these are all documented where they are defined */
+// FIX: remember to mention Firefox version recommendation somewhere
 
-extern wstring convert_utf8_to_wchar_t(const string& input);
-extern string convert_wchar_t_to_utf8(const wstring& input);
-extern bool is_plain_alpha(wchar_t c);
+// FIX: remember to go over all of Roger's comments on that PDF he sent me
 
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-exception classes */
+// I use wishful_hash_set/map whenever I really want to use hash_set/map.
+// Unfortunately hash_set/map is not quite standard enough yet, so for now it just gets mapped to set/map.
+#define  wishful_hash_map  std::map
+#define  wishful_hash_set  std::set
 
-struct blahtex_error {
-	wstring message;
-	
-	blahtex_error(const wstring& new_message) :
-		message(L"blahtex error: " + new_message) { }
+// Yes, I hate macros too. Sorry.
+// It's used to set up a hash table from an array of raw data.
+#define END_ARRAY(zzz_array) ((zzz_array) + sizeof(zzz_array)/sizeof((zzz_array)[0]))
+
+// The blahtex namespace encompasses the blahtex core (as opposed to the blahtex command-line application):
+// this includes tokenising, parsing, generating mathml, generating "reconstructed latex".
+//
+// It does NOT include: wide/narrow character conversion, shelling out to latex/dvips/imagemagick, I/O.
+
+namespace blahtex
+{
+
+// This function tests whether two sets are disjoint, assuming T has a total ordering.
+// (You'd think the STL would have this, but I couldn't find it.)
+template<typename T> bool disjoint(const std::set<T>& x, const std::set<T>& y)
+{
+    if (x.empty() || y.empty())
+        return true;
+    
+    typename std::set<T>::const_iterator p = x.begin(), q = y.begin();
+    while (true)
+    {
+        if (*p < *q)
+        {
+            if (++p == x.end())
+                return true;
+        }
+        else if (*q < *p)
+        {
+            if (++q == y.end())
+                return true;
+        }
+        else
+            return false;
+    }
+}
+
+enum MathmlFont
+{
+    cMathmlFontNormal,
+    cMathmlFontBold,
+    cMathmlFontItalic,
+    cMathmlFontBoldItalic,
+    cMathmlFontDoubleStruck,
+    cMathmlFontBoldFraktur,
+    cMathmlFontScript,
+    cMathmlFontBoldScript,
+    cMathmlFontFraktur,
+    cMathmlFontSansSerif,
+    cMathmlFontBoldSansSerif,
+    cMathmlFontSansSerifItalic,
+    cMathmlFontSansSerifBoldItalic,
+    cMathmlFontMonospace
 };
 
-struct internal_error : blahtex_error {
-	internal_error(const wstring& new_message) :
-		blahtex_error(
-			wstring(
-				L"An internal error has occurred. This really shouldn't have happened. "
-				L"Please accept our apologies, and let the blahtex developers know. "
-				L"The error message was: \"" + new_message + L"\" Thanks. ")) { };
+enum MathmlEncoding
+{
+    cMathmlEncodingRaw,         // directly as unicode chars (i.e. ends up as UTF-8)
+    cMathmlEncodingNumeric,     // use e.g. &#x1234;
+    cMathmlEncodingShort,       // use e.g. &lang;
+    cMathmlEncodingLong         // use e.g. &LeftAngleBracket;
 };
 
-struct user_error : blahtex_error {
-	user_error(const wstring& new_message) :
-		blahtex_error(wstring(L"The supplied input was invalid, because: ") + new_message) { }
+struct MathmlOptions
+{
+    int mSpacingExplicitness;
+    bool mFancyFontSubstitution;
+    MathmlEncoding mMathmlEncoding;     // How to encode MathML chars
+    bool mOtherEncodingRaw;             // how to encode non-MathML chars
+    
+    MathmlOptions() :
+        mSpacingExplicitness(1), mFancyFontSubstitution(false),
+        mMathmlEncoding(cMathmlEncodingNumeric), mOtherEncodingRaw(false) { }
 };
 
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Simple hash table with wstring keys. This is used for some hard-coded lookup tables.
-
-- Keys and values are stored as POINTERS to already existing data, to speed up building the table.
-  Therefore the keys/values inserted MUST remain at their current address during table lifetime.
-- Table size fixed at initialisation.
-- Uses simple open addressing (just tries successive slots).
-- Supports lookup and insertion (insertion ASSUMES supplied key does not already exist in table,
-  and that the table will not become full).
-
-It would be nice if we could compute the hashes at compile-time, but C++ is not that enlightened.
-*/
-
-template <typename T> struct dictionary_item {
-	wstring key;
-	T value;
+enum Flavour
+{
+    cFlavourOrd,
+    cFlavourOp,
+    cFlavourBin,
+    cFlavourRel,
+    cFlavourOpen,
+    cFlavourClose,
+    cFlavourPunct,
+    cFlavourInner
 };
 
-template <typename T> class hash_table {
-	vector<pair<const wstring*, const T*> > data;
+enum Placement
+{
+    cPlacementSideset,
+    cPlacementUnderOver,
+    cPlacementAccent
+};
 
-	/* This is based on a hash function I picked up on the interweb somewhere. I have no idea
-	if it's any good, but it seems reasonable enough a priori, and looks to be quite fast. */
-	unsigned hash_string(const wstring& key) const {
-		unsigned hash = key.size();
-		for (wstring::const_iterator ptr = key.begin(); ptr != key.end(); ptr++)
-			hash = (hash << 6) + (hash << 16) - hash + static_cast<unsigned>(*ptr);
-		return hash;
-	}
-	
+enum Style
+{
+    cStyleDisplay,
+    cStyleText,
+    cStyleScript,
+    cStyleScriptScript
+};
+
+enum Limits
+{
+    cLimitsDisplayLimits,
+    cLimitsLimits,
+    cLimitsNoLimits
+};
+
+enum Align
+{
+    cAlignLeft,
+    cAlignCentre,
+    cAlignRightLeft
+};
+
+struct XmlNode
+{
+    // If mIsTag is:
+    // cTag:    then this node represents a tag pair, like "<mi>...</mi>". In this case mText is something
+    //          like "mi", mAttributes is a list of pairs like ("mathvariant","sans-serif"), and
+    //          mChildren gives the children nodes.
+    // cString: then this node represents a simple text string, which is stored in mText, and the other
+    //          members are unused.
+    enum NodeType
+    {
+        cTag,
+        cString,
+    }
+    mType;
+
+    std::wstring mText;
+    std::map<std::wstring, std::wstring> mAttributes;
+    std::list<XmlNode*> mChildren;
+
+    XmlNode(NodeType type, const std::wstring& text) :
+        mType(type), mText(text) { }
+
+    ~XmlNode();
+    void Print(std::wostream& os, const MathmlOptions& options, bool indent, int depth = 0) const;
+};
+
+// Exception is the type of object thrown by all parts of the blahtex core. Generally they indicate
+// some kind of syntax error in the input. More serious errors (e.g. STL memory errors) will presumably
+// throw some kind of std::exception.
+// 
+// Each exception consists of an mCode plus zero or more arguments (mArgs).
+//
+// Implemented in Exception.cpp.
+class Exception
+{
 public:
-	// Constructs a hash table from an array of key/value pairs to be inserted.
-	hash_table(const dictionary_item<T>* begin, const dictionary_item<T>* end) {
-		data.resize((end - begin) * 4, pair<const wstring*, const T*>(NULL, NULL));
-		while (begin != end) {
-			insert(begin->key, &begin->value);
-			begin++;
-		}
-	}
+    // mCode may be assigned any of the following:
+    enum Code
+    {
+        cIllegalCharacter,
+        cIllegalBlahtexSuffix,
+        cTooManyTokens,
+        cIllegalFinalBackslash,
+        cUnrecognisedCommand,
+        cIllegalCommandInMathMode,
+        cIllegalCommandInMathModeWithHint,
+        cIllegalCommandInTextMode,
+        cIllegalCommandInTextModeWithHint,
+        cMissingOpenBraceBefore,
+        cMissingOpenBraceAfter,
+        cMissingOpenBraceAtEnd,
+        cNotEnoughArguments,
+        cMissingCommandAfterNewcommand,
+        cIllegalRedefinition,
+        cMissingOrIllegalParameterCount,
+        cMissingOrIllegalParameterIndex,
+        cUnmatchedOpenBracket,
+        cUnmatchedOpenBrace,
+        cUnmatchedCloseBrace,
+        cUnmatchedLeft,
+        cUnmatchedRight,
+        cUnmatchedBegin,
+        cUnmatchedEnd,
+        cUnexpectedNextCell,
+        cUnexpectedNextRow,
+        cMismatchedBeginAndEnd,
+        cCasesRowTooBig,
+        cMissingDelimiter,
+        cIllegalDelimiter,
+        cMisplacedLimits,
+        cDoubleSuperscript,
+        cDoubleSubscript,
+        cAmbiguousInfix,
+        cUnavailableSymbolFontCombination,
+        cInvalidNegation
+    };
 
-	// returns NULL if key is not found
-	const T* lookup(const wstring& key) const {
-		unsigned hash = hash_string(key) % data.size();
-		typename vector<pair<const wstring*, const T*> >::const_iterator search =
-			data.begin() + hash;
-		while (search->first != NULL) {
-			if (*search->first == key) return search->second;
-			if (++search == data.end())
-				search = data.begin();
-		}
-		return NULL;
-	}
-	
-	void insert(const wstring& key, const T* value) {
-		unsigned hash = hash_string(key) % data.size();
-		typename vector<pair<const wstring*, const T*> >::iterator search = data.begin() + hash;
-		while (search->first != NULL) {
-			if (++search == data.end())
-				search = data.begin();
-		}
-		search->first = &key;
-		search->second = value;
-	}
+    Exception(Code code);
+    Exception(Code code, const std::wstring& arg1);
+    Exception(Code code, const std::wstring& arg1, const std::wstring& arg2);
+    
+    std::wstring GetXml(bool encodingRaw) const;
+    
+private:
+    Code                        mCode;
+    std::vector<std::wstring>   mArgs;
+
+    // Returns short string corresponding to mCode, e.g. returns "TooManyTokens" if mCode == TooManyTokens
+    std::wstring GetCodeAsText() const;
+    
+    static wishful_hash_map<Code, std::wstring> gCodesAsTextTable;
+    static wishful_hash_map<Code, std::wstring> gEnglishMessagesTable;
 };
 
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Here is some stuff to do with fonts.
+namespace LayoutTree
+{
+    struct Node
+    {
+        virtual ~Node() { }
+        
+        // This field is only used during the layout tree building phase (to determine spacing).
+        // It corresponds roughly to TeX's differently flavoured atoms.
+        // It's ignored for Space nodes
+        Flavour mFlavour;
+        
+        // This field is only used during the layout tree building phase (to determine script placement).
+        // FIX: is this true anymore?
+        // It indicates whether this (operator) node should have scripts placed in "script position".
+        // It is only valid if mFlavour == cFlavourOp.
+        Limits mLimits;
 
-Dealing with fonts is a little more complicated than one might first guess. For example latex
-handles the expression "z + \Sigma + \mathbf{x + \alpha + \Lambda}" as follows:
+        // This field is ignored for Space nodes
+        Style mStyle;
+        
+        Node(Style style, Flavour flavour, Limits limits) :
+            mStyle(style), mFlavour(flavour), mLimits(limits) { }
+                
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const = 0;
 
-- "z" is in italics
-- "\Sigma" is NOT in italics
-- "x" is in bold (no italics)
-- "\alpha" is in ITALICS, not bold
-- "\Lambda" is bold, no italics.
-- Even inside the \mathbf{...} command, operators like "+" are NOT in bold.
+        // This function recursively prints the layout tree under this node.
+        // This is only used for debugging. Implemented in debug.cpp.
+        virtual void Print(std::wostream& os, int depth = 0) const = 0;
+    };
+    
+    struct Row : Node
+    {
+        std::list<Node*> mChildren;
 
-So it's not as simple as just using <mstyle mathvariant="bold">...</mstyle> for "\mathbf".
+        Row(Style style) :
+            Node(style, cFlavourOrd, cLimitsDisplayLimits) { }
+        ~Row();
 
-There are additional complications due to \boldsymbol, which works somewhat orthogonally to
-font commands like "\mathbf" and "\mathit", and which DOES apply to things like "+" and "\alpha".
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
 
-Also, MathML tries to make life "easier" by switching to italics for an identifier that is
-only one character long, but using normal font for longer identifiers. So we need to compensate
-for that.
+    struct Symbol : Node
+    {
+        std::wstring mText;
+        MathmlFont mFont;
 
-Finally, Mozilla doesn't currently support the fonts "script", "fraktur", "double-struck" (and
-bolded versions thereof), so we have a tweak (see "tweak_fancy_fonts") which explicitly
-substitutes the correct character entities like "&Aopf;".
+        Symbol(const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits) :
+            Node(style, flavour, limits), mText(text), mFont(font) { }
 
-(Fonts in text mode are much simpler.)
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const = 0;
+        virtual void Print(std::wostream& os, int depth = 0) const = 0;
+    };
+    
+    struct SymbolPlain : Symbol
+    {
+        SymbolPlain(const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits = cLimitsDisplayLimits) :
+            Symbol(text, font, style, flavour, limits) { }
 
-Therefore, our approach is very conservative. We simulate the effects of latex font commands as
-we build the layout tree (using a "latex_math_font" object), and for each symbol in the output we
-approximate by the best available MathML font.
-*/
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
 
-/* These are all the fonts supported by MathML. (There *are* other font commands, but they are
-deprecated in MathML 2.0, so we don't use them.) */
-enum mathml_font {
-	mathml_font_NA,
-	mathml_font_normal,
-	mathml_font_bold,
-	mathml_font_italic,
-	mathml_font_bold_italic,
-	mathml_font_double_struck,
-	mathml_font_bold_fraktur,
-	mathml_font_script,
-	mathml_font_bold_script,
-	mathml_font_fraktur,
-	mathml_font_sans_serif,
-	mathml_font_bold_sans_serif,
-	mathml_font_sans_serif_italic,
-	mathml_font_sans_serif_bold_italic,
-	mathml_font_monospace
+    struct SymbolText : Symbol
+    {
+        SymbolText(const std::wstring& text, MathmlFont font, Style style) :
+            Symbol(text, font, style, cFlavourOrd, cLimitsDisplayLimits) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+    struct SymbolOperator : Symbol
+    {
+        bool mIsStretchy;
+        std::wstring mSize;
+
+        SymbolOperator(bool isStretchy, const std::wstring& size, const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits = cLimitsDisplayLimits) :
+            Symbol(text, font, style, flavour, limits), mIsStretchy(isStretchy), mSize(size) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+    struct Space : Node
+    {
+        int mWidth;  // measured in mu (so 1em = 18 mu in normal font size); may be negative
+        bool mIsUserRequested;
+
+        Space(int width, bool isUserRequested) :
+            Node(cStyleDisplay, cFlavourOrd, cLimitsDisplayLimits), mWidth(width), mIsUserRequested(isUserRequested) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+    struct Scripts : Node
+    {
+        // Any of the following three fields may be NULL.
+        std::auto_ptr<Node> mBase, mUpper, mLower;
+        Placement mPlacement;
+
+        Scripts(Style style, Flavour flavour, Limits limits, Placement placement, std::auto_ptr<Node> base, std::auto_ptr<Node> upper, std::auto_ptr<Node> lower) :
+            Node(style, flavour, limits), mPlacement(placement), mBase(base), mUpper(upper), mLower(lower) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+    struct Fraction : Node
+    {
+        std::auto_ptr<Node> mNumerator, mDenominator;
+        bool mIsLineVisible;
+
+        Fraction(Style style, std::auto_ptr<Node> numerator, std::auto_ptr<Node> denominator, bool isLineVisible) :
+            Node(style, cFlavourOrd, cLimitsDisplayLimits), mNumerator(numerator), mDenominator(denominator), mIsLineVisible(isLineVisible) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+    struct Fenced : Node
+    {
+        std::wstring mLeftDelimiter, mRightDelimiter;
+        std::auto_ptr<Node> mChild;
+
+        Fenced(const std::wstring& leftDelimiter, const std::wstring& rightDelimiter, std::auto_ptr<Node> child) :
+            Node(child->mStyle, cFlavourOrd, cLimitsDisplayLimits), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter), mChild(child) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+    struct Sqrt : Node
+    {
+        std::auto_ptr<Node> mChild;
+        
+        Sqrt(std::auto_ptr<Node> child) :
+            Node(child->mStyle, cFlavourOrd, cLimitsDisplayLimits), mChild(child) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+    struct Root : Node
+    {
+        std::auto_ptr<Node> mInside, mOutside;
+
+        Root(std::auto_ptr<Node> inside, std::auto_ptr<Node> outside) :
+            Node(inside->mStyle, cFlavourOrd, cLimitsDisplayLimits), mInside(inside), mOutside(outside) { }
+
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+
+    struct Table : Node
+    {
+        std::vector<std::vector<Node*> > mRows;
+        Align mAlign;
+
+        Table(Style style) :
+            Node(style, cFlavourOrd, cLimitsDisplayLimits), mAlign(cAlignCentre) { }
+        
+        ~Table();
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual void Print(std::wostream& os, int depth = 0) const;
+    };
+    
+} // end LayoutTree namespace
+
+
+extern wishful_hash_map<std::wstring, std::wstring> gDelimiterTable;
+
+// The ParseTree namespace contains all classes representing nodes in the parse tree.
+namespace ParseTree
+{
+
+    struct LatexMathFont
+    {
+        enum Family
+        {
+            cFamilyDefault,  // indicates default font (e.g. "x" gets italics, "1" gets roman)
+            cFamilyRm,       // roman
+            cFamilyBf,       // bold
+            cFamilyIt,       // italics
+            cFamilySf,       // sans serif
+            cFamilyTt,       // typewriter (monospace)
+            cFamilyBb,       // blackboard bold (double-struck)
+            cFamilyCal,      // calligraphic
+            cFamilyFrak      // fraktur
+        }
+        mFamily;
+        
+        bool mIsBoldsymbol;
+        
+        LatexMathFont(Family family = cFamilyDefault, bool isBoldsymbol = false) :
+            mFamily(family), mIsBoldsymbol(isBoldsymbol) { }
+        
+        MathmlFont GetMathmlApproximation() const;
+    };
+
+    struct LatexTextFont
+    {
+        enum Family
+        {
+            cFamilyRm,       // roman
+            cFamilySf,       // sans serif
+            cFamilyTt        // typewriter (monospace)
+        }
+        mFamily;
+        
+        bool mIsBold;
+        bool mIsItalic;
+        
+        LatexTextFont(Family family = cFamilyRm, bool isBold = false, bool isItalic = false) :
+            mFamily(family), mIsBold(isBold), mIsItalic(isItalic) { }
+
+        MathmlFont GetMathmlApproximation() const;
+    };
+
+    // Base class for nodes in the parse tree.
+    struct Node
+    {
+        virtual ~Node() { };
+        
+        virtual void ReconstructLatex(std::wostream& os) const = 0;
+
+        // 'Print' recursively prints the parse tree under this node.
+        // This is only used for debugging. Implemented in 'debug.cpp'.
+        virtual void Print(std::wostream& os, int depth = 0) const = 0;
+
+    };
+
+    // Any node that occurs during math mode.
+    struct MathNode : Node
+    {
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const = 0;
+    };
+
+    // Any node that occurs during text mode.
+    struct TextNode : Node
+    {
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const = 0;
+    };
+
+    // Represents any command like "a", "1", "\alpha", "\int" which blahtex treats as a single symbol.
+    // (Also includes spacing commands like "\,".)
+    struct MathSymbol : MathNode
+    {
+        std::wstring mCommand;
+
+        MathSymbol(const std::wstring& command) :
+            mCommand(command) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a blahtex primitive taking a single argument; that is, any command listed in
+    // gMathTokenTable as having token code equal to cCommand1Arg.
+    struct MathCommand1Arg : MathNode
+    {
+        std::wstring mCommand;
+        std::auto_ptr<MathNode> mChild;
+        
+        MathCommand1Arg(const std::wstring& command, std::auto_ptr<MathNode> child) :
+            mCommand(command), mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a style change primitive like "\rm", "\scriptstyle"
+    // e.g. in the expression "abc \rm def", the mChild member of the "\rm" node points to "def".
+    struct MathStyleChange : MathNode
+    {
+        std::wstring mCommand;
+        std::auto_ptr<MathNode> mChild;
+        
+        MathStyleChange(const std::wstring& command, std::auto_ptr<MathNode> child) :
+            mCommand(command), mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a blahtex primitive taking two arguments; that is, any command listed in
+    // gMathTokenTable as having token code equal to cCommand2Args or cCommandInfix.
+    struct MathCommand2Args : MathNode
+    {
+        std::wstring mCommand;
+        std::auto_ptr<MathNode> mChild1, mChild2;
+        bool mIsInfix;
+        
+        MathCommand2Args(const std::wstring& command,
+            std::auto_ptr<MathNode> child1, std::auto_ptr<MathNode> child2, bool isInfix) :
+            mCommand(command), mChild1(child1), mChild2(child2), mIsInfix(isInfix) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a "big" primitive like "\bigBlahtex" or "\BiggBlahtex".
+    // (The ordinary TeX commands "\big" etc get translated via macros to one of these blahtex primitives.)
+    struct MathBig : MathNode
+    {
+        std::wstring mCommand, mDelimiter;
+
+        MathBig(const std::wstring& command, const std::wstring& delimiter) :
+            mCommand(command), mDelimiter(delimiter) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents material surrounded by grouping braces.
+    // e.g. "{abc}" gets stored as a MathGroup node whose child contains "abc".
+    struct MathGroup : MathNode
+    {
+        std::auto_ptr<MathNode> mChild;
+
+        MathGroup(std::auto_ptr<MathNode> child) :
+            mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a sequence of nodes, concatenated together, left-to-right.
+    // e.g. "abc" gets stored as a MathList containing three MathSymbol nodes.
+    struct MathList : MathNode
+    {
+        std::vector<MathNode*> mChildren;
+
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+        ~MathList();
+    };
+
+    // Represents a base with a superscript and/or subscript.
+    // All three fields are optional (NULL indicates an empty field).
+    struct MathScripts : MathNode
+    {
+        std::auto_ptr<MathNode> mBase, mUpper, mLower;
+
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+    
+    // Represents a "limits" command, i.e. one of "\limits", "\nolimits", or "\displaylimits".
+    // Its child should be the operator that it is applied to. e.g. in the input "x^2\limits_5",
+    // the base of the MathScripts node should be a MathLimits node, whose child is the MathSymbol
+    // node representing "x".
+    struct MathLimits : MathNode
+    {
+        std::wstring mCommand;
+        std::auto_ptr<MathNode> mChild;
+
+        MathLimits(const std::wstring& command, std::auto_ptr<MathNode> child) :
+            mCommand(command), mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents an expression surrounded by "\left( ... \right)".
+    // The members mLeftDelimiter and mRightDelimiter must be delimiter commands like "(" or "\langle" or ".".
+    // mChild is the stuff enclosed by the delimiters.
+    struct MathDelimited : MathNode
+    {
+        // These two delimiters are allowed to be blank.
+        std::wstring mLeftDelimiter, mRightDelimiter;
+        std::auto_ptr<MathNode> mChild;
+
+        MathDelimited(std::auto_ptr<MathNode> child,
+            const std::wstring& leftDelimiter, const std::wstring& rightDelimiter) :
+            mChild(child), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+    
+    // Represents a row of a table, e.g. it might represent the expression "a & b & c".
+    struct MathTableRow : MathNode
+    {
+        std::vector<MathNode*> mEntries;
+
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+        ~MathTableRow();
+    };
+
+    // Represents a table, e.g. might represent the expression "a & b & c \\ d & e & f \\ g & h".
+    struct MathTable : MathNode
+    {
+        std::vector<MathTableRow*> mRows;
+
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+        ~MathTable();
+    };
+
+    // Represents an environment. Currently all supported environments are just various forms of table, so
+    // for the moment we insist that it contains a table.
+    // The mName' member is one of: "matrix", "pmatrix", "bmatrix", "Bmatrix", "vmatrix", "Vmatrix", "cases".
+    struct MathEnvironment : MathNode
+    {
+        std::wstring mName;
+        std::auto_ptr<MathTable> mTable;
+
+        MathEnvironment(const std::wstring& name, std::auto_ptr<MathTable> table) :
+            mName(name), mTable(table) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a command that switches from math mode into text mode (e.g. "\textrmBlahtex").
+    // Note that certain commands (e.g. "\textrmBlahtex") will be translated into a TextCommand1Arg node
+    // if encountered during text mode, but into a EnterTextMode if encountered during math mode.
+    struct EnterTextMode : MathNode
+    {
+        std::wstring mCommand;
+        std::auto_ptr<TextNode> mChild;
+        
+        EnterTextMode(const std::wstring& command, std::auto_ptr<TextNode> child) :
+            mCommand(command), mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a sequence of nodes in text mode.
+    struct TextList : TextNode
+    {
+        std::vector<TextNode*> mChildren;
+
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
+        ~TextList();
+    };
+
+    // Represents text mode material surrounded by grouping braces.
+    struct TextGroup : TextNode
+    {
+        std::auto_ptr<TextNode> mChild;
+
+        TextGroup(std::auto_ptr<TextNode> child) :
+            mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
+    };
+    
+    // Represents any text mode command like "a", "1", "\textbackslash" which blahtex treats as a
+    // single symbol.
+    struct TextSymbol : TextNode
+    {
+        std::wstring mCommand;
+
+        TextSymbol(const std::wstring& command) :
+            mCommand(command) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
+    };
+
+    // Represents a style change like "\rm" occurring in text mode.
+    struct TextStyleChange : TextNode
+    {
+        std::wstring mCommand;
+        std::auto_ptr<TextNode> mChild;
+
+        TextStyleChange(const std::wstring& command, std::auto_ptr<TextNode> child) :
+            mCommand(command), mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
+    };
+    
+    // Represents a command in text mode taking a single argument (e.g. "\textrmBlahtex").
+    struct TextCommand1Arg : TextNode
+    {
+        std::wstring mCommand;
+        std::auto_ptr<TextNode> mChild;
+
+        TextCommand1Arg(const std::wstring& command, std::auto_ptr<TextNode> child) :
+            mCommand(command), mChild(child) { }
+        virtual void Print(std::wostream& os, int depth) const;
+        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
+    };
+
+} // end ParseTree namespace
+
+
+// MacroProcessor maintains a stack of tokens, can be queried for the next available token, and expands
+// macros automatically. It is the layer between tokenising (handled by the Instance class) and parsing
+// proper.
+//
+// It does not process "\newcommand" commands automatically; instead it passes "\newcommand" straight back
+// to the caller, and the caller is responsible for calling MacroProcessor::HandleNewcommand.
+// (Rationale: this gives results much closer to real TeX parsing. For example, we wouldn't want
+// "x^\newcommand{\stuff}{xyz}\stuff" to be construed as legal input.)
+//
+// Note that unlike TeX, macros are *not* local to their enclosing block.
+// e.g. "{\newcommand{\abc}{xyz}}\abc" will not generate an "unrecognised command" exception.
+//
+// Implemented in MacroProcessor.cpp.
+
+class MacroProcessor
+{
+public:
+    MacroProcessor(const std::vector<std::wstring>& input);
+
+    // Returns the next token on the stack (without removing it), after expanding macros.
+    // (Returns empty string if there are no tokens left.)
+    std::wstring Peek();
+
+    // Same as Peek(), but also removes the token.
+    std::wstring Get();
+    
+    // Pops the current token.
+    void Advance();
+    
+    // Pops consecutive whitespace tokens.
+    void SkipWhitespace();
+    
+    // Assuming that "\newcommand" has just been seen and popped off the stack, this function
+    // processes a macro definition.
+    void HandleNewcommand();
+
+private:
+    // Records information about a single macro.
+    struct Macro
+    {
+        // The number of parameters the macro accepts. (Blahtex doesn't handle optional arguments.)
+        int mParameterCount;
+        
+        // The sequence of tokens that get substituted when this macro is expanded.
+        // Arguments are indicated by "#1", "#2", etc.
+        std::vector<std::wstring> mReplacement;
+        
+        Macro() : mParameterCount(0) { }
+    };
+
+    // List of all currently recognised macros.
+    wishful_hash_map<std::wstring, Macro> mMacros;
+
+    // The token stack. (mTokens.back() is the top of the stack.)
+    std::vector<std::wstring> mTokens;
+    
+    // This flag is set if we have already ascertained that the current token doesn't need to undergo macro
+    // expansion. (This is just an optimisation so that successive calls to Peek/Get don't need to check the
+    // macro table more than is necessary.)
+    bool mIsTokenReady;
+
+    // Reads a single macro argument; that is, either a single token, or if that token is "{", reads all the
+    // way up to the matching "}". The argument (not including delimiting braces) is appended to 'output'.
+    // Returns true on success, or false if the argument is missing.
+    bool ReadArgument(std::vector<std::wstring>& output);
+
+    // Total approximate cost of parsing activity so far (approximately). See cMaxParseCost for more info.
+    unsigned mCostIncurred;
 };
 
-// strings corresponding to each of the above fonts
-extern wstring mathml_font_strings[];
+// The time spent by the parser should be O(cMaxParseCost). This corresponds roughly to the number of
+// tokens that blahtex will allow in a single translation operation, but it also takes into account
+// things like time taken during macro expansion, searching for matching braces, etc. The aim is to prevent
+// a nasty user inducing exponential time via tricky macro definiitons.
+const unsigned cMaxParseCost = 20000;
 
-// Represents the latex font state during math mode.
-struct latex_math_font {
-	enum types {
-		none,  // whatever is default
-		rm,    // roman
-		bf,    // bold
-		it,    // italics
-		sf,    // sans serif
-		tt,    // typewriter
-		bb,    // blackboard bold
-		cal,   // calligraphic
-		frak   // fraktur
-	} type;
-	bool boldsymbol;
-	
-	latex_math_font() : type(none), boldsymbol(false) { }
-	
-	// Determine which MathML font best represents the given latex font.
-	mathml_font get_mathml_approximation() const;
+// The Parser class actually does the parsing work. It runs the supplied input tokens through a
+// MacroProcessor, and builds a parse tree from the resulting token stream.
+
+class Parser
+{
+public:
+    // Main function that the caller should use to do a parsing job.
+    // It is ok to call DoParse repeatedly for a single Parser object; each DoParse starts with a clean slate.
+    std::auto_ptr<ParseTree::MathNode> DoParse(const std::vector<std::wstring>& input);
+
+    // FIX: remember to mention somewhere that \newcommand is not local to blocks
+
+    // The parser uses GetMathTokenCode/MathPrimitveTable (in math mode) or GetTextTokenCode/
+    // TextTokenTable (in text mode) to translate each incoming token into one of the following values:
+    enum TokenCode
+    {
+        cEndOfInput,
+        cWhitespace,
+
+        // The "\newcommand" command.
+        cNewcommand,
+        
+        // Commands that are illegal in the current mode and don't start with a backslash (like "$", "%").
+        cIllegal,
+        
+        // Opening and closing braces ("{" and "}").
+        cBeginGroup,
+        cEndGroup,
+
+        // The commands "&" and "\\".
+        cNextCell,
+        cNextRow,
+        
+        // The commands "^" and "_".
+        cSuperscript,
+        cSubscript,
+        
+        // The prime symbol "'".
+        cPrime,
+
+        // Blahtex primitives accepting one argument or two arguments respectively.
+        cCommand1Arg,
+        cCommand2Args,
+        
+        // Infix commands like "\over".
+        cCommandInfix,
+        
+        // The "\left" and "\right" commands.
+        cLeft,
+        cRight,
+        
+        // Any command like "\bigBlahtex" which must be followed by a delimiter.
+        cBig,
+        
+        // Any of "\limits", "\nolimits", "\displaylimits".
+        cLimits,
+        
+        // Commands like "\begin{matrix}", "\end{matrix}".
+        cBeginEnvironment,
+        cEndEnvironment,
+        
+        // Command that switch from math mode to text mode (e.g. "\textrmBlahtex").
+        cEnterTextMode,
+
+        // Style change commands, e.g. "\rm" and "\scriptstyle"
+        cStyleChange,
+
+        // Pretty much every other blahtex primitive: "a", "1", "\alpha", "+", "\rightarrow", "\,"...
+        cSymbol,
+        
+        // Some commands that you might expect get translated as cSymbol actually become
+        // cSymbolUnsafe' instead. What this means is that TeX/LaTeX/AMSLaTeX considers them a macro that
+        // gets expanded, and they become subsequently unsafe for use as a single symbol. For example,
+        // "x^\cong" is illegal in LaTeX, so we assign the code cSymbolUnsafe to "\cong".
+        cSymbolUnsafe
+    };
+
+    // These tables contain all the primitives that blahtex recognises in math mode (respectively text mode).
+    // They provide the token codes for the parser to do its job.
+    static wishful_hash_map<std::wstring, TokenCode> gMathTokenTable;
+    static wishful_hash_map<std::wstring, TokenCode> gTextTokenTable;
+    
+private:
+    std::auto_ptr<MacroProcessor> mTokenSource;
+
+    // ParseMathList starts parsing a math list, until it reaches a command indicating the end of
+    // the list, like "}" or "\right" or "\end{...}".
+    std::auto_ptr<ParseTree::MathNode> ParseMathList();
+    
+    // ParseMathField parses a TeX "math field", which is either a single symbol or an
+    // expression grouped with braces.
+    std::auto_ptr<ParseTree::MathNode> ParseMathField();
+    
+    // Handle a table enclosed in something like "\begin{matrix} ... \end{matrix}"; i.e. it breaks input up
+    // into entries and rows based on "\\" and "&" commands.
+    std::auto_ptr<ParseTree::MathTable> ParseMathTable();
+
+    // PrepareScripts is used in several places in ParseMathList to set up a MathScripts node to fill.
+    // Postcondition is that the last element in 'output' is a MathScripts node, whose base is equal to
+    // whatever node was previously the last element in 'output' (unless that node was already a
+    // MathScripts node).
+    // The idea is that PrepareScripts should be called just after we encounter "^" or "_".
+    // 
+    // Note the argument and return values have no auto_ptr, so the caller does not get ownership of
+    // the MathScripts node (PrepareScripts assigns this ownership to 'output' if necessary).
+    ParseTree::MathScripts* PrepareScripts(ParseTree::MathList* output);
+
+    // ParseTextList starts parsing a text list, until it reaches "}" or end of input.
+    std::auto_ptr<ParseTree::TextNode> ParseTextList();
+
+    // ParseTextField parses an argument to a command in text mode, which is either a single
+    // symbol or an expression grouped with braces.
+    std::auto_ptr<ParseTree::TextNode> ParseTextField();
+    
+    // These functions determine the appropriate token code for the supplied token.
+    // Things like "1", "a", "+" are handled appropriately, as are backslash-prefixed commands listed in
+    // gMathTokenTable or gTextTokenTable.
+    // Exceptions are thrown for unrecognised tokens.
+    TokenCode GetMathTokenCode(const std::wstring& token) const;
+    TokenCode GetTextTokenCode(const std::wstring& token) const;
 };
 
-// Represents the latex font state during text mode.
-struct latex_text_font {
-	enum families {
-		rm,    // roman family
-		sf,    // sans serif family
-		tt     // typewriter family
-	} family;
-	bool bold;
-	bool italic;
-	
-	latex_text_font(families new_family = rm, bool new_bold = false, bool new_italic = false) :
-		family(new_family), bold(new_bold), italic(new_italic) { }
 
-	// Works out which MathML font best represents the given latex font.
-	mathml_font get_mathml_approximation() const;
+// Implemented in Instance.cpp.
+class Instance
+{
+public:
+    Instance();
+
+    // 'process_input' generates a parse tree and a layout tree from the supplied input.
+    void ProcessInput(const std::wstring& input);
+    
+    std::auto_ptr<XmlNode> GenerateMathml(const MathmlOptions& options);
+    std::auto_ptr<XmlNode> GenerateHtml();
+    std::wstring GenerateReconstructedLatex();
+    
+    const ParseTree::MathNode* GetParseTree() { return mParseTree.get(); }
+    const LayoutTree::Node* GetLayoutTree() { return mLayoutTree.get(); }
+
+private:
+    std::auto_ptr<ParseTree::MathNode> mParseTree;
+    std::auto_ptr<LayoutTree::Node> mLayoutTree;
+    
+    // The Tokenise function splits the given input into tokens, each represented by a string. The output is
+    // appended to 'output'.
+    // 
+    // There are several types of tokens:
+    // - single characters like "a", or "{", or single non-ascii unicode characters
+    // - alphabetic commands like "\frac"
+    // - commands like "\," which have a single nonalphabetic character after the backslash
+    // - commands like "\   " which have their whitespace collapsed, stored as "\ "
+    // - other consecutive whitespace characters which get collapsed to just " "
+    // - the sequence "\begin   {  stuff  }" gets stored as the single token "\begin{  stuff  }";
+    //   similarly for "\end"
+    static void Tokenise(const std::wstring& input, std::vector<std::wstring>& output);
+
+    // gStandardMacros is a string which, in effect, gets inserted at the beginning of any input string 
+    // handled by ProcessInput. It contains a sequence of "\newcommand" commands.
+    static std::wstring gStandardMacros;
+    
+    // Tokenised version of gStandardMacros (computed only once, when first used):
+    static std::vector<std::wstring> gStandardMacrosTokenised;
 };
 
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Structs used in various hard-coded lookup tables */
+// This functions strips off the "Blahtex" suffix from its input, if such a suffix appears.
+// The idea is to convert internal commands like "\fracBlahtex" back into plain old "\frac".
+extern std::wstring StripBlahtexSuffix(const std::wstring& input);
 
-// For each latex command, gives the corresponding tokens produced during math mode and text mode
-struct latex_command_info {
-	int math_token;
-	int text_token;
-};
+}
 
-/* Specifies which delimiters should go around each type of environment
-(e.g. pmatrix gets "(" and ")") */
-struct environment_info {
-	wstring left_delimiter;
-	wstring right_delimiter;
-};
-
-// Information about a latex identifier command.
-struct identifier_info {
-	// is the identifier italic by default (false for capital greek letters, "\infty", etc.)
-	bool italic;
-	// stuff to put between the <mi>...</mi> tags (e.g. "&alpha;")
-	wstring text;		
-};
-
-// Information about a latex operator command.
-struct operator_info {
-	/* does this operator have scripts under/over by default instead of sub/sup?
-	True for things like "lim" and "\sum". */
-	bool underover;
-	// stuff to put between the <mo>...</mo> tags.
-	wstring text;
-};
-
-// Information about a latex accent command.
-struct accent_info {
-	// stuff to put between the <mo>...</mo> tags.
-	wstring text;
-	// e.g. true for "\widehat", false for "\hat"
-	bool stretchy;
-	// true means this is an over-accent, false means an under-accent
-	bool over;
-};
-
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Here are some classes representing the MathML tree.
-
-The MathML tree corresponds precisely to the MathML output; the "write_output" function converts
-the tree to linear text.
-
-The layout tree to MathML tree conversion is handled in "mathml.cpp".
-*/
-
-struct mathml_node {
-	// Recursively write the MathML tree to a stream, taking into account indentation if required.
-	virtual void write_output(wostream& os, int depth = 0) const = 0;
-};
-
-// Represents a literal string in a MathML expression.
-struct mathml_string_node : mathml_node {
-	wstring text;
-	
-	mathml_string_node(const wstring& new_text) : text(new_text) { }
-	virtual void write_output(wostream& os, int depth = 0) const;
-};
-
-// Represents a pair of tags <mxyz>...</mxyz>.
-struct mathml_tag_node : mathml_node {
-	enum types {
-		mrow,
-		mi,
-		mo,
-		mn,
-		mfrac,
-		msup,
-		msub,
-		msubsup,
-		munder,
-		mover,
-		munderover,
-		msqrt,
-		mroot,
-		mtext,
-		mtable,
-		mtr,
-		mtd,
-		mstyle,
-		mspace
-	} type;
-
-	list<mathml_node*> children;
-	
-	// Attributes appearing in the opening tag, e.g. attributes[L"mathvariant"] = L"bold"
-	map<wstring, wstring> attributes;
-
-	mathml_tag_node(types new_type) : type(new_type) { }
-	virtual void write_output(wostream& os, int depth = 0) const;
-};
-
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Here are some classes representing the layout tree.
-
-The layout tree is an intermediate stage between the parse tree and the MathML tree.
-
-It does not contain any latex commands; all symbols like "\alpha" have been converted to MathML
-entities, and all fonts have been converted to their best MathML approximations.
-
-It has essentially the same structure as the MathML tree, but it is encoded in a way that is
-programatically easier to work with.
-
-The layout tree to MathML tree conversion is handled in "mathml.cpp".
-The parse tree to layout tree conversion is handled in "layout.cpp".
-
-The class hierarchy for nodes representing the layout tree is:
-
-layout_node
-	layout_textchar
-	layout_textblock
-	layout_join
-	layout_identifier
-	layout_numeral
-	layout_operator
-		layout_simple_operator
-		layout_compound_operator
-	layout_space
-	layout_scripts
-	layout_fraction
-	layout_sqrt
-	layout_root
-	layout_table_row
-	layout_table
-*/
-
-struct layout_node {
-	/* Finds the base of an expression containing nested super/subscripts. This is required (for
-	example) to work out that in the expression "a^{b^c} p_q +_x", an &InvisibleTimes; operator
-	should be inserted between "a^{b^c}" and "p_q" (because the bases "a" and "p" are both
-	identifiers) but not between "p_q" and "+_x" (because "+" is not an identifier). */
-	virtual const layout_node* get_deepest_base() const { return this; }
-
-	// Recursively builds the MathML tree corresponding to this layout node.
-	virtual mathml_node* build_mathml_tree() const
-	{ throw internal_error(L"Unexpected call to build_mathml_tree."); }
-	
-	/* Recursively merges adjacent numeral nodes, so we get <mn>42</mn> instead
-	of <mn>4</mn><mn>2</mn>. The return value is a replacement for the node, should the node
-	wish to change itself (e.g. <mrow><mn>4</mn><mn>2</mn></mrow> should be replaced with
-	<mn>42</mn>, not <mrow><mn>42</mn></mrow>). */
-	virtual layout_node* merge_numerals() { return this; }
-};
-
-// Represents a single character in text mode. (Or a few characters on rare occasions.)
-struct layout_textchar : layout_node {
-	// Something like "a" or "&amp;" or even "&nbsp;&nbsp;"
-	wstring text;
-	// The font that this character should be rendered in.
-	mathml_font font;
-	
-	layout_textchar(const wstring& new_text, mathml_font new_font) :
-		text(new_text), font(new_font) { }
-};
-
-/* Represents a sequence of characters in text mode.
-This will become an <mtext> element in the MathML tree. */
-struct layout_textblock : layout_node {
-	list<layout_textchar*> children;
-	
-	virtual mathml_node* build_mathml_tree() const;
-};
-
-/* Represents a sequence of nodes in math mode. These kind of nodes are spliced together so that
-no layout_join node has another layout_join node as a child (except in cases involving
-"prohibit_merge"). */
-struct layout_join : layout_node {
-	/* "prohibit_merge" is set if this node should not merge with a parent layout_join.
-	This is necessary so that we know to put <mrow>...</mrow> tags around something like
-		<mo stretchy="true">(></mo> ... <mo stretchy="false">)</mo>
-	so that the parentheses only stretch for the things that they enclose. */
-	bool prohibit_merge;
-	
-	list<layout_node*> children;
-
-	layout_join() : prohibit_merge(false) { }
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-// Represents an identifier, i.e. anything that eventually will be inside <mi>...</mi> tags.
-struct layout_identifier : layout_node {
-	// The string that goes between <mi> tags (e.g. "a" or "&alpha;" or "sin")
-	wstring text;
-	// The font that this identifier should be rendered in.
-	mathml_font font;
-	/* "function_style" is true for something like "sin". This flag is used to work out where
-	the "&ApplyFunction;" operator needs to go. */
-	bool function_style;
-
-	layout_identifier(
-		const wstring& new_text, mathml_font new_font, bool new_function_style = false) :
-		text(new_text), font(new_font), function_style(new_function_style) { }
-	virtual mathml_node* build_mathml_tree() const;
-};
-
-// Represents a numeral, i.e. anything that eventually will be inside <mn>...</mn> tags.
-struct layout_numeral : layout_node {
-	// The string that goes between <mn> tags (e.g. "42"). Only contains digits.
-	wstring text;
-	// The font that this numeral should be rendered in.
-	mathml_font font;
-
-	layout_numeral(const wstring& new_text, mathml_font new_font) :
-		text(new_text), font(new_font) { }
-	virtual mathml_node* build_mathml_tree() const;
-};
-
-/* Represents an operator. This includes things that will be inside <mo>...</mo> tags
-(layout_simple_operator), but also things enclosed by the "\mathop" command
-(layout_compound_operator). */
-struct layout_operator : layout_node {
-	// True for operators like "lim" or "\sum" which have scripts under/over rather than sub/sup.
-	bool underover;
-	
-	layout_operator(bool new_underover) : underover(new_underover) { }
-};
-
-// Represents an operator constructed directly from a LaTeX command or operator character.
-struct layout_simple_operator : layout_operator {
-	// The string that goes between <mo> tags (e.g. "(" or "+" or "&int;" or "lim").
-	wstring text;
-	// Is this a stretchy operator?
-	bool stretchy;
-	/* If "stretchy" is set and "size" is non-empty, then "size" indicates the vertical size that
-	the operator should be. (e.g. "2.5em".) This is used to implement the "\big" commands, by
-	setting the "minsize" and "maxsize" attributes. */
-	wstring size;
-	// The font that this operator should be rendered in.
-	mathml_font font;
-	
-	layout_simple_operator(const wstring& new_text, mathml_font new_font) :
-		text(new_text), font(new_font), stretchy(false), layout_operator(false) { }
-	virtual mathml_node* build_mathml_tree() const;
-};
-
-/* Represents an operator formed by the "\mathop" command. (We use a separate enclosing node so
-that it is easier to implement the \limits and \nolimits commands.) */
-struct layout_compound_operator : layout_operator {
-	// The stuff being treated as a single operator.
-	layout_node* child;
-	
-	layout_compound_operator(layout_node* new_child) : child(new_child), layout_operator(true) { }
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-// Represents a space element (i.e. an <mspace>).
-struct layout_space : layout_node {
-	// The width of the space, e.g. "2.5em"
-	wstring width;
-	
-	layout_space(const wstring& new_width) : width(new_width) { }
-	virtual mathml_node* build_mathml_tree() const;
-};
-
-/* Represents sub/superscripts (or both together) or under/overscripts (or both together) or
-under/over accents (or both together).
-
-The "underover" flag determines whether these are under/over or sub/super scripts. It is determined
-while building the layout tree, by examining its base, in particular the underover flag of any
-layout_operator appearing as the base.
-
-If "accent" is true, then "underover" is ignored. */
-struct layout_scripts : layout_node {
-	layout_node* base;
-	// NULL if no lower script
-	layout_node* lower;
-	// NULL if no upper script
-	layout_node* upper;
-	bool underover;
-	bool accent;
-
-	layout_scripts(
-		layout_node* new_base, layout_node* new_lower, layout_node* new_upper, bool new_underover) :
-		base(new_base), lower(new_lower), upper(new_upper), accent(false),
-		underover(new_underover) { }
-	
-	virtual const layout_node* get_deepest_base() const { return base->get_deepest_base(); }
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-/* Represents a fraction (i.e. an <mfrac> element), including things like binomial coefficients
-which don't have a horizontal line. */
-struct layout_fraction : layout_node {
-	layout_node* numerator;
-	layout_node* denominator;
-	// false for things like binomial coefficients
-	bool visible_line;
-
-	layout_fraction(
-		layout_node* new_numerator, layout_node* new_denominator, bool new_visible_line = true) :
-		numerator(new_numerator), denominator(new_denominator), visible_line(new_visible_line) { }
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-// Represents the square root of whatever is "inside" (i.e. an <msqrt> element).
-struct layout_sqrt : layout_node {
-	layout_node* inside;
-	
-	layout_sqrt(layout_node* new_inside) : inside(new_inside) { }
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-// Represents a general radical (i.e. an <mroot> element).
-struct layout_root : layout_node {
-	layout_node* inside;
-	layout_node* outside;
-	
-	layout_root(layout_node* new_inside, layout_node* new_outside) :
-		inside(new_inside), outside(new_outside) { }
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-/* Represents a row of a table (i.e. an <mtr> element, whose entries are enclosed
-in <mtd> elements). */
-struct layout_table_row : layout_node {
-	list<layout_node*> entries;
-	
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-// Represents a table (i.e. an <mtable> element).
-struct layout_table : layout_node {
-	list<layout_table_row*> rows;
-	/* "align" is used as the "colalign" attribute of the <mtable> element.
-	Currently it is only used to implement the "cases" block, to left-align things. */
-	wstring align;
-	
-	virtual mathml_node* build_mathml_tree() const;
-	virtual layout_node* merge_numerals();
-};
-
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Here are some classes to represent the parse tree.
-
-The parse tree is a tree representation of the input latex expression.
-
-The latex to parse tree conversion is handled in "parse.ypp".
-The parse tree to layout tree conversion is handled in "layout.cpp".
-
-The class hierarchy for nodes representing the parse tree is:
-
-parse_node
-	parse_text
-		parse_text_empty
-		parse_text_join
-		parse_text_command_1arg
-		parse_text_atom
-	parse_math
-		parse_math_empty
-		parse_math_join
-		parse_math_atom
-		parse_math_script
-			parse_math_prime
-			parse_math_superscript
-			parse_math_subscript
-		parse_math_scripts
-		parse_math_delimited
-		parse_math_command_1arg
-		parse_math_command_2args
-		parse_math_table
-		parse_math_table_row
-		parse_math_environment
-		parse_enter_text_mode
-*/
-
-struct parse_node {
-};
-
-// Any node occurring in text mode
-struct parse_text : parse_node {
-	virtual layout_node* build_layout_tree(const latex_text_font& current_font) const
-	{ throw internal_error(L"Unexpected call to build_layout_tree"); }
-};
-
-// Any node occurring in math mode
-struct parse_math : parse_node {
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const
-	{ throw internal_error(L"Unexpected call to build_layout_tree"); }
-	
-	/* The function "make_operatorname" attempts to make an operator name out of the parse tree
-	under this node. If the tree consists only of alphanumeric atoms and spaces, it will succeed
-	and place the resulting string in "output". If it fails, it throws an "operatorname_too_hard"
-	exception. See the "\operatorname" section of "parse_math_command_1arg::build_layout_tree"
-	for more details. */
-	struct operatorname_too_hard { };
-	virtual void make_operatorname(wstring& output) const
-	{ throw operatorname_too_hard(); }
-};
-
-// Represents absence of a node in text mode.
-struct parse_text_empty : parse_text {
-	virtual layout_node* build_layout_tree(const latex_text_font& current_font) const;
-};
-
-// Represents absence of a node in math mode.
-struct parse_math_empty : parse_math {
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-
-	virtual void make_operatorname(wstring& output) const { }
-};
-
-// Represents a pair of concatenated nodes in text mode.
-struct parse_text_join : parse_text {
-	parse_text* child1;
-	parse_text* child2;
-
-	parse_text_join(parse_text* new_child1, parse_text* new_child2) :
-		child1(new_child1), child2(new_child2) { }
-	virtual layout_node* build_layout_tree(const latex_text_font& current_font) const;
-};
-
-// Represents a text mode command with one argument (like "\textbf" or "\bf").
-struct parse_text_command_1arg : parse_text {
-	wstring command;
-	parse_text* argument;
-	
-	parse_text_command_1arg(const wstring& new_command, parse_text* new_argument) :
-		command(new_command), argument(new_argument) { }
-	virtual layout_node* build_layout_tree(const latex_text_font& current_font) const;
-};
-
-// Represents a text mode atom like "a" or "\," or "\backslash".
-struct parse_text_atom : parse_text {
-	wstring text;
-	
-	parse_text_atom(const wstring& new_text) : text(new_text) { }
-	virtual layout_node* build_layout_tree(const latex_text_font& current_font) const;
-};
-
-// Represents a math mode atom like "a" or "2" or "\," or "+" or "\alpha" or "\lim".
-struct parse_math_atom : parse_math {
-	wstring text;
-
-	parse_math_atom(const wstring& new_text) : text(new_text) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-
-	virtual void make_operatorname(wstring& output) const {
-		if (text == L"\\," || text == L"\\ ") {
-			output += L" ";
-			return;
-		}
-		else if (text.size() == 1) {
-			wchar_t c = text[0];
-			if (is_plain_alpha(c) || (c >= '0' && c <= '9')) {
-				output += c;
-				return;
-			}
-		}
-		else throw operatorname_too_hard();
-	}
-};
-
-// Represents a pair of concatenated nodes in math mode.
-struct parse_math_join : parse_math {
-	parse_math* child1;
-	parse_math* child2;
-	
-	parse_math_join(parse_math* new_child1, parse_math* new_child2) :
-		child1(new_child1), child2(new_child2) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-
-	virtual void make_operatorname(wstring& output) const {
-		child1->make_operatorname(output);
-		child2->make_operatorname(output);
-	}
-};
-
-// Represents a script attached to a base; either a subscript, a superscript, or a prime.
-struct parse_math_script : parse_math {
-};
-
-// Represents a subscript attached to a base.
-struct parse_math_subscript : parse_math_script {
-	parse_math* subscript;
-	
-	parse_math_subscript(parse_math* new_subscript) : subscript(new_subscript) { }
-};
-
-// Represents a superscript attached to a base.
-struct parse_math_superscript : parse_math_script {
-	parse_math* superscript;
-	
-	parse_math_superscript(parse_math* new_superscript) : superscript(new_superscript) { }
-};
-
-// Represents a prime attached to a base.
-struct parse_math_prime : parse_math_script {
-};
-
-/* Represents a node with several scripts attached, and possibly some "limit controls".
-The scripts are attached in any order, and we haven't yet checked if there are double
-superscripts, etc. */
-struct parse_math_scripts : parse_math {
-	// something like "\limits" or "\nolimits"; ignored if empty
-	wstring limits;
-	parse_math* base;
-	list<parse_math_script*> scripts;
-	
-	parse_math_scripts(parse_math* new_base) : base(new_base) { }
-	parse_math_scripts(parse_math* new_base, const wstring& new_limits) :
-		base(new_base), limits(new_limits) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-/* Represents a delimited expression (something like "\left( ... \right]"). At this stage we
-allow the delimiters to be any math atom. */
-struct parse_math_delimited : parse_math {
-	// The stuff inside the delimiters.
-	parse_math* enclosed;
-	parse_math_atom* left;
-	parse_math_atom* right;
-	
-	parse_math_delimited(
-		parse_math* new_enclosed, parse_math_atom* new_left, parse_math_atom* new_right) :
-		enclosed(new_enclosed), left(new_left), right(new_right) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-// Represents a latex command with one argument (e.g. "\sqrt", "\mathbf", "\mathop")
-struct parse_math_command_1arg : parse_math {
-	// The command (e.g. "\sqrt")
-	wstring command;
-	// The argument to the command
-	parse_math* argument;
-	
-	parse_math_command_1arg(const wstring& new_command, parse_math* new_argument) :
-		command(new_command), argument(new_argument) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-/* Represents a latex command with two arguments (e.g. "\frac", "\choose").
-This includes commands like "\sqrt" which have an optional argument present. */
-struct parse_math_command_2args : parse_math {
-	// The command (e.g. "\sqrt")
-	wstring command;
-	// The two arguments.
-	parse_math* argument1;
-	parse_math* argument2;
-
-	parse_math_command_2args(
-		const wstring& new_command, parse_math* new_argument1, parse_math* new_argument2) :
-		command(new_command), argument1(new_argument1), argument2(new_argument2) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-// Represents a row of a table.
-struct parse_math_table_row : parse_math {
-	list<parse_math*> entries;
-
-	parse_math_table_row(parse_math* new_entry) { entries.push_back(new_entry); }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-// Represents a table.
-struct parse_math_table : parse_math {
-	list<parse_math_table_row*> rows;
-	
-	parse_math_table(parse_math_table_row* new_row) { rows.push_back(new_row); }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-/* Represents an environment, such as "\begin{pmatrix} ... \end{pmatrix}", or the simpler notation
-"\pmatrix{...}" (which is deprecated in standard latex).
-
-Note: in this implementation, we assume that every environment contains a table. This is of course
-not true in latex; but currently the only ones we want to implement have this property. */
-struct parse_math_environment : parse_math {
-	// The name of the environment (e.g. "pmatrix" or "cases")
-	wstring name;
-	// The table contained in the environment.
-	parse_math_table* child;
-	
-	parse_math_environment(const wstring& new_name, parse_math_table* new_child) :
-		name(new_name), child(new_child) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-// Represents a command that indicates entry to text mode (e.g. "\textbf" or "\mbox").
-struct parse_enter_text_mode : parse_math {
-	// The relevant command.
-	wstring command;
-	// The stuff in text mode.
-	parse_text* argument;
-	
-	parse_enter_text_mode(const wstring& new_command, parse_text* new_argument) :
-		command(new_command), argument(new_argument) { }
-	virtual layout_node* build_layout_tree(const latex_math_font& current_font) const;
-};
-
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-More globals - these are all documented where they are defined */
-
-extern bool mode_displayed;
-extern bool mode_indented;
-
-extern bool tweak_Vert_stretch;
-extern bool tweak_fancy_fonts;
-extern bool tweak_mtext_nbsp;
-extern bool tweak_bold_prime;
-extern bool tweak_weird_invisible_times;
-
-extern void split_into_tokens(const wstring& input, vector<wstring>& output);
-extern vector<wstring> input_tokens;
-extern parse_math* parse_root;
-extern int yyparse();
-
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-end of file */
+// end of file @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
