@@ -32,11 +32,16 @@ SOURCES = \
 	UnicodeConverter.cpp \
 	main.cpp
 
-linux:  $(SOURCES)  blahtex.h  md5Wrapper.h  md5.h  UnicodeConverter.h
-	g++ -O3 -o blahtex $(SOURCES)
-	
+OBJECTS = $(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SOURCES)))
+
+CFLAGS = -O3
+CXXFLAGS = $(CFLAGS)
+
+linux:  $(OBJECTS)  blahtex.h  md5Wrapper.h  md5.h  UnicodeConverter.h
+	$(CXX) $(CFLAGS) -o blahtex $(OBJECTS)
+
 mac: $(SOURCES)
 	g++ -O3 -o blahtex -liconv -DBLAHTEX_ICONV_CONST $(SOURCES)
 
 clean:
-	rm -f blahtex
+	rm -f blahtex $(OBJECTS)
