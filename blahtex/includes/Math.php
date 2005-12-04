@@ -107,8 +107,8 @@ class MathRenderer {
 			$contents = `$cmd`;
 			wfDebug( "TeX output:\n $contents\n---\n" );
 		
-			if (strlen($contents) == 0) {
-				return $this->_error( 'math_unknown_error' );
+ 			if (strlen($contents) == 0) {
+			  return $this->_error( 'math_unknown_error', $cmd );
 			}
 			
 			$retval = substr ($contents, 0, 1);
