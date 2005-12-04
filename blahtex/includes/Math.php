@@ -44,15 +44,16 @@ class MathRenderer {
                      || $this->mode == MW_MATH_MATHML_AX || $this->mode == MW_MATH_MATHML_AXX
                      || $this->mode == MW_MATH_MATHML_MIX
 		    ) && $wgBlahtex) {
-                  # Write tex to file and call blahtex
+
+                  # Pipe contents through blahtex
                   if (function_exists('is_executable') && !is_executable($wgBlahtex)) {
                     return $this->_error( 'math_noblahtex', $wgBlahtex );
                   }
                   $descriptorspec = array(0 => array("pipe", "r"),
                                           1 => array("pipe", "w"));
-                  $process = proc_open($wgBlahtex, $descriptorspec, $pipes);
+                  $process = proc_open($wgBlahtex.'  --mathml', $descriptorspec, $pipes);
                   if (!$process) {
-                    return $this->_error( 'math_unknown_error' );
+                    return $this->_error( 'math_unknown_error', '#1' );
                   }
                   fwrite($pipes[0], $this->tex);
                   fclose($pipes[0]);
@@ -63,13 +64,30 @@ class MathRenderer {
                   fclose($pipes[1]);
                   if (proc_close($process) != 0) {
                     # exit code of blahtex is not zero; this shouldn't happen
-                    return $this->_error( 'math_unknown_error' );
+                    return $this->_error( 'math_unknown_error', '#2' );
                   }
-                  $str = 'blahtex error: ';
-                  if (substr($contents, 0, strlen($str)) == $str) {
-                    return $this->_error('math_blahtex_error', substr($contents, strlen($str)));
-                  }
-                  return ("<math xmlns='http://www.w3.org/1998/Math/MathML'>" . $contents . "</math>");
+
+		  # Parse output. Assumes output is well-formed.
+		  $contents = rtrim($contents);
+		  $firsttag = substr($contents, 1, strpos($contents, '>') - 1);
+
+		  if ($firsttag == 'mathml') {
+		    # Everything is okay
+		    $contents = substr($contents, strlen($firsttag)+2, 
+				       strpos($contents, '</'.$firsttag.'>') - (strlen($firsttag)+2));
+		    return ("<math xmlns='http://www.w3.org/1998/Math/MathML'>" . $contents . "</math>");
+		  }
+		  else if ($firsttag == 'inputError') {
+		    # The input is not valid. 
+		    # FIXME For the moment, use the 'message'
+		    $pos = strpos($contents, '<message>') + strlen('<message>');
+		    $contents = substr($contents, $pos, strpos($contents, '</message>') - $pos);
+		    return $this->_error('', $contents);
+		  }
+
+		  # Other errors are pngError, logicError, or unicodeError
+		  # but these shouldn't happen in this context
+		  return $this->_error('math_blahtex_error', $contents);
                 }
 
 		if( !$this->_recall() ) {
@@ -187,7 +205,10 @@ class MathRenderer {
 	function _error( $msg, $append = '' ) {
 		$mf   = htmlspecialchars( wfMsg( 'math_failure' ) );
 		$munk = htmlspecialchars( wfMsg( 'math_unknown_error' ) );
-		$errmsg = htmlspecialchars( wfMsg( $msg ) );
+		if ($msg)
+		  $errmsg = htmlspecialchars( wfMsg( $msg ) );
+		else
+		  $errmsg = '';
                 $source = htmlspecialchars(str_replace("\n", ' ', $this->tex));
                 # Note: the str_replace above is because the return value must not contain newlines
 		return "<strong class='error'>$mf ($errmsg$append): $source</strong>\n";
