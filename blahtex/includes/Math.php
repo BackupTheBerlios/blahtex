@@ -55,6 +55,7 @@ class MathRenderer {
                   if (!$process) {
                     return $this->_error( 'math_unknown_error', '#1' );
                   }
+		  fwrite($pipes[0], '\\displaystyle ');
                   fwrite($pipes[0], $this->tex);
                   fclose($pipes[0]);
                   $contents = '';
