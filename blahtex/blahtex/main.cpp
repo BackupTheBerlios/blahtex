@@ -18,9 +18,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "blahtex.h"
-#include "errno.h"
 #include "UnicodeConverter.h"
 #include "md5Wrapper.h"
+#include <cerrno>
 #include <iostream>
 #include <sstream>
 #include <fstream>
