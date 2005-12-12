@@ -1,6 +1,6 @@
-// File "MacroProcesor.cpp"
+// File "MacroProcessor.cpp"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -109,8 +109,7 @@ void MacroProcessor::HandleNewcommand()
 
     wstring newCommand = mTokens.back();
     if (mMacros.count(newCommand)
-        || Parser::gMathTokenTable.count(newCommand)
-        || Parser::gTextTokenTable.count(newCommand)
+        || gMathTokenTable.count(newCommand) || gTextTokenTable.count(newCommand)
         || newCommand == L"\\sqrt")
         throw Exception(Exception::cIllegalRedefinition, newCommand);
     mTokens.pop_back();

@@ -1,6 +1,6 @@
-// File "exceptions.cpp"
+// File "Exception.cpp"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,7 @@ using namespace std;
 namespace blahtex {
 
 pair<Exception::Code, wstring> gCodesAsTextArray[] = {
+    make_pair( Exception::cNonAsciiInMathMode,                     L"NonAsciiInMathMode" ),
     make_pair( Exception::cIllegalCharacter,                       L"IllegalCharacter" ),
     make_pair( Exception::cIllegalBlahtexSuffix,                   L"IllegalBlahtexSuffix" ),
     make_pair( Exception::cTooManyTokens,                          L"TooManyTokens" ),
@@ -66,6 +67,9 @@ pair<Exception::Code, wstring> gCodesAsTextArray[] = {
 wishful_hash_map<Exception::Code, wstring> Exception::gCodesAsTextTable(gCodesAsTextArray, END_ARRAY(gCodesAsTextArray));
 
 pair<Exception::Code, wstring> gEnglishMessagesArray[] = {
+
+    make_pair(Exception::cNonAsciiInMathMode,
+        L"Non-ASCII characters may only be used in text mode (try enclosing the problem characters in \"\\text{...}\")"),
 
     make_pair(Exception::cIllegalCharacter,
         L"Illegal character in input"),

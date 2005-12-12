@@ -1,6 +1,6 @@
 // File "Parser.cpp"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -28,8 +28,6 @@ using namespace std;
 // FIX: blahtex can't handle "\mathop\sum"... basically because \sum should expand as a macro, but
 // regular latex can figure out what \mathop applies to... I can't!
 // This is no big deal though.. e.g. \mathrel\sum fails on latex+amslatex.
-
-// FIX: need to think about illegal UNICODE characters, like FFFE or whatever it is...
 
 namespace blahtex {
 
@@ -518,6 +516,8 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\varprojlim",             Parser::cSymbolUnsafe)
 };
 
+wishful_hash_map<wstring, Parser::TokenCode> gMathTokenTable(gMathTokenArray, END_ARRAY(gMathTokenArray));
+
 pair<wstring, Parser::TokenCode> gTextTokenArray[] =
 {
     make_pair(L"",                         Parser::cEndOfInput),
@@ -567,6 +567,7 @@ pair<wstring, Parser::TokenCode> gTextTokenArray[] =
     make_pair(L"/",                        Parser::cSymbol),
     make_pair(L"?",                        Parser::cSymbol),
     make_pair(L"\"",                       Parser::cSymbol),
+    make_pair(L"\'",                       Parser::cSymbol),
 
     make_pair(L"~",                        Parser::cSymbolUnsafe),
     make_pair(L"\\,",                      Parser::cSymbolUnsafe),
@@ -592,8 +593,7 @@ pair<wstring, Parser::TokenCode> gTextTokenArray[] =
     make_pair(L"\\sf",                     Parser::cStyleChange),
 };
 
-wishful_hash_map<wstring, Parser::TokenCode> Parser::gMathTokenTable(gMathTokenArray, END_ARRAY(gMathTokenArray));
-wishful_hash_map<wstring, Parser::TokenCode> Parser::gTextTokenTable(gTextTokenArray, END_ARRAY(gTextTokenArray));
+wishful_hash_map<wstring, Parser::TokenCode> gTextTokenTable(gTextTokenArray, END_ARRAY(gTextTokenArray));
 
 Parser::TokenCode Parser::GetMathTokenCode(const wstring& token) const
 {
@@ -619,11 +619,13 @@ Parser::TokenCode Parser::GetMathTokenCode(const wstring& token) const
         else
             throw Exception(Exception::cUnrecognisedCommand, token);
     }
+    
+    if (token[0] > 0x7F)
+        throw Exception(Exception::cNonAsciiInMathMode);
 
     if ((token[0] >= L'a' && token[0] <= L'z') ||
         (token[0] >= L'A' && token[0] <= L'Z') ||
-        (token[0] >= L'0' && token[0] <= L'9') ||
-        (token[0] > 0x7F))
+        (token[0] >= L'0' && token[0] <= L'9'))
         return cSymbol;
 
     throw Exception(Exception::cUnrecognisedCommand, token);

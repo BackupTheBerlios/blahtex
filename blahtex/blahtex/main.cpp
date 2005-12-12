@@ -1,6 +1,6 @@
 // File "main.cpp"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -20,24 +20,21 @@
 #include "blahtex.h"
 #include "UnicodeConverter.h"
 #include "md5Wrapper.h"
-#include <cerrno>
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <sys/stat.h>
 #include <stdexcept>
+#include <cerrno>
 
 using namespace std;
 using namespace blahtex;
 
-string gBlahtexVersion = "0.3.2";
+string gBlahtexVersion = "0.3.3";
 
 // We only use a single instance of UnicodeConverter.
 UnicodeConverter gUnicodeConverter;
 
-// FIX: make blahtex print ShowUsage if no input is ready to read
-
-// FIX: update this message:
 void ShowUsage()
 {
     cout <<
@@ -47,17 +44,17 @@ void ShowUsage()
         "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
         "Usage: blahtex [ --indented ] [ --font-substitution ] [ --spacing N ]\n"
         "               [ --mathml-encoding type ] [ --other-encoding type ]\n"
-        "               [ --mathml ] [ --html ] [ --png ] < inputfile\n\n"
+        "               [ --mathml ] [ --html ] [ --png ] [ --debug type ] < inputfile\n\n"
         " --indented\n"
         "        produce nicely indented MathML tags\n\n"
         " --font-substitution\n"
         "        use character entities to avoid poorly-supported mathvariant font settings\n\n"
         " --spacing 0\n"
-        "        emit spacing commands wherever possible\n"
+        "        emit MathML spacing markup wherever possible\n"
         " --spacing 1 (default)\n"
-        "        emit spacing commands where a MathML renderer is likely to get it wrong\n"
+        "        emit spacing markup where a MathML renderer is likely to get it wrong\n"
         " --spacing 2\n"
-        "        only emit spacing commands where the user specifically requests it\n\n"
+        "        only emit spacing markup where specifically requested in the TeX input\n\n"
         " --mathml\n"
         "        generate MathML output\n\n"
         " --html\n"
@@ -75,7 +72,13 @@ void ShowUsage()
         " --other-encoding raw\n"
         "        encode non-ASCII, non-MathML characters as raw UTF-8\n"
         " --other-encoding numeric\n"
-        "        encode non-ASCII, non-MathML characters as numeric codes\n"
+        "        encode non-ASCII, non-MathML characters as numeric codes\n\n"
+        " --debug parse\n"
+        "        display the parse tree (output is NOT XML)\n"
+        " --debug layout\n"
+        "        display the layout tree (output is NOT XML)\n"
+        " --debug purified\n"
+        "        display purified TeX (output is NOT XML)\n"
     ;
     exit(0);
 }
@@ -99,16 +102,25 @@ struct CommandLineException
 };
 
 int main (int argc, char * const argv[]) {
+    if (isatty(0))
+        ShowUsage();
+
     // This outermost try block catches all std::exceptions.
     try
     {
         gUnicodeConverter.Open();
 
-        MathmlOptions options;
+        MathmlOptions mathmlOptions;
+        EncodingOptions encodingOptions;
+
         bool indented = false;
         bool doPng    = false;
         bool doMathml = false;
         bool doHtml   = false;
+        
+        bool debugLayoutTree  = false;
+        bool debugParseTree   = false;
+        bool debugPurifiedTex = false;
         
         try {
             // Process command line arguments
@@ -129,11 +141,11 @@ int main (int argc, char * const argv[]) {
                     arg = string(argv[i]);
                     if (arg.empty() || arg[0] < '0' || arg[0] > '2')
                         throw CommandLineException("Illegal number after \"--spacing\" (try blahtex --help)");
-                    options.mSpacingExplicitness = atoi(argv[i]);
+                    mathmlOptions.mSpacingExplicitness = atoi(argv[i]);
                 }
                 
                 else if (arg == "--font-substitution")
-                    options.mFancyFontSubstitution = true;
+                    mathmlOptions.mFancyFontSubstitution = true;
                 
                 else if (arg == "--png")
                     doPng = true;
@@ -150,13 +162,13 @@ int main (int argc, char * const argv[]) {
                         throw CommandLineException("Missing string after \"--mathml-encoding\" (try blahtex --help)");
                     arg = string(argv[i]);
                     if (arg == "raw")
-                        options.mMathmlEncoding = cMathmlEncodingRaw;
+                        encodingOptions.mMathmlEncoding = cMathmlEncodingRaw;
                     else if (arg == "numeric")
-                        options.mMathmlEncoding = cMathmlEncodingNumeric;
+                        encodingOptions.mMathmlEncoding = cMathmlEncodingNumeric;
                     else if (arg == "short")
-                        options.mMathmlEncoding = cMathmlEncodingShort;
+                        encodingOptions.mMathmlEncoding = cMathmlEncodingShort;
                     else if (arg == "long")
-                        options.mMathmlEncoding = cMathmlEncodingLong;
+                        encodingOptions.mMathmlEncoding = cMathmlEncodingLong;
                     else
                         throw CommandLineException("Illegal string after \"--mathml-encoding\" (try blahtex --help)");
                 }
@@ -167,11 +179,26 @@ int main (int argc, char * const argv[]) {
                         throw CommandLineException("Missing string after \"--other-encoding\" (try blahtex --help)");
                     arg = string(argv[i]);
                     if (arg == "raw")
-                        options.mOtherEncodingRaw = true;
+                        encodingOptions.mOtherEncodingRaw = true;
                     else if (arg == "numeric")
-                        options.mOtherEncodingRaw = false;
+                        encodingOptions.mOtherEncodingRaw = false;
                     else
                         throw CommandLineException("Illegal string after \"--other-encoding\" (try blahtex --help)");
+                }
+
+                else if (arg == "--debug")
+                {
+                    if (++i == argc)
+                        throw CommandLineException("Missing string after \"--debug\" (try blahtex --help)");
+                    arg = string(argv[i]);
+                    if (arg == "layout")
+                        debugLayoutTree = true;
+                    else if (arg == "parse")
+                        debugParseTree = true;
+                    else if (arg == "purified")
+                        debugPurifiedTex = true;
+                    else
+                        throw CommandLineException("Illegal string after \"--debug\" (try blahtex --help)");
                 }
                 
                 else
@@ -208,13 +235,39 @@ int main (int argc, char * const argv[]) {
             Instance I;
             I.ProcessInput(input);
             
+            if (debugParseTree)
+            {
+                output << L"\n=== BEGIN PARSE TREE ===\n\n";
+                I.GetParseTree()->Print(output);
+                output << L"\n=== END PARSE TREE ===\n\n";
+            }
+            if (debugLayoutTree)
+            {
+                output << L"\n=== BEGIN LAYOUT TREE ===\n\n";
+                wostringstream temp;
+                I.GetLayoutTree()->Print(temp);
+                output << XmlEncode(temp.str(), EncodingOptions());
+                output << L"\n=== END LAYOUT TREE ===\n\n";
+            }
+
+            wstring purifiedTex;
+            if (doPng || debugPurifiedTex)
+                purifiedTex = I.GeneratePurifiedTex();
+            
+            if (debugPurifiedTex)
+            {
+                output << L"\n=== BEGIN PURIFIED TEX ===\n\n";
+                output << purifiedTex;
+                output << L"\n=== END PURIFIED TEX ===\n\n";
+            }
+            
             if (doMathml)
             {
-                auto_ptr<XmlNode> mathml = I.GenerateMathml(options);
+                auto_ptr<XmlNode> mathml = I.GenerateMathml(mathmlOptions);
                 output << L"<mathml>";
                 if (indented)
                     output << endl;
-                mathml->Print(output, options, indented);
+                mathml->Print(output, encodingOptions, indented);
                 if (indented)
                     output << endl;
                 output << L"</mathml>" << endl;
@@ -227,8 +280,8 @@ int main (int argc, char * const argv[]) {
             
             if (doPng)
             {
-                string reconstructed = gUnicodeConverter.ConvertOut(I.GenerateReconstructedLatex());
-                string md5 = ComputeMd5(reconstructed);
+                string purifiedTexUtf8 = gUnicodeConverter.ConvertOut(purifiedTex);
+                string md5 = ComputeMd5(purifiedTexUtf8);
                 
                 string shellLatex = "/sw/bin/latex";
                 string shellDvips = "/sw/bin/dvips";
@@ -240,7 +293,7 @@ int main (int argc, char * const argv[]) {
                         ofstream texFile(texFilename.c_str(), ios::out | ios::binary);
                         if (!texFile)
                             throw wstring(L"Could not create tex file");
-                        texFile << reconstructed;
+                        texFile << purifiedTexUtf8;
                     }
                     
                     string command;
@@ -287,7 +340,7 @@ int main (int argc, char * const argv[]) {
 
         catch (Exception& e)
         {
-            cout << gUnicodeConverter.ConvertOut(e.GetXml(options.mOtherEncodingRaw)) << endl;
+            cout << gUnicodeConverter.ConvertOut(e.GetXml(encodingOptions.mOtherEncodingRaw)) << endl;
             return 0;
         }
 

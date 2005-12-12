@@ -1,6 +1,6 @@
 // File "ParseTree.cpp"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -146,8 +146,6 @@ MathmlFont LatexTextFont::GetMathmlApproximation() const
     throw logic_error("Unexpected LatexTextFont data");
 }
 
-// FIX: write something in blahtex.h about ownership conventions for smart pointers
-
 auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const
 {
     auto_ptr<LayoutTree::Row> output(new LayoutTree::Row(currentStyle));
@@ -253,8 +251,8 @@ auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(const LatexMathFont& curren
             foundFirst = true;
         else
         {
-            Flavour  leftFlavour = dynamic_cast<LayoutTree::Fenced*>(*previousAtom) ? cFlavourOpen : (*previousAtom)->mFlavour;
-            Flavour rightFlavour = dynamic_cast<LayoutTree::Fenced*>(*previousAtom) ? cFlavourClose : (*currentAtom)->mFlavour;
+            Flavour  leftFlavour = dynamic_cast<LayoutTree::Fenced*>(*previousAtom) ? cFlavourClose : (*previousAtom)->mFlavour;
+            Flavour rightFlavour = dynamic_cast<LayoutTree::Fenced*>(*currentAtom)  ? cFlavourOpen  : (*currentAtom)->mFlavour;
 
             int width = 
 
@@ -356,12 +354,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
                 mCommand, font.GetMathmlApproximation(), currentStyle, cFlavourOrd));
         }
         
-        // Non-ascii characters:
+        // Non-ascii characters
         if (mCommand[0] > 0x7F)
-        {
-            // FIX: write this
-            throw logic_error("Non-ascii characters not implemented yet.");
-        }
+            throw logic_error("Unexpected non-ascii character in MathSymbol::BuildLayoutTree");
     }
 
     static pair<wstring, wchar_t> lowercaseGreekArray[] =
@@ -409,6 +404,11 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
             currentFont.mIsBoldsymbol ? cMathmlFontBoldItalic : cMathmlFontItalic,
             currentStyle, cFlavourOrd));
     }
+
+    // FIX: for some reason firefox is selecting perhaps a sans-serif font to render
+    // <mi mathvariant="normal">&Gamma;</mi>
+    // and for other greek letters too.
+    // Maybe should really follow Roger's suggestion re: mathml version 1 fonts
 
     static pair<wstring, wchar_t> uppercaseGreekArray[] =
     {
@@ -697,8 +697,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
     if (operatorLookup != operatorTable.end())
     {
         return auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolOperator(
-            false,      // not stretchy
-            L"", operatorLookup->second.mText,
+            false, L"",     // not stretchy
+            false,          // not an accent
+            operatorLookup->second.mText,
             // operators are only affected by the boldsymbol status, not the family.
             currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal,
             currentStyle, operatorLookup->second.mFlavour, operatorLookup->second.mLimits));
@@ -782,6 +783,8 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\varliminf",              ),
         make_pair(L"\\mod",                    ),
         make_pair(L"\\bmod",                   ),
+
+
 */
 }
 
@@ -800,6 +803,10 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     {
         return auto_ptr<LayoutTree::Node>(new LayoutTree::Sqrt(mChild->BuildLayoutTree(currentFont, currentStyle)));
     }
+
+// FIX: implement these: (NOT as accents I think...)
+//        make_pair(L"\\overbrace",           AccentInfo(L"\U0000FE37",           true)),
+//        make_pair(L"\\underbrace",          AccentInfo(L"\U0000FE38",           true)),
     
     if (mCommand == L"\\pmod")
     {
@@ -808,18 +815,17 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
         MathmlFont font = currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal;
 
         row->mChildren.push_back(new LayoutTree::Space(18, true));      // "true" means user-requested, non-negotiable space
-        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", L"(", font, currentStyle, cFlavourOpen));
-        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", L"mod", font, currentStyle, cFlavourOrd));
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"(", font, currentStyle, cFlavourOpen));
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"mod", font, currentStyle, cFlavourOrd));
         row->mChildren.push_back(new LayoutTree::Space(6, false));      // "false" means possibly negotiable space
         row->mChildren.push_back(mChild->BuildLayoutTree(currentFont, currentStyle).release());
-        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", L")", font, currentStyle, cFlavourClose));
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L")", font, currentStyle, cFlavourClose));
         
         return static_cast<auto_ptr<LayoutTree::Node> >(row);
     }
 
     if (mCommand == L"\\operatorname" || mCommand == L"\\operatornamewithlimits")
     {
-        // FIX: think a bit harder about how well this works.
         // FIX: DOC the business with merging adjacent roman font characters in <mi> nodes
         
         LatexMathFont font = currentFont;
@@ -833,6 +839,8 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     static pair<wstring, wstring> negationArray[] =
     {
         // FIX: add more entries to this table
+        // FIX: label these entries so I know what the hell they are
+        // FIX: Why is 2208 listed twice???
         make_pair(L"\U00002208",       L"\U00002209"),
         make_pair(L"\U00002208",       L"\U00002262"),
         make_pair(L"\U00002203",       L"\U00002204"),
@@ -912,7 +920,8 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     }
     
     static pair<wstring, AccentInfo> accentCommandArray[] =
-    {                                                                      // stretchy?
+    {                                                                       // stretchy?
+        // FIX: review these...
         make_pair(L"\\hat",                 AccentInfo(L"^",                    false)),
         make_pair(L"\\widehat",             AccentInfo(L"^",                    true)),
         make_pair(L"\\bar",                 AccentInfo(L"\U000000AF",           false)),
@@ -920,11 +929,8 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
         make_pair(L"\\underline",           AccentInfo(L"\U000000AF",           true)),
         make_pair(L"\\tilde",               AccentInfo(L"\U000002DC",           false)),
         make_pair(L"\\widetilde",           AccentInfo(L"\U000002DC",           true)),
-        make_pair(L"\\overbrace",           AccentInfo(L"\U0000FE37",           true)),
-        make_pair(L"\\underbrace",          AccentInfo(L"\U0000FE38",           true)),
         make_pair(L"\\overleftarrow",       AccentInfo(L"\U00002190",           true)),
-        // FIX: need to review whether "\vec" should be stretchy; seems to depend on browser
-        make_pair(L"\\vec",                 AccentInfo(L"\U000020D7",           true)),     // FIX: I think I transcribed this one wrong...
+        make_pair(L"\\vec",                 AccentInfo(L"\U000020D7",           true)),
         make_pair(L"\\overrightarrow",      AccentInfo(L"\U00002192",           true)),
         make_pair(L"\\overleftrightarrow",  AccentInfo(L"\U00002194",           true)),
         make_pair(L"\\dot",                 AccentInfo(L"\U000000B7",           false)),
@@ -942,26 +948,25 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     {
         auto_ptr<LayoutTree::Node> base = mChild->BuildLayoutTree(currentFont, currentStyle), lower, upper;
 
-        wstring size;
-        if (mCommand == L"\\vec")
-            size = L"0.5em";
-        
         auto_ptr<LayoutTree::Node> accent(new LayoutTree::SymbolOperator(
-            accentCommand->second.mIsStretchy, size, accentCommand->second.mText,
+            accentCommand->second.mIsStretchy, L"",
+            true,       // is an accent
+            accentCommand->second.mText,
             currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal,
-            currentStyle,           // FIX: this is not right!! need to decrease style appropriately! Check MathML documentation for handling of accent="true" style changes
+            // Note: we don't need to decrement the style here, because LayoutTree::SymbolOperator
+            // knows not to insert style changes for accent operators
+            currentStyle,
             cFlavourOrd));
         
-        if (mCommand == L"\\underline" || mCommand == L"\\underbrace")
+        if (mCommand == L"\\underline")
             lower = accent;
         else
             upper = accent;
 
-        Placement placement = (mCommand == L"\\underbrace" || mCommand == L"\\overbrace")
-            ? cPlacementUnderOver : cPlacementAccent;
-
         return auto_ptr<LayoutTree::Node>(new LayoutTree::Scripts(
-            currentStyle, cFlavourOrd, cLimitsDisplayLimits, placement, base, upper, lower));
+            currentStyle, cFlavourOrd, cLimitsDisplayLimits,
+            false,      // not sideset
+            base, upper, lower));
     }
     
     // FIX: change this:
@@ -1049,7 +1054,7 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(const LatexMathFont
             isLineVisible));
 
         if (hasParentheses)
-            return auto_ptr<LayoutTree::Node>(new LayoutTree::Fenced(L"(", L")", inside));
+            return auto_ptr<LayoutTree::Node>(new LayoutTree::Fenced(currentStyle, L"(", L")", inside));
         else
             return inside;
     }
@@ -1077,6 +1082,7 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(const LatexMathFont
 auto_ptr<LayoutTree::Node> MathGroup::BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const
 {
     // TeX treates any group enclosed by curly braces as an "ordinary" atom.
+    // This is why e.g. "123{,}456" looks different to "123,456"
     auto_ptr<LayoutTree::Node> node = mChild->BuildLayoutTree(currentFont, currentStyle);
     node->mFlavour = cFlavourOrd;
     return node;
@@ -1093,7 +1099,14 @@ auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(const LatexMathFont& cur
     {
         base = mBase->BuildLayoutTree(currentFont, currentStyle);
         flavour = base->mFlavour;
-        limits = base->mLimits;         // FIX: do we really need this line?
+        
+        // FIX: The next line is a slightly nasty hack.
+        // We propagate the limits setting of the base to the LayoutTree::Scripts node. Then the Scripts
+        // node can just examine its OWN limits setting to decide where to place the scripts. This probably
+        // isn't the best way to do this, because strictly speaking the limits setting doesn't apply to the
+        // scripts node itself. But it doesn't break, because the limits field on a scripts node should
+        // never actually be used for anything else (at least I can't think of a counterexample).
+        limits = base->mLimits;
     }
     
     Style smallerStyle = currentStyle;
@@ -1110,15 +1123,11 @@ auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(const LatexMathFont& cur
     if (mLower.get())
         lower = mLower->BuildLayoutTree(currentFont, smallerStyle);
     
-    Placement placement =
-        
-        (flavour == cFlavourOp &&
-            (limits == cLimitsLimits || (limits == cLimitsDisplayLimits && currentStyle == cStyleDisplay)))
-        
-        ? cPlacementUnderOver : cPlacementSideset;
-
+    bool isSideset = (flavour != cFlavourOp) ||
+        (limits != cLimitsLimits && (limits != cLimitsDisplayLimits || currentStyle != cStyleDisplay));
+    
     return auto_ptr<LayoutTree::Node>(new LayoutTree::Scripts(
-        currentStyle, flavour, limits, placement, base, upper, lower));
+        currentStyle, flavour, limits, isSideset, base, upper, lower));
 }
 
 auto_ptr<LayoutTree::Node> MathLimits::BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const
@@ -1143,7 +1152,7 @@ auto_ptr<LayoutTree::Node> MathLimits::BuildLayoutTree(const LatexMathFont& curr
 auto_ptr<LayoutTree::Node> MathDelimited::BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const
 {
     return auto_ptr<LayoutTree::Node>(new LayoutTree::Fenced(
-        gDelimiterTable[mLeftDelimiter], gDelimiterTable[mRightDelimiter],
+        currentStyle, gDelimiterTable[mLeftDelimiter], gDelimiterTable[mRightDelimiter],
         mChild->BuildLayoutTree(currentFont, currentStyle)));
 }
 
@@ -1188,8 +1197,10 @@ auto_ptr<LayoutTree::Node> MathBig::BuildLayoutTree(const LatexMathFont& current
 
         // FIX: latex allows "\big."... do we?
         return auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolOperator(
-            true,      // indicates stretchy="true"
-            bigCommand->second.mSize, gDelimiterTable[mDelimiter], cMathmlFontNormal,
+            true,       // indicates stretchy="true"
+            bigCommand->second.mSize,
+            false,      // not an accent
+            gDelimiterTable[mDelimiter], cMathmlFontNormal,
             newStyle, bigCommand->second.mFlavour));
     }
     
@@ -1245,26 +1256,33 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(const LatexMathFont&
     if (environmentName == environmentTable.end())
         throw logic_error("Unexpected environment name in MathEnvironment::BuildLayoutTree");
 
-    // For reasons I don't fully comprehend, the "boldsymbol" persists into environments, but
-    // the math font doesn't.
+    // For reasons I don't fully comprehend, the "boldsymbol" persists into environments,
+    // but the math font doesn't.
     LatexMathFont font;
     font.mIsBoldsymbol = currentFont.mIsBoldsymbol;
 
-    Style style;
+    Style tableStyle, fencedStyle;
     if (mName == L"smallmatrix")
-        style = cStyleScript;
+        tableStyle = fencedStyle = cStyleScript;
     else if (mName == L"aligned")
-        style = cStyleDisplay;
+        tableStyle = cStyleDisplay;
     else
-        style = cStyleText;
+    {
+        tableStyle = cStyleText;
+        fencedStyle = (currentStyle == cStyleDisplay) ? cStyleDisplay : cStyleText;
+    }
     
-    auto_ptr<LayoutTree::Node> table = mTable->BuildLayoutTree(font, style);
+    auto_ptr<LayoutTree::Node> table = mTable->BuildLayoutTree(font, tableStyle);
+
     if (mName == L"aligned")
         dynamic_cast<LayoutTree::Table*>(table.get())->mAlign = cAlignRightLeft;
     else if (mName == L"cases")
         dynamic_cast<LayoutTree::Table*>(table.get())->mAlign = cAlignLeft;
 
-    return auto_ptr<LayoutTree::Node>(new LayoutTree::Fenced(
+    if (mName == L"aligned" || mName == L"matrix")
+        return table;
+        
+    return auto_ptr<LayoutTree::Node>(new LayoutTree::Fenced(fencedStyle,
         environmentName->second.mLeftDelimiter, environmentName->second.mRightDelimiter, table));
 }
 
@@ -1345,9 +1363,6 @@ auto_ptr<LayoutTree::Node> TextSymbol::BuildLayoutTree(const LatexTextFont& curr
             textCommand->second, currentFont.GetMathmlApproximation(), currentStyle));
     }
 
-    // FIX: think very carefully about which characters can end up here.
-    // Have to make sure that everything the parser lets through makes sense to handle as follows.
-        
     return auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolText(
         mCommand, currentFont.GetMathmlApproximation(), currentStyle));
 }
@@ -1402,29 +1417,29 @@ auto_ptr<LayoutTree::Node> TextCommand1Arg::BuildLayoutTree(const LatexTextFont&
 }
 
 
-// This stream insertion operator exists solely to simplify the code for ReconstructLatex (below)
+// This stream insertion operator exists solely to simplify the code for GetPurifiedTex (below)
 wostream& operator<<(wostream& os, const ParseTree::Node& source)
 {
-    source.ReconstructLatex(os);
+    source.GetPurifiedTex(os);
     return os;
 }
 
-void MathSymbol::ReconstructLatex(wostream& os) const
+void MathSymbol::GetPurifiedTex(wostream& os) const
 {
     os << L" " << StripBlahtexSuffix(mCommand);
 }
 
-void MathCommand1Arg::ReconstructLatex(wostream& os) const
+void MathCommand1Arg::GetPurifiedTex(wostream& os) const
 {
     os << StripBlahtexSuffix(mCommand) << L"{" << *mChild << L"}";
 }
 
-void MathStyleChange::ReconstructLatex(wostream& os) const
+void MathStyleChange::GetPurifiedTex(wostream& os) const
 {
     os << StripBlahtexSuffix(mCommand) << *mChild;
 }
 
-void MathCommand2Args::ReconstructLatex(wostream& os) const
+void MathCommand2Args::GetPurifiedTex(wostream& os) const
 {
     if (mIsInfix)
     {
@@ -1439,7 +1454,7 @@ void MathCommand2Args::ReconstructLatex(wostream& os) const
     }
 }
 
-void MathGroup::ReconstructLatex(wostream& os) const
+void MathGroup::GetPurifiedTex(wostream& os) const
 {
     // We remove nested braces here just for fun.
     if (dynamic_cast<MathGroup*>(mChild.get()))
@@ -1448,13 +1463,13 @@ void MathGroup::ReconstructLatex(wostream& os) const
         os << L"{" << *mChild << L"}";
 }
 
-void MathList::ReconstructLatex(wostream& os) const
+void MathList::GetPurifiedTex(wostream& os) const
 {
     for (vector<MathNode*>::const_iterator ptr = mChildren.begin(); ptr != mChildren.end(); ptr++)
         os << **ptr;
 }
 
-void MathScripts::ReconstructLatex(wostream& os) const
+void MathScripts::GetPurifiedTex(wostream& os) const
 {
     if (mBase.get())
         os << *mBase;
@@ -1464,22 +1479,22 @@ void MathScripts::ReconstructLatex(wostream& os) const
         os << L"_{" << *mLower << L"}";
 }
 
-void MathLimits::ReconstructLatex(wostream& os) const
+void MathLimits::GetPurifiedTex(wostream& os) const
 {
     os << *mChild << mCommand;
 }
 
-void MathDelimited::ReconstructLatex(wostream& os) const
+void MathDelimited::GetPurifiedTex(wostream& os) const
 {
     os << L"\\left" << mLeftDelimiter << *mChild << L"\\right" << mRightDelimiter;
 }
 
-void MathBig::ReconstructLatex(wostream& os) const
+void MathBig::GetPurifiedTex(wostream& os) const
 {
     os << StripBlahtexSuffix(mCommand) << mDelimiter;
 }
 
-void MathTableRow::ReconstructLatex(wostream& os) const
+void MathTableRow::GetPurifiedTex(wostream& os) const
 {
     for (vector<MathNode*>::const_iterator ptr = mEntries.begin(); ptr != mEntries.end(); ptr++)
     {
@@ -1489,7 +1504,7 @@ void MathTableRow::ReconstructLatex(wostream& os) const
     }
 }
 
-void MathTable::ReconstructLatex(wostream& os) const
+void MathTable::GetPurifiedTex(wostream& os) const
 {
     for (vector<MathTableRow*>::const_iterator ptr = mRows.begin(); ptr != mRows.end(); ptr++)
     {
@@ -1499,18 +1514,18 @@ void MathTable::ReconstructLatex(wostream& os) const
     }
 }
 
-void MathEnvironment::ReconstructLatex(wostream& os) const
+void MathEnvironment::GetPurifiedTex(wostream& os) const
 {
     os << L"\\begin{" << mName << L"}" << *mTable << L"\\end{" << mName << L"}";
 }
 
-void TextList::ReconstructLatex(wostream& os) const
+void TextList::GetPurifiedTex(wostream& os) const
 {
     for (vector<TextNode*>::const_iterator ptr = mChildren.begin(); ptr != mChildren.end(); ptr++)
         os << **ptr;
 }
 
-void TextGroup::ReconstructLatex(wostream& os) const
+void TextGroup::GetPurifiedTex(wostream& os) const
 {
     // Let's remove nested braces, just for fun.
     if (dynamic_cast<TextGroup*>(mChild.get()))
@@ -1519,22 +1534,26 @@ void TextGroup::ReconstructLatex(wostream& os) const
         os << L"{" << *mChild << L"}";
 }
 
-void TextSymbol::ReconstructLatex(wostream& os) const
+void TextSymbol::GetPurifiedTex(wostream& os) const
 {
-    os << mCommand;
+    if (mCommand.size() == 1 && mCommand[0] > 0x7F)
+        // Replace non-ascii characters by "?".
+        os << L"?";
+    else
+        os << mCommand;
 }
 
-void TextStyleChange::ReconstructLatex(wostream& os) const
+void TextStyleChange::GetPurifiedTex(wostream& os) const
 {
     os << StripBlahtexSuffix(mCommand) << *mChild;
 }
 
-void TextCommand1Arg::ReconstructLatex(wostream& os) const
+void TextCommand1Arg::GetPurifiedTex(wostream& os) const
 {
     os << StripBlahtexSuffix(mCommand) << L"{" << *mChild << L"}";
 }
 
-void EnterTextMode::ReconstructLatex(wostream& os) const
+void EnterTextMode::GetPurifiedTex(wostream& os) const
 {
     os << StripBlahtexSuffix(mCommand) << L"{" << *mChild << L"}";
 }

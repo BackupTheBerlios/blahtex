@@ -1,6 +1,6 @@
 // File "blahtex.h"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -20,10 +20,6 @@
 
 // FIX: there's a bug when the input is just "\sqrt[]"; wrong error message is generated
 
-// FIX: check md5 code doesn't care about endianness of wchar_t....?
-
-// FIX: need to change GNU GPL headers on all files
-
 // FIX: need to add "\odot"
 
 #include <iostream>
@@ -35,30 +31,22 @@
 #include <set>
 #include <map>
 
-// FIX: need to prevent non-ascii chars making it to latex if we don't get the unicode packages sorted out
-
-// FIX: remember to mention Firefox version recommendation somewhere
-
 // FIX: remember to go over all of Roger's comments on that PDF he sent me
 
-// I use wishful_hash_set/map whenever I really want to use hash_set/map.
+// I use wishful_hash_set/map wherever I really want to use hash_set/map.
 // Unfortunately hash_set/map is not quite standard enough yet, so for now it just gets mapped to set/map.
 #define  wishful_hash_map  std::map
 #define  wishful_hash_set  std::set
 
-// Yes, I hate macros too. Sorry.
-// It's used to set up a hash table from an array of raw data.
+// The macro END_ARRAY is used in several places to simplify code that constructs an STL container from an
+// array of data. (Yes, I hate macros too. Sorry.)
 #define END_ARRAY(zzz_array) ((zzz_array) + sizeof(zzz_array)/sizeof((zzz_array)[0]))
 
-// The blahtex namespace encompasses the blahtex core (as opposed to the blahtex command-line application):
-// this includes tokenising, parsing, generating mathml, generating "reconstructed latex".
-//
-// It does NOT include: wide/narrow character conversion, shelling out to latex/dvips/imagemagick, I/O.
-
+// The blahtex namespace encompasses the "blahtex core", but not the "blahtex command line application".
 namespace blahtex
 {
 
-// This function tests whether two sets are disjoint, assuming T has a total ordering.
+// This function tests whether two STL sets are disjoint, assuming T has a total ordering.
 // (You'd think the STL would have this, but I couldn't find it.)
 template<typename T> bool disjoint(const std::set<T>& x, const std::set<T>& y)
 {
@@ -83,6 +71,7 @@ template<typename T> bool disjoint(const std::set<T>& x, const std::set<T>& y)
     }
 }
 
+// These are all the possible settings for the MathML attribute "mathvariant".
 enum MathmlFont
 {
     cMathmlFontNormal,
@@ -101,26 +90,61 @@ enum MathmlFont
     cMathmlFontMonospace
 };
 
+// The different possible output character encodings that blahtex can use for MathML characters:
 enum MathmlEncoding
 {
-    cMathmlEncodingRaw,         // directly as unicode chars (i.e. ends up as UTF-8)
+    cMathmlEncodingRaw,         // directly using unicode code points
     cMathmlEncodingNumeric,     // use e.g. &#x1234;
     cMathmlEncodingShort,       // use e.g. &lang;
     cMathmlEncodingLong         // use e.g. &LeftAngleBracket;
 };
 
-struct MathmlOptions
+// This class stores options for output character encodings. It is used by XmlNode::Print to decide
+// how to encode non-ASCII MathML characters and non-ASCII, non-MathML unicode characters.
+struct EncodingOptions
 {
-    int mSpacingExplicitness;
-    bool mFancyFontSubstitution;
-    MathmlEncoding mMathmlEncoding;     // How to encode MathML chars
-    bool mOtherEncodingRaw;             // how to encode non-MathML chars
+    // What to do with non-ASCII MathML characters:
+    MathmlEncoding mMathmlEncoding;
     
-    MathmlOptions() :
-        mSpacingExplicitness(1), mFancyFontSubstitution(false),
+    // What to do with non-ASCII, non-MathML characters:
+    // true means use code points directly; false mean use e.g. &#x1234.
+    bool mOtherEncodingRaw;
+    
+    EncodingOptions() :
         mMathmlEncoding(cMathmlEncodingNumeric), mOtherEncodingRaw(false) { }
 };
 
+extern std::wstring XmlEncode(const std::wstring& input, const EncodingOptions& options);
+
+// This class stores options for controlling the MathML output that blahtex produces.
+// In particular it is passed to both Instance::GenerateMathml and XmlNode::Print.
+struct MathmlOptions
+{
+    // mSpacingExplicitness controls how much control blahtex takes over spacing. Blahtex always uses
+    // TeX's rules (or an approximation thereof) to determine spacing, but this option controls how much
+    // of the time it actually outputs markup (<mspace>, lspace, rspace) to implement its spacing decisions. 
+    //
+    // Currently there are three possible settings:
+    // 0 = Control-freak setting. Blahtex outputs spacing commands everwhere possible, doesn't leave any
+    //     choice to the MathML renderer.
+    // 1 = Moderate setting. Blahtex outputs spacing commands where it thinks a typical MathML renderer
+    //     is likely to do something visually unsatisfactory without additional help.
+    // 2 = Lowest setting. Blahtex only outputs spacing commands when the user specifically asks for them,
+    //     using TeX commands like "\," or "\quad".
+    int mSpacingExplicitness;
+
+    // Setting mFancyFontSubstitution = true tells blahtex to avoid using the mathvariant values
+    // "script", "bold-script", "fraktur", "bold-fraktur", and "double-struck". Instead, it replaces
+    // any characters using these fonts with unicode code points directly. The rationale is that certain
+    // renderers (Mozilla-based in particular) don't fully implement mathvariant yet, so we need to do this
+    // substitution for them.
+    bool mFancyFontSubstitution;
+    
+    MathmlOptions() :
+        mSpacingExplicitness(1), mFancyFontSubstitution(false) { }
+};
+
+// These values correspond (roughly) to TeX's "atom flavors".
 enum Flavour
 {
     cFlavourOrd,
@@ -133,21 +157,20 @@ enum Flavour
     cFlavourInner
 };
 
-enum Placement
-{
-    cPlacementSideset,
-    cPlacementUnderOver,
-    cPlacementAccent
-};
-
+// These values correspond to the four possible style settings in TeX.
+// (We ignore the cramped/uncramped variations.)
 enum Style
 {
-    cStyleDisplay,
-    cStyleText,
-    cStyleScript,
-    cStyleScriptScript
+    cStyleDisplay,              // like \displaystyle
+    cStyleText,                 // like \textstyle
+    cStyleScript,               // like \scriptstyle
+    cStyleScriptScript          // like \scriptscriptstyle
 };
 
+// Every atom of flavour "op" has one of these values attached, corresponding to TeX's "limits" setting.
+// cLimitsLimits         => display scripts in limits position (i.e. above and below the operator)
+// cLimitsNoLimits       => display scripts NOT in limits position (i.e. ordinary sideset scripts)
+// cLimitsDisplayLimits  => use limits position if current style is displaystyle, otherwise use nolimits.
 enum Limits
 {
     cLimitsDisplayLimits,
@@ -155,6 +178,10 @@ enum Limits
     cLimitsNoLimits
 };
 
+// These values describe the possible alignment values for a table.
+// Most environments (e.g. "matrix", "pmatrix") us cAlignCentre.
+// The environments "cases" uses cAlignLeft (all table entries aligned to the left).
+// cAlignRightLeft alternates columns aligned right and left; it's used for the "aligned" environment.
 enum Align
 {
     cAlignLeft,
@@ -162,14 +189,28 @@ enum Align
     cAlignRightLeft
 };
 
+// Implemented in LayoutTree.cpp.
+struct MathmlEnvironment
+{
+    bool mDisplayStyle;
+    int mScriptLevel;
+    
+    MathmlEnvironment(bool displayStyle = false, int scriptLevel = 0) :
+        mDisplayStyle(displayStyle), mScriptLevel(scriptLevel) { }
+    MathmlEnvironment(Style style);
+};
+
+// XmlNode represents a node in an XML tree.
+// Implemented in XmlNode.cpp.
 struct XmlNode
 {
     // If mIsTag is:
     // cTag:    then this node represents a tag pair, like "<mi>...</mi>". In this case mText is something
-    //          like "mi", mAttributes is a list of pairs like ("mathvariant","sans-serif"), and
-    //          mChildren gives the children nodes.
+    //          like "mi", mAttributes is a list of pairs like ("mathvariant", "sans-serif") which describe
+    //          the attributes in the opening tag, and mChildren gives the children nodes.
     // cString: then this node represents a simple text string, which is stored in mText, and the other
-    //          members are unused.
+    //          members are unused. The string is stored as unicode code points ONLY; that is, no XML
+    //          entities are used, not even things like "&amp;".
     enum NodeType
     {
         cTag,
@@ -185,12 +226,17 @@ struct XmlNode
         mType(type), mText(text) { }
 
     ~XmlNode();
-    void Print(std::wostream& os, const MathmlOptions& options, bool indent, int depth = 0) const;
+    
+    // Recursively prints the XML tree rooted at this node to the output stream os.
+    // Also handles XML entity-encoding, using "options" to decide how to encode non-ASCII characters.
+    // (This includes translating things like "&" into "&amp;".)
+    // If "indent" is true, it will print each tag pair on a new line, and add appropriate indenting.
+    void Print(std::wostream& os, const EncodingOptions& options, bool indent, int depth = 0) const;
 };
 
-// Exception is the type of object thrown by all parts of the blahtex core. Generally they indicate
-// some kind of syntax error in the input. More serious errors (e.g. STL memory errors) will presumably
-// throw some kind of std::exception.
+// Exception is the type of object thrown by all parts of the blahtex core. They indicate some kind of syntax
+// error in the input. They do not include more serious errors like memory errors, or debug assertions.
+// (We use std::exception for these.)
 // 
 // Each exception consists of an mCode plus zero or more arguments (mArgs).
 //
@@ -201,6 +247,7 @@ public:
     // mCode may be assigned any of the following:
     enum Code
     {
+        cNonAsciiInMathMode,
         cIllegalCharacter,
         cIllegalBlahtexSuffix,
         cTooManyTokens,
@@ -242,48 +289,67 @@ public:
     Exception(Code code);
     Exception(Code code, const std::wstring& arg1);
     Exception(Code code, const std::wstring& arg1, const std::wstring& arg2);
-    
+
+    // Returns a string describing this exception. It will be of the form:
+    // "<inputError><id>X</id><arg>arg1</arg><arg>arg2</arg><message>Y</message></inputError>", where
+    // - X is a string corresponding to the error code (e.g. cTooManyTokens becomes "TooManyTokens")
+    // - arg1, arg2 etc are the (zero or more) arguments of the error, and
+    // - Y is an human-readable description of the exception.
+    //
+    // The output will be XML-safe; e.g. "&" gets translated to "&amp;".
+    // If encodingRaw is true, then non-ASCII characters will be encoded as unicode code points, otherwise
+    // it will use numeric entities like "&#x1234;".
     std::wstring GetXml(bool encodingRaw) const;
     
 private:
-    Code                        mCode;
-    std::vector<std::wstring>   mArgs;
+    Code mCode;
+    std::vector<std::wstring> mArgs;
 
-    // Returns short string corresponding to mCode, e.g. returns "TooManyTokens" if mCode == TooManyTokens
+    // Returns short string corresponding to mCode, e.g. returns "TooManyTokens" if mCode == cTooManyTokens.
     std::wstring GetCodeAsText() const;
     
-    static wishful_hash_map<Code, std::wstring> gCodesAsTextTable;
-    static wishful_hash_map<Code, std::wstring> gEnglishMessagesTable;
+    // These store the list of error code names and english message equivalents.
+    static wishful_hash_map<Code, std::wstring> gCodesAsTextTable, gEnglishMessagesTable;
 };
 
+// The LayoutTree namespace contains all classes that represents nodes in the layout tree.
+// These are implemented in LayoutTree.cpp.
 namespace LayoutTree
 {
+    // Base class for layout tree nodes.
     struct Node
     {
         virtual ~Node() { }
         
         // This field is only used during the layout tree building phase (to determine spacing).
         // It corresponds roughly to TeX's differently flavoured atoms.
-        // It's ignored for Space nodes
+        // It's ignored for LayoutTree::Space nodes.
         Flavour mFlavour;
         
         // This field is only used during the layout tree building phase (to determine script placement).
-        // FIX: is this true anymore?
-        // It indicates whether this (operator) node should have scripts placed in "script position".
+        // It corresponds to TeX's "limits", "nolimits", "displaylimits" settings.
         // It is only valid if mFlavour == cFlavourOp.
         Limits mLimits;
 
-        // This field is ignored for Space nodes
+        // This field corresponds to TeX's displaystyle/textstyle/scriptstyle/scriptscriptstyle setting.
+        // It's ignored for LayoutTree::Space nodes.
         Style mStyle;
         
         Node(Style style, Flavour flavour, Limits limits) :
             mStyle(style), mFlavour(flavour), mLimits(limits) { }
-                
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const = 0;
+        
+        // This produces a MathML tree corresponding to the tree under this layout node.
+        // The "environment" parameter tells BuildMathmlTree what assumptions to make about its rendering
+        // environment. It uses these to decide whether to insert extra <mstyle> tags.
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options,
+            MathmlEnvironment inheritedEnvironment) const = 0;
 
-        // This function recursively prints the layout tree under this node.
-        // This is only used for debugging. Implemented in debug.cpp.
+        // This function recursively prints the layout tree under this node. Only used for debugging.
         virtual void Print(std::wostream& os, int depth = 0) const = 0;
+        
+    protected:
+        // Used internally by Print.
+        std::wstring PrintFields() const;
     };
     
     struct Row : Node
@@ -294,7 +360,7 @@ namespace LayoutTree
             Node(style, cFlavourOrd, cLimitsDisplayLimits) { }
         ~Row();
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
 
@@ -306,7 +372,8 @@ namespace LayoutTree
         Symbol(const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits) :
             Node(style, flavour, limits), mText(text), mFont(font) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const = 0;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options,
+            MathmlEnvironment inheritedEnvironment) const = 0;
         virtual void Print(std::wostream& os, int depth = 0) const = 0;
     };
     
@@ -315,7 +382,7 @@ namespace LayoutTree
         SymbolPlain(const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits = cLimitsDisplayLimits) :
             Symbol(text, font, style, flavour, limits) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
 
@@ -324,7 +391,7 @@ namespace LayoutTree
         SymbolText(const std::wstring& text, MathmlFont font, Style style) :
             Symbol(text, font, style, cFlavourOrd, cLimitsDisplayLimits) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -332,11 +399,12 @@ namespace LayoutTree
     {
         bool mIsStretchy;
         std::wstring mSize;
+        bool mIsAccent;
 
-        SymbolOperator(bool isStretchy, const std::wstring& size, const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits = cLimitsDisplayLimits) :
-            Symbol(text, font, style, flavour, limits), mIsStretchy(isStretchy), mSize(size) { }
+        SymbolOperator(bool isStretchy, const std::wstring& size, bool isAccent, const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits = cLimitsDisplayLimits) :
+            Symbol(text, font, style, flavour, limits), mIsStretchy(isStretchy), mSize(size), mIsAccent(isAccent) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -348,7 +416,7 @@ namespace LayoutTree
         Space(int width, bool isUserRequested) :
             Node(cStyleDisplay, cFlavourOrd, cLimitsDisplayLimits), mWidth(width), mIsUserRequested(isUserRequested) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -356,15 +424,15 @@ namespace LayoutTree
     {
         // Any of the following three fields may be NULL.
         std::auto_ptr<Node> mBase, mUpper, mLower;
-        Placement mPlacement;
+        bool mIsSideset;
 
-        Scripts(Style style, Flavour flavour, Limits limits, Placement placement, std::auto_ptr<Node> base, std::auto_ptr<Node> upper, std::auto_ptr<Node> lower) :
-            Node(style, flavour, limits), mPlacement(placement), mBase(base), mUpper(upper), mLower(lower) { }
+        Scripts(Style style, Flavour flavour, Limits limits, bool isSideset, std::auto_ptr<Node> base, std::auto_ptr<Node> upper, std::auto_ptr<Node> lower) :
+            Node(style, flavour, limits), mIsSideset(isSideset), mBase(base), mUpper(upper), mLower(lower) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
-    
+
     struct Fraction : Node
     {
         std::auto_ptr<Node> mNumerator, mDenominator;
@@ -373,7 +441,7 @@ namespace LayoutTree
         Fraction(Style style, std::auto_ptr<Node> numerator, std::auto_ptr<Node> denominator, bool isLineVisible) :
             Node(style, cFlavourOrd, cLimitsDisplayLimits), mNumerator(numerator), mDenominator(denominator), mIsLineVisible(isLineVisible) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -382,10 +450,10 @@ namespace LayoutTree
         std::wstring mLeftDelimiter, mRightDelimiter;
         std::auto_ptr<Node> mChild;
 
-        Fenced(const std::wstring& leftDelimiter, const std::wstring& rightDelimiter, std::auto_ptr<Node> child) :
-            Node(child->mStyle, cFlavourOrd, cLimitsDisplayLimits), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter), mChild(child) { }
+        Fenced(Style style, const std::wstring& leftDelimiter, const std::wstring& rightDelimiter, std::auto_ptr<Node> child) :
+            Node(style, cFlavourOrd, cLimitsDisplayLimits), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter), mChild(child) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -396,7 +464,7 @@ namespace LayoutTree
         Sqrt(std::auto_ptr<Node> child) :
             Node(child->mStyle, cFlavourOrd, cLimitsDisplayLimits), mChild(child) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -407,7 +475,7 @@ namespace LayoutTree
         Root(std::auto_ptr<Node> inside, std::auto_ptr<Node> outside) :
             Node(inside->mStyle, cFlavourOrd, cLimitsDisplayLimits), mInside(inside), mOutside(outside) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
 
@@ -420,7 +488,7 @@ namespace LayoutTree
             Node(style, cFlavourOrd, cLimitsDisplayLimits), mAlign(cAlignCentre) { }
         
         ~Table();
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -429,59 +497,58 @@ namespace LayoutTree
 
 extern wishful_hash_map<std::wstring, std::wstring> gDelimiterTable;
 
+struct LatexMathFont
+{
+    enum Family
+    {
+        cFamilyDefault,  // indicates default font (e.g. "x" gets italics, "1" gets roman)
+        cFamilyRm,       // roman
+        cFamilyBf,       // bold
+        cFamilyIt,       // italics
+        cFamilySf,       // sans serif
+        cFamilyTt,       // typewriter (monospace)
+        cFamilyBb,       // blackboard bold (double-struck)
+        cFamilyCal,      // calligraphic
+        cFamilyFrak      // fraktur
+    }
+    mFamily;
+    
+    bool mIsBoldsymbol;
+    
+    LatexMathFont(Family family = cFamilyDefault, bool isBoldsymbol = false) :
+        mFamily(family), mIsBoldsymbol(isBoldsymbol) { }
+    
+    MathmlFont GetMathmlApproximation() const;
+};
+
+struct LatexTextFont
+{
+    enum Family
+    {
+        cFamilyRm,       // roman
+        cFamilySf,       // sans serif
+        cFamilyTt        // typewriter (monospace)
+    }
+    mFamily;
+    
+    bool mIsBold;
+    bool mIsItalic;
+    
+    LatexTextFont(Family family = cFamilyRm, bool isBold = false, bool isItalic = false) :
+        mFamily(family), mIsBold(isBold), mIsItalic(isItalic) { }
+
+    MathmlFont GetMathmlApproximation() const;
+};
+
 // The ParseTree namespace contains all classes representing nodes in the parse tree.
 namespace ParseTree
 {
-
-    struct LatexMathFont
-    {
-        enum Family
-        {
-            cFamilyDefault,  // indicates default font (e.g. "x" gets italics, "1" gets roman)
-            cFamilyRm,       // roman
-            cFamilyBf,       // bold
-            cFamilyIt,       // italics
-            cFamilySf,       // sans serif
-            cFamilyTt,       // typewriter (monospace)
-            cFamilyBb,       // blackboard bold (double-struck)
-            cFamilyCal,      // calligraphic
-            cFamilyFrak      // fraktur
-        }
-        mFamily;
-        
-        bool mIsBoldsymbol;
-        
-        LatexMathFont(Family family = cFamilyDefault, bool isBoldsymbol = false) :
-            mFamily(family), mIsBoldsymbol(isBoldsymbol) { }
-        
-        MathmlFont GetMathmlApproximation() const;
-    };
-
-    struct LatexTextFont
-    {
-        enum Family
-        {
-            cFamilyRm,       // roman
-            cFamilySf,       // sans serif
-            cFamilyTt        // typewriter (monospace)
-        }
-        mFamily;
-        
-        bool mIsBold;
-        bool mIsItalic;
-        
-        LatexTextFont(Family family = cFamilyRm, bool isBold = false, bool isItalic = false) :
-            mFamily(family), mIsBold(isBold), mIsItalic(isItalic) { }
-
-        MathmlFont GetMathmlApproximation() const;
-    };
-
     // Base class for nodes in the parse tree.
     struct Node
     {
         virtual ~Node() { };
         
-        virtual void ReconstructLatex(std::wostream& os) const = 0;
+        virtual void GetPurifiedTex(std::wostream& os) const = 0;
 
         // 'Print' recursively prints the parse tree under this node.
         // This is only used for debugging. Implemented in 'debug.cpp'.
@@ -510,7 +577,7 @@ namespace ParseTree
         MathSymbol(const std::wstring& command) :
             mCommand(command) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -524,7 +591,7 @@ namespace ParseTree
         MathCommand1Arg(const std::wstring& command, std::auto_ptr<MathNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -538,7 +605,7 @@ namespace ParseTree
         MathStyleChange(const std::wstring& command, std::auto_ptr<MathNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -554,7 +621,7 @@ namespace ParseTree
             std::auto_ptr<MathNode> child1, std::auto_ptr<MathNode> child2, bool isInfix) :
             mCommand(command), mChild1(child1), mChild2(child2), mIsInfix(isInfix) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -567,7 +634,7 @@ namespace ParseTree
         MathBig(const std::wstring& command, const std::wstring& delimiter) :
             mCommand(command), mDelimiter(delimiter) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -580,7 +647,7 @@ namespace ParseTree
         MathGroup(std::auto_ptr<MathNode> child) :
             mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -591,7 +658,7 @@ namespace ParseTree
         std::vector<MathNode*> mChildren;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
         ~MathList();
     };
@@ -603,7 +670,7 @@ namespace ParseTree
         std::auto_ptr<MathNode> mBase, mUpper, mLower;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
     
@@ -619,7 +686,7 @@ namespace ParseTree
         MathLimits(const std::wstring& command, std::auto_ptr<MathNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -636,7 +703,7 @@ namespace ParseTree
             const std::wstring& leftDelimiter, const std::wstring& rightDelimiter) :
             mChild(child), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
     
@@ -646,7 +713,7 @@ namespace ParseTree
         std::vector<MathNode*> mEntries;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
         ~MathTableRow();
     };
@@ -657,7 +724,7 @@ namespace ParseTree
         std::vector<MathTableRow*> mRows;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
         ~MathTable();
     };
@@ -673,7 +740,7 @@ namespace ParseTree
         MathEnvironment(const std::wstring& name, std::auto_ptr<MathTable> table) :
             mName(name), mTable(table) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -688,7 +755,7 @@ namespace ParseTree
         EnterTextMode(const std::wstring& command, std::auto_ptr<TextNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -698,7 +765,7 @@ namespace ParseTree
         std::vector<TextNode*> mChildren;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
         ~TextList();
     };
@@ -711,7 +778,7 @@ namespace ParseTree
         TextGroup(std::auto_ptr<TextNode> child) :
             mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
     
@@ -724,7 +791,7 @@ namespace ParseTree
         TextSymbol(const std::wstring& command) :
             mCommand(command) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
 
@@ -737,7 +804,7 @@ namespace ParseTree
         TextStyleChange(const std::wstring& command, std::auto_ptr<TextNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
     
@@ -750,7 +817,7 @@ namespace ParseTree
         TextCommand1Arg(const std::wstring& command, std::auto_ptr<TextNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void ReconstructLatex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
 
@@ -759,28 +826,26 @@ namespace ParseTree
 
 // MacroProcessor maintains a stack of tokens, can be queried for the next available token, and expands
 // macros automatically. It is the layer between tokenising (handled by the Instance class) and parsing
-// proper.
+// proper (handled by the Parser class).
 //
 // It does not process "\newcommand" commands automatically; instead it passes "\newcommand" straight back
 // to the caller, and the caller is responsible for calling MacroProcessor::HandleNewcommand.
 // (Rationale: this gives results much closer to real TeX parsing. For example, we wouldn't want
 // "x^\newcommand{\stuff}{xyz}\stuff" to be construed as legal input.)
 //
-// Note that unlike TeX, macros are *not* local to their enclosing block.
-// e.g. "{\newcommand{\abc}{xyz}}\abc" will not generate an "unrecognised command" exception.
-//
 // Implemented in MacroProcessor.cpp.
-
 class MacroProcessor
 {
 public:
+    // Input is a vector of strings, one for each input token.
     MacroProcessor(const std::vector<std::wstring>& input);
 
     // Returns the next token on the stack (without removing it), after expanding macros.
-    // (Returns empty string if there are no tokens left.)
+    // Returns empty string if there are no tokens left.
     std::wstring Peek();
 
     // Same as Peek(), but also removes the token.
+    // Returns empty string if there are no tokens left.
     std::wstring Get();
     
     // Pops the current token.
@@ -801,16 +866,18 @@ private:
         int mParameterCount;
         
         // The sequence of tokens that get substituted when this macro is expanded.
-        // Arguments are indicated by "#1", "#2", etc.
+        // Arguments are indicated as follows: first the string "#", and then the string "n", where n is
+        // a number between 1 and 9, indicating which argument to substitute.
         std::vector<std::wstring> mReplacement;
         
-        Macro() : mParameterCount(0) { }
+        Macro() :
+            mParameterCount(0) { }
     };
 
     // List of all currently recognised macros.
     wishful_hash_map<std::wstring, Macro> mMacros;
 
-    // The token stack. (mTokens.back() is the top of the stack.)
+    // The token stack; the top of the stack is mTokens.back().
     std::vector<std::wstring> mTokens;
     
     // This flag is set if we have already ascertained that the current token doesn't need to undergo macro
@@ -823,121 +890,84 @@ private:
     // Returns true on success, or false if the argument is missing.
     bool ReadArgument(std::vector<std::wstring>& output);
 
-    // Total approximate cost of parsing activity so far (approximately). See cMaxParseCost for more info.
+    // Total approximate cost of parsing activity so far. See cMaxParseCost for more info.
     unsigned mCostIncurred;
 };
 
-// The time spent by the parser should be O(cMaxParseCost). This corresponds roughly to the number of
-// tokens that blahtex will allow in a single translation operation, but it also takes into account
-// things like time taken during macro expansion, searching for matching braces, etc. The aim is to prevent
-// a nasty user inducing exponential time via tricky macro definiitons.
+// The time spent by the parser should be O(cMaxParseCost). The aim is to prevent a nasty user inducing
+// exponential time via tricky macro definitions.
+// (It corresponds roughly to the number of tokens that blahtex will allow in a single translation operation,
+// but also takes into account e.g. time taken during macro expansion, searching for matching braces...)
 const unsigned cMaxParseCost = 20000;
 
 // The Parser class actually does the parsing work. It runs the supplied input tokens through a
 // MacroProcessor, and builds a parse tree from the resulting token stream.
-
 class Parser
 {
 public:
-    // Main function that the caller should use to do a parsing job.
-    // It is ok to call DoParse repeatedly for a single Parser object; each DoParse starts with a clean slate.
+    // Main function that the caller should use to do a parsing job. Input is a TeX string, output
+    // is the root of a parse tree.
     std::auto_ptr<ParseTree::MathNode> DoParse(const std::vector<std::wstring>& input);
 
-    // FIX: remember to mention somewhere that \newcommand is not local to blocks
-
-    // The parser uses GetMathTokenCode/MathPrimitveTable (in math mode) or GetTextTokenCode/
-    // TextTokenTable (in text mode) to translate each incoming token into one of the following values:
+    // The parser uses GetMathTokenCode (in math mode) or GetTextTokenCode (in text mode) to translate each
+    // incoming token into one of the following values:
     enum TokenCode
     {
         cEndOfInput,
         cWhitespace,
-
-        // The "\newcommand" command.
-        cNewcommand,
-        
-        // Commands that are illegal in the current mode and don't start with a backslash (like "$", "%").
-        cIllegal,
-        
-        // Opening and closing braces ("{" and "}").
-        cBeginGroup,
+        cNewcommand,        // The "\newcommand" command.
+        cIllegal,           // Single character commands that are illegal in the current mode (like "$", "%").
+        cBeginGroup,        // Opening and closing braces ("{" and "}").
         cEndGroup,
-
-        // The commands "&" and "\\".
-        cNextCell,
+        cNextCell,          // The commands "&" and "\\".
         cNextRow,
-        
-        // The commands "^" and "_".
-        cSuperscript,
+        cSuperscript,       // The commands "^" and "_".
         cSubscript,
-        
-        // The prime symbol "'".
-        cPrime,
-
-        // Blahtex primitives accepting one argument or two arguments respectively.
-        cCommand1Arg,
+        cPrime,             // The prime symbol "'".
+        cCommand1Arg,       // Blahtex primitives accepting one argument or two arguments respectively.
         cCommand2Args,
-        
-        // Infix commands like "\over".
-        cCommandInfix,
-        
-        // The "\left" and "\right" commands.
-        cLeft,
+        cCommandInfix,      // Infix commands like "\over".
+        cLeft,              // The "\left" and "\right" commands.
         cRight,
-        
-        // Any command like "\bigBlahtex" which must be followed by a delimiter.
-        cBig,
-        
-        // Any of "\limits", "\nolimits", "\displaylimits".
-        cLimits,
-        
-        // Commands like "\begin{matrix}", "\end{matrix}".
-        cBeginEnvironment,
+        cBig,               // Any command like "\bigBlahtex" (must be followed by a delimiter).
+        cLimits,            // Any of "\limits", "\nolimits", "\displaylimits".
+        cBeginEnvironment,  // Commands like "\begin{matrix}", "\end{matrix}".
         cEndEnvironment,
+        cEnterTextMode,     // Command that switch from math mode to text mode (e.g. "\textrmBlahtex")
+        cStyleChange,       // Style change commands, e.g. "\rm" and "\scriptstyle"
+        cSymbol,            // Pretty much every other primitive: "a", "1", "\alpha", "+", "\rightarrow", etc.
         
-        // Command that switch from math mode to text mode (e.g. "\textrmBlahtex").
-        cEnterTextMode,
-
-        // Style change commands, e.g. "\rm" and "\scriptstyle"
-        cStyleChange,
-
-        // Pretty much every other blahtex primitive: "a", "1", "\alpha", "+", "\rightarrow", "\,"...
-        cSymbol,
-        
-        // Some commands that you might expect get translated as cSymbol actually become
-        // cSymbolUnsafe' instead. What this means is that TeX/LaTeX/AMSLaTeX considers them a macro that
-        // gets expanded, and they become subsequently unsafe for use as a single symbol. For example,
-        // "x^\cong" is illegal in LaTeX, so we assign the code cSymbolUnsafe to "\cong".
+        // cSymbolUnsafe covers some commands that one might expect to get translated as cSymbol.
+        //
+        // The issue is that TeX/LaTeX/AMS-LaTeX expands certain commands as macros, and they subsequently
+        // become unsafe for use as a single symbol. For example, "x^\cong" is illegal in TeX, because
+        // "\cong" gets expanded as a macro, so we assign the code cSymbolUnsafe to "\cong". This is a bit
+        // of a nasty hack, but the only real alternative is to simulate a much larger portion of
+        // TeX/LaTeX/AMS-LaTeX, which at this stage is unpalatable :-)
         cSymbolUnsafe
     };
 
-    // These tables contain all the primitives that blahtex recognises in math mode (respectively text mode).
-    // They provide the token codes for the parser to do its job.
-    static wishful_hash_map<std::wstring, TokenCode> gMathTokenTable;
-    static wishful_hash_map<std::wstring, TokenCode> gTextTokenTable;
-    
 private:
+    // Tokens are first filtered through this MacroProcessor object, so that the parser doesn't have to be
+    // aware of macros at all.
     std::auto_ptr<MacroProcessor> mTokenSource;
 
     // ParseMathList starts parsing a math list, until it reaches a command indicating the end of
     // the list, like "}" or "\right" or "\end{...}".
     std::auto_ptr<ParseTree::MathNode> ParseMathList();
     
-    // ParseMathField parses a TeX "math field", which is either a single symbol or an
-    // expression grouped with braces.
+    // ParseMathField parses a TeX "math field", which is either a single symbol or an expression grouped
+    // with braces.
     std::auto_ptr<ParseTree::MathNode> ParseMathField();
     
     // Handle a table enclosed in something like "\begin{matrix} ... \end{matrix}"; i.e. it breaks input up
     // into entries and rows based on "\\" and "&" commands.
     std::auto_ptr<ParseTree::MathTable> ParseMathTable();
 
-    // PrepareScripts is used in several places in ParseMathList to set up a MathScripts node to fill.
-    // Postcondition is that the last element in 'output' is a MathScripts node, whose base is equal to
-    // whatever node was previously the last element in 'output' (unless that node was already a
-    // MathScripts node).
-    // The idea is that PrepareScripts should be called just after we encounter "^" or "_".
-    // 
-    // Note the argument and return values have no auto_ptr, so the caller does not get ownership of
-    // the MathScripts node (PrepareScripts assigns this ownership to 'output' if necessary).
+    // PrepareScripts is called when we encounter "^" or "_", to ensure that the last element of
+    // output->mChildren is a MathScripts node whose base is the base of the "^" or "_" command.
+    // (The caller does not get ownership of the MathScripts node; PrepareScripts assigns this ownership to
+    // *output if necessary).
     ParseTree::MathScripts* PrepareScripts(ParseTree::MathList* output);
 
     // ParseTextList starts parsing a text list, until it reaches "}" or end of input.
@@ -950,43 +980,59 @@ private:
     // These functions determine the appropriate token code for the supplied token.
     // Things like "1", "a", "+" are handled appropriately, as are backslash-prefixed commands listed in
     // gMathTokenTable or gTextTokenTable.
-    // Exceptions are thrown for unrecognised tokens.
     TokenCode GetMathTokenCode(const std::wstring& token) const;
     TokenCode GetTextTokenCode(const std::wstring& token) const;
 };
 
-
+// These tables contain all the primitives that blahtex recognises in math mode (respectively text mode).
+// They provide the token codes for the parser to do its job.
+extern wishful_hash_map<std::wstring, Parser::TokenCode> gMathTokenTable, gTextTokenTable;
+   
+// The Instance class is the main interface that an application (such as the blahtex command line application)
+// should use to communicate with the blahtex core.
+//
 // Implemented in Instance.cpp.
 class Instance
 {
 public:
     Instance();
 
-    // 'process_input' generates a parse tree and a layout tree from the supplied input.
+    // ProcessInput generates a parse tree and a layout tree from the supplied input.
     void ProcessInput(const std::wstring& input);
-    
+
+    // GenerateMathml generates a XML tree containing MathML markup.
+    // See the definition of MathmlOptions for the meaning of the options parameter.
+    // Returns the root node.
     std::auto_ptr<XmlNode> GenerateMathml(const MathmlOptions& options);
+
+    // GenerateHtml is not implemented yet.
     std::auto_ptr<XmlNode> GenerateHtml();
-    std::wstring GenerateReconstructedLatex();
     
+    // GeneratePurifiedTex returns a string containing a complex LaTeX file that could be fed to
+    // LaTeX to produce a graphical version of the input. It includes any required \usepackage commands.
+    std::wstring GeneratePurifiedTex();
+
     const ParseTree::MathNode* GetParseTree() { return mParseTree.get(); }
     const LayoutTree::Node* GetLayoutTree() { return mLayoutTree.get(); }
 
 private:
+    // These store the parse tree and layout tree generated by ProcessInput.
+    // All the GenerateXXX functions in turn produce their output from these trees.
     std::auto_ptr<ParseTree::MathNode> mParseTree;
     std::auto_ptr<LayoutTree::Node> mLayoutTree;
     
-    // The Tokenise function splits the given input into tokens, each represented by a string. The output is
-    // appended to 'output'.
+    // The Tokenise function splits the given input into tokens, each represented by a string.
+    // The output is APPENDED to 'output'.
     // 
     // There are several types of tokens:
-    // - single characters like "a", or "{", or single non-ascii unicode characters
+    // - single characters like "a", or "{", or single non-ASCII unicode characters
     // - alphabetic commands like "\frac"
     // - commands like "\," which have a single nonalphabetic character after the backslash
     // - commands like "\   " which have their whitespace collapsed, stored as "\ "
     // - other consecutive whitespace characters which get collapsed to just " "
     // - the sequence "\begin   {  stuff  }" gets stored as the single token "\begin{  stuff  }";
-    //   similarly for "\end"
+    //   note that whitespace is preserved between the braces but not between "\begin" and "{".
+    //   Similarly for "\end".
     static void Tokenise(const std::wstring& input, std::vector<std::wstring>& output);
 
     // gStandardMacros is a string which, in effect, gets inserted at the beginning of any input string 

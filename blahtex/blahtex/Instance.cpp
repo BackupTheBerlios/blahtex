@@ -1,6 +1,6 @@
 // File "Instance.cpp"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -23,14 +23,12 @@
 
 using namespace std;
 
-// FIX: chase up a handful of "runtime_error" exceptions...
-
 namespace blahtex
 {
 
 // The arrays 'gAmsmathCommands', 'gAmsfontsCommands' and 'gAmssymbCommands' list all the latex commands
 // which require additional latex packages to be loaded.
-// This information is used by Instance::GenerateReconstructedLatex'.
+// This information is used by Instance::GeneratePurifiedTex'.
 wstring gAmsmathCommandsArray[] =
 {
     L"\\text",
@@ -341,13 +339,13 @@ void Instance::ProcessInput(const wstring& input)
     for (vector<wstring>::const_iterator ptr = tokens.begin() + gStandardMacrosTokenised.size();
         ptr != tokens.end(); ptr++)
     {
-        if (input.size() >= 7 && input.substr(input.size() - 7, 7) == L"Blahtex")
+        if (ptr->size() >= 7 && ptr->substr(ptr->size() - 7, 7) == L"Blahtex")
             throw Exception(Exception::cIllegalBlahtexSuffix);
     }
 
     Parser P;
     mParseTree = P.DoParse(tokens);
-    mLayoutTree = mParseTree->BuildLayoutTree(ParseTree::LatexMathFont(), cStyleDisplay);
+    mLayoutTree = mParseTree->BuildLayoutTree(LatexMathFont(), cStyleText);
 }
 
 // This function recursively traverses a MathML tree, and removes "extraneous" font attributes.
@@ -389,7 +387,7 @@ void RemoveExtraneousFontAttributes(XmlNode* node)
 auto_ptr<XmlNode> Instance::GenerateMathml(const MathmlOptions& options)
 {
     // FIX: Check the layout tree has actually been generated
-    auto_ptr<XmlNode> root = mLayoutTree->BuildMathmlTree(options, cStyleDisplay);
+    auto_ptr<XmlNode> root = mLayoutTree->BuildMathmlTree(options, cStyleText);
     RemoveExtraneousFontAttributes(root.get());
     return root;
 }
@@ -400,21 +398,19 @@ auto_ptr<XmlNode> Instance::GenerateHtml()
     return auto_ptr<XmlNode>(new XmlNode(XmlNode::cTag, L"html"));
 }
 
-wstring Instance::GenerateReconstructedLatex()
+wstring Instance::GeneratePurifiedTex()
 {
     // Check the parse tree has actually been generated
     if (!mParseTree.get())
-        throw logic_error("Parse tree not built yet in call to Instance::GenerateReconstructedLatex");
+        throw logic_error("Parse tree not built yet in call to Instance::GeneratePurifiedTex");
 
     wostringstream os;
-    mParseTree->ReconstructLatex(os);
+    mParseTree->GetPurifiedTex(os);
     wstring latex = os.str();
     
-    // Work out which commands appeared in the reconstructed latex output, so we can work out which packages
+    // Work out which commands appeared in the purified latex output, so we can work out which packages
     // need to be included.
     
-    // FIX: here we should probably test for non-ascii characters and prevent latex seeing them,
-    // until we work out how to get latex to handle unicode
     vector<wstring> tokens;
     Tokenise(latex, tokens);
 

@@ -1,6 +1,6 @@
 // File "LayoutTree.cpp"
 // 
-// blahtex (version 0.3.2): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -60,58 +60,60 @@ Table::~Table()
             delete *q;
 }
 
-int GetMathmlScriptLevel(Style style)
+MathmlEnvironment::MathmlEnvironment(Style style)
 {
+    mDisplayStyle = (style == cStyleDisplay);
+
     switch (style)
     {
         case cStyleDisplay:
-        case cStyleText:           return 0;
-        case cStyleScript:         return 1;
-        case cStyleScriptScript:   return 2;
+        case cStyleText:             mScriptLevel = 0; break;
+        case cStyleScript:           mScriptLevel = 1; break;
+        case cStyleScriptScript:     mScriptLevel = 2; break;
+        default:
+            throw logic_error("Unexpected style value in MathmlEnvironment::MathmlEnvironment");
     }
-    throw logic_error("Unexpected style value in GetMathmlScriptLevel");
 }
 
-auto_ptr<XmlNode> InsertMstyle(auto_ptr<XmlNode> node, Style sourceStyle, Style targetStyle)
+auto_ptr<XmlNode> InsertMstyle(auto_ptr<XmlNode> node, MathmlEnvironment sourceEnvironment, MathmlEnvironment targetEnvironment)
 {
-    if (sourceStyle == targetStyle)
+    if (sourceEnvironment.mDisplayStyle == targetEnvironment.mDisplayStyle &&
+        sourceEnvironment.mScriptLevel == targetEnvironment.mScriptLevel)
         return node;
     
-    auto_ptr<XmlNode> style(new XmlNode(XmlNode::cTag, L"mstyle"));
-    style->mChildren.push_back(node.release());
+    auto_ptr<XmlNode> newNode(new XmlNode(XmlNode::cTag, L"mstyle"));
+    newNode->mChildren.push_back(node.release());
 
-    if (sourceStyle == cStyleDisplay)
-        style->mAttributes[L"displaystyle"] = L"false";
-    else if (targetStyle == cStyleDisplay)
-        style->mAttributes[L"displaystyle"] = L"true";
+    if (sourceEnvironment.mDisplayStyle != targetEnvironment.mDisplayStyle)
+        newNode->mAttributes[L"displaystyle"] = (targetEnvironment.mDisplayStyle) ? L"true" : L"false";
 
-    int targetSize = GetMathmlScriptLevel(targetStyle);
-        
-    if (targetSize != GetMathmlScriptLevel(sourceStyle))
+    if (sourceEnvironment.mScriptLevel != targetEnvironment.mScriptLevel)
     {
         wostringstream os;
-        os << targetSize;
-        style->mAttributes[L"scriptlevel"] = os.str();
+        os << targetEnvironment.mScriptLevel;
+        newNode->mAttributes[L"scriptlevel"] = os.str();
     }
     
-    return style;
+    return newNode;
 }
 
-// This function obtains the nucleus of a MathML expression. (See "embellished operators" in the MathML spec.)
+// This function obtains the core of a MathML expression. (See "embellished operators" in the MathML spec.)
 // This is used to find any <mo> node which should have its "lspace" and/or "rspace" attributes set.
-XmlNode* GetNucleus(XmlNode* node)
+XmlNode* GetCore(XmlNode* node)
 {
+    // FIX: this code is not quite right. It doesn't handle situations where <mrow> or <mstyle>
+    // or something similar contain a single node which is an embellished operator.
+    
     if (!node || node->mType == XmlNode::cString)
         return node;
-    return (node->mText == L"msup" || node->mText == L"msub" || node->mText == L"msubsup" ||
-            node->mText == L"mover" || node->mText == L"munder" || node->mText == L"munderover")
-        ? GetNucleus(node->mChildren.front()) : node;
+    return (node->mText == L"msup"  || node->mText == L"msub"   || node->mText == L"msubsup"    ||
+            node->mText == L"mover" || node->mText == L"munder" || node->mText == L"munderover" ||
+            node->mText == L"mfrac")
+        ? GetCore(node->mChildren.front()) : node;
 }
 
-auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
-    // FIX: what will happen if the TOPmost node is not a Row? Maybe should just force a Row in there for safety.
-
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mrow"));
 
     if (mChildren.empty())
@@ -136,7 +138,7 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, Style curre
 
         auto_ptr<XmlNode> currentNode;
         if (child != mChildren.end())
-            currentNode = (*child)->BuildMathmlTree(options, mStyle);
+            currentNode = (*child)->BuildMathmlTree(options, MathmlEnvironment(mStyle));
 
         bool merged = false;
         
@@ -171,8 +173,8 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, Style curre
         // in which case we use "lspace" and/or "rspace" attributes.
         if (!merged)
         {
-            XmlNode*  currentNucleus = GetNucleus(currentNode.get());
-            XmlNode* previousNucleus = GetNucleus(previousNode);
+            XmlNode*  currentNucleus = GetCore(currentNode.get());
+            XmlNode* previousNucleus = GetCore(previousNode);
 
             bool isPreviousMo = (previousNucleus && previousNucleus->mText == L"mo");
             bool isCurrentMo  = ( currentNucleus &&  currentNucleus->mText == L"mo");
@@ -237,16 +239,26 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, Style curre
         node = singleton;
     }
     
-    return InsertMstyle(node, currentStyle, mStyle);
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Space::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Space::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
-    // FIX: this seems to happen on input like "x^{\,}", putting "\," in a matrix entry etc.
-    throw logic_error("Unexpectedly arrived in Space::BuildMathmlTree");
+    if (!mIsUserRequested)
+        throw logic_error("Unexpected lonely automatic space in Space::BuildMathmlTree");
+    
+    // FIX: what happens with negative space?
+    
+    wostringstream wos;
+    wos << fixed << setprecision(3) << (mWidth / 18.0) << L"em";
+
+    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mspace"));
+    node->mAttributes[L"width"] = wos.str();
+
+    return node;
 }
 
-auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag,
         (mText.size() == 1 && mText[0] >= L'0' && mText[0] <= '9') ? L"mn" : L"mi"));
@@ -302,7 +314,7 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, Sty
         if (replacement)
         {
             node->mChildren.push_back(new XmlNode(XmlNode::cString, wstring(1, replacement)));
-            return InsertMstyle(node, currentStyle, mStyle);
+            return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
         }
     }
 
@@ -315,53 +327,52 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, Sty
     // FIX: move this comment to Row::BuildMathmlTree.
     node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
 
-    return InsertMstyle(node, currentStyle, mStyle);
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
-    static wstring stretchyArray[] =
+    static wchar_t stretchyArray[] =
     {
-        L"(",
-        L")",
-        L"[",
-        L"]",
-        L"{",
-        L"}",
-        L"|",
-        L"/",
-        L"&Backslash;",
-        L"&lang;",
-        L"&rang;",
-        L"&lceil;",
-        L"&rceil;",
-        L"&lfloor;",
-        L"&rfloor;",
-        // FIX: look these up in MathML documentation to see if they are stretchy:...
-        L"&sum;",
-        L"&prod;",
-        L"&int;",
-        L"&Int;",
-        L"&tint;",
-        L"&qint;",
-        L"&oint;",
-        L"&bigcap;",
-        L"&bigodot;",
-        L"&bigotimes;",
-        L"&coprod;",
-        L"&bigsqcup;",
-        L"&bigoplus;",
-        L"&bigvee;",
-        L"&biguplus;",
-        L"&Wedge;"
+        L'(',
+        L')',
+        L'[',
+        L']',
+        L'{',
+        L'}',
+        L'|',
+        L'/',
+        L'\U000002DC',      // DiacriticalTilde
+        L'\U000002C7',      // Hacek
+        L'\U000002D8',      // Breve
+        L'\U00002216',      // Backslash
+        L'\U00002329',      // LeftAngleBracket
+        L'\U0000232A',      // RightAngleBracket
+        L'\U00002308',      // LeftCeiling
+        L'\U00002309',      // RightCeiling
+        L'\U0000230A',      // LeftFloor
+        L'\U0000230B',      // RightFloor
+        L'\U00002211',      // Sum
+        L'\U0000220F',      // Product
+        L'\U0000222B',      // Integral
+        L'\U0000222C',      // Int
+        L'\U0000222D',      // iiint
+        L'\U00002A0C',      // iiiint
+        L'\U0000222E',      // ContourIntegral
+        L'\U000022C2',      // Intersection
+        L'\U00002A00',      // bigodot
+        L'\U00002A02',      // bigotimes
+        L'\U00002210',      // Coproduct
+        L'\U00002A06',      // bigsqcup
+        L'\U00002A01',      // bigoplus
+        L'\U000022C1',      // Vee
+        L'\U00002A04',      // biguplus
+        L'\U000022C0'       // Wedge
     };
-    static wishful_hash_set<wstring> stretchyTable(stretchyArray, END_ARRAY(stretchyArray));
+    static wishful_hash_set<wchar_t> stretchyTable(stretchyArray, END_ARRAY(stretchyArray));
     
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
     node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
-
-    if (mLimits == cLimitsLimits)
-        node->mAttributes[L"movablelimits"] = L"false";
 
     if (mFont != cMathmlFontNormal)
         node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
@@ -372,98 +383,99 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, 
         if (!mSize.empty())
             node->mAttributes[L"minsize"] = node->mAttributes[L"maxsize"] = mSize;
     }
-    else if (stretchyTable.count(mText))
+    else if (mText.size() == 1 && stretchyTable.count(mText[0]))
         node->mAttributes[L"stretchy"] = L"false";
     
-    return InsertMstyle(node, currentStyle, mStyle);
+    if (mIsAccent)
+    {
+        node->mAttributes[L"accent"] = L"true";
+        return node;
+    }
+    
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> SymbolText::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> SymbolText::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mtext"));
     node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
     node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
-    return InsertMstyle(node, currentStyle, mStyle);
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
-    Style smallerStyle = mStyle;
-    switch (smallerStyle)
-    {
-        case cStyleDisplay:
-        case cStyleText:          smallerStyle = cStyleScript; break;
-        case cStyleScript:
-        case cStyleScriptScript:  smallerStyle = cStyleScriptScript; break;
-    }
+    MathmlEnvironment scriptEnvironment = MathmlEnvironment(mStyle);
+    scriptEnvironment.mDisplayStyle = false;
+    scriptEnvironment.mScriptLevel++;
 
     auto_ptr<XmlNode> base;
     if (mBase.get())
-        base = mBase->BuildMathmlTree(options, mStyle);
+        base = mBase->BuildMathmlTree(options, MathmlEnvironment(mStyle));
     else
         // An empty base gets represented by "<mrow/>"
         base.reset(new XmlNode(XmlNode::cTag, L"mrow"));
-    
+
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L""));
     node->mChildren.push_back(base.release());
-    
+
     if (mUpper.get())
     {
         if (mLower.get())
         {
-            node->mText = (mPlacement == cPlacementSideset) ? L"msubsup" : L"munderover";
-            node->mChildren.push_back(mLower->BuildMathmlTree(options, smallerStyle).release());
-            node->mChildren.push_back(mUpper->BuildMathmlTree(options, smallerStyle).release());
+            node->mText = mIsSideset ? L"msubsup" : L"munderover";
+            node->mChildren.push_back(mLower->BuildMathmlTree(options, scriptEnvironment).release());
+            node->mChildren.push_back(mUpper->BuildMathmlTree(options, scriptEnvironment).release());
         }
         else
         {
-            node->mText = (mPlacement == cPlacementSideset) ? L"msup" : L"mover";
-            node->mChildren.push_back(mUpper->BuildMathmlTree(options, smallerStyle).release());
+            node->mText = mIsSideset ? L"msup" : L"mover";
+            node->mChildren.push_back(mUpper->BuildMathmlTree(options, scriptEnvironment).release());
         }
     }
     else
     {
-        node->mText = (mPlacement == cPlacementSideset) ? L"msub" : L"munder";
-        node->mChildren.push_back(mLower->BuildMathmlTree(options, smallerStyle).release());
-    }
-   
-    if (mPlacement == cPlacementAccent)
-    {
-        if (mUpper.get())
-            node->mAttributes[L"accentover"] = L"true";
-        if (mLower.get())
-            node->mAttributes[L"accentunder"] = L"true";
-        
-        // FIX: accents are still very not right... all kind of extra mstyle tags get inserted.
-        // FIX: also, need to completely rewrite this stuff so that the buildmathmltree functions
-        // get passed a current "scriptLevel" and "displayStyle" setting, not a "currentStyle".
+        node->mText = mIsSideset ? L"msub" : L"munder";
+        node->mChildren.push_back(mLower->BuildMathmlTree(options, scriptEnvironment).release());
     }
 
-    return InsertMstyle(node, currentStyle, mStyle);
+    if (!mIsSideset && mStyle != cStyleDisplay)
+    {
+        // This situation should be quite unusual, since the user would have to force things using
+        // "\limits". If there's an operator in the core, we need to set movablelimits just to be safe.
+
+        // FIX: this code might let the user induce quadratic time, with something like this:
+        // "\textstyle \mathop{\mathop{\mathop{\mathop{x}\limits^x}\limits^x}\limits^x}\limits^x" etc
+        
+        XmlNode* core = GetCore(node->mChildren.front());
+        if (core->mText == L"mo" && !node->mChildren.back()->mAttributes.count(L"accent"))
+            core->mAttributes[L"movablelimits"] = L"false";
+    }
+       
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Fraction::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Fraction::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
-    Style smallerStyle = mStyle;
-    switch (smallerStyle)
-    {
-        case cStyleDisplay:    smallerStyle = cStyleText; break;
-        case cStyleText:       smallerStyle = cStyleScript; break;
-        case cStyleScript:     smallerStyle = cStyleScriptScript; break;
-    }
-
+    MathmlEnvironment smallerEnvironment = MathmlEnvironment(mStyle);
+    
+    if (smallerEnvironment.mDisplayStyle)
+        smallerEnvironment.mDisplayStyle = false;
+    else
+        smallerEnvironment.mScriptLevel++;
+    
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mfrac"));
-    node->mChildren.push_back(mNumerator  ->BuildMathmlTree(options, smallerStyle).release());
-    node->mChildren.push_back(mDenominator->BuildMathmlTree(options, smallerStyle).release());
+    node->mChildren.push_back(mNumerator  ->BuildMathmlTree(options, smallerEnvironment).release());
+    node->mChildren.push_back(mDenominator->BuildMathmlTree(options, smallerEnvironment).release());
     if (!mIsLineVisible)
         node->mAttributes[L"linethickness"] = L"0";
 
-    return InsertMstyle(node, currentStyle, mStyle);
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
-    auto_ptr<XmlNode> inside = mChild->BuildMathmlTree(options, mStyle);
+    auto_ptr<XmlNode> inside = mChild->BuildMathmlTree(options, MathmlEnvironment(mStyle));
 
     if (mLeftDelimiter.empty() && mRightDelimiter.empty())
         return inside;
@@ -495,26 +507,25 @@ auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, Style cu
         output->mChildren.push_back(node.release());
     }
 
-    return InsertMstyle(output, currentStyle, mStyle);
+    return InsertMstyle(output, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Sqrt::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Sqrt::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"msqrt"));
-    node->mChildren.push_back(mChild->BuildMathmlTree(options, mStyle).release());
-    return InsertMstyle(node, currentStyle, mStyle);
+    node->mChildren.push_back(mChild->BuildMathmlTree(options, MathmlEnvironment(mStyle)).release());
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Root::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Root::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mroot"));
-    // FIX: check these are around the right away
-    node->mChildren.push_back(mInside ->BuildMathmlTree(options, mStyle).release());
-    node->mChildren.push_back(mOutside->BuildMathmlTree(options, cStyleScriptScript).release());
-    return InsertMstyle(node, currentStyle, mStyle);
+    node->mChildren.push_back(mOutside->BuildMathmlTree(options, MathmlEnvironment(false, 2)).release());
+    node->mChildren.push_back(mInside ->BuildMathmlTree(options, MathmlEnvironment(mStyle)).release());
+    return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, Style currentStyle) const
+auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
     // FIX: remember can kill <mrow> tags inside <mtd> tags i.e. make them implied....
     // and NOT JUST HERE... this happens for many types of tags.
@@ -545,7 +556,7 @@ auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, Style cur
         for (vector<Node*>::const_iterator inEntry = inRow->begin(); inEntry != inRow->end(); inEntry++, count++)
         {
             auto_ptr<XmlNode> outEntry(new XmlNode(XmlNode::cTag, L"mtd"));
-            outEntry->mChildren.push_back((*inEntry)->BuildMathmlTree(options, mStyle).release());
+            outEntry->mChildren.push_back((*inEntry)->BuildMathmlTree(options, MathmlEnvironment(mStyle)).release());
             outRow->mChildren.push_back(outEntry.release());
         }
         for (; count < tableWidth; count++)
@@ -554,40 +565,62 @@ auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, Style cur
         node->mChildren.push_back(outRow.release());
     }
 
-    if (mStyle == cStyleDisplay)
+    // Here we would prefer to use the InsertMstyle function, but the MathML spec says that the displaystyle
+    // attribute needs to be set on the <mtable> element itself, since the default "false" overrides any
+    // enclosing <mstyle>. So we only put the scriptlevel in an mstyle (if necessary).
+    MathmlEnvironment tableEnvironment(mStyle);
+    if (tableEnvironment.mDisplayStyle)
         node->mAttributes[L"displaystyle"] = L"true";
-    
-    int size = GetMathmlScriptLevel(mStyle);
-    if (size != GetMathmlScriptLevel(currentStyle))
+    if (tableEnvironment.mScriptLevel != inheritedEnvironment.mScriptLevel)
     {
-        auto_ptr<XmlNode> style(new XmlNode(XmlNode::cTag, L"mstyle"));
-        style->mChildren.push_back(node.release());
+        auto_ptr<XmlNode> styleNode(new XmlNode(XmlNode::cTag, L"mstyle"));
+        styleNode->mChildren.push_back(node.release());
 
         wostringstream os;
-        os << size;
-        style->mAttributes[L"scriptlevel"] = os.str();
+        os << tableEnvironment.mScriptLevel;
+        styleNode->mAttributes[L"scriptlevel"] = os.str();
         
-        return style;
+        return styleNode;
     }
-    
-    return node;
+    else
+        return node;
 }
 
 // ===========================================================================================================
 // Now all the LayoutTree debugging code
 
-// FIX: make this stuff entity encode for my sanity
-
 wstring gFlavourStrings[] =
 {
-    L"Ord",
-    L"Op",
-    L"Bin",
-    L"Rel",
-    L"Open",
-    L"Close",
-    L"Punct",
-    L"Inner"
+    L"ord",
+    L"op",
+    L"bin",
+    L"rel",
+    L"open",
+    L"close",
+    L"punct",
+    L"inner"
+};
+
+wstring gLimitsStrings[] =
+{
+    L"displaylimits",
+    L"limits",
+    L"nolimits"
+};
+
+wstring gStyleStrings[] =
+{
+    L"displaystyle",
+    L"textstyle",
+    L"scriptstyle",
+    L"scriptscriptstyle"
+};
+
+wstring gAlignStrings[] =
+{
+    L"left",
+    L"centre",
+    L"rightleft"
 };
 
 // This function generates the indents used by various debugging Print functions.
@@ -596,50 +629,52 @@ wstring indent(int depth)
     return wstring(2 * depth, L' ');
 }
 
+wstring Node::PrintFields() const
+{
+    wstring output = gFlavourStrings[mFlavour];
+    if (mFlavour == cFlavourOp)
+        output += L" " + gLimitsStrings[mLimits];
+    output += L" " + gStyleStrings[mStyle];
+    return output;
+}
+
 void Row::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Row" << endl;
+    os << indent(depth) << L"Row " << PrintFields() << endl;
     for (list<Node*>::const_iterator ptr = mChildren.begin(); ptr != mChildren.end(); ptr++)
         (*ptr)->Print(os, depth+1);
 }
 
 void SymbolPlain::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"SymbolPlain \"" << mText << L"\" (font = " << gMathmlFontStrings[mFont] << L", flavour = " << gFlavourStrings[mFlavour] << L")" << endl;
+    os << indent(depth) << L"SymbolPlain \"" << mText << L"\" " << gMathmlFontStrings[mFont] << L" " << PrintFields() << endl;
 }
 
 void SymbolText::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"SymbolText \"" << mText << L"\" (font = " << gMathmlFontStrings[mFont] << L", flavour = " << gFlavourStrings[mFlavour] << L")" << endl;
+    os << indent(depth) << L"SymbolText \"" << mText << L"\" " << gMathmlFontStrings[mFont] << L" " << PrintFields() << endl;
 }
 
 void SymbolOperator::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"SymbolOperator \"" << mText << L"\" (font = " << gMathmlFontStrings[mFont]
-        << L", stretchy = " << (mIsStretchy ? L"true" : L"false");
+    os << indent(depth) << L"SymbolOperator \"" << mText << L"\" " << gMathmlFontStrings[mFont]
+        << (mIsStretchy ? L" stretchy" : L" non-stretchy") << (mIsAccent ? L" accent" : L"");
     if (!mSize.empty())
-        os << L", size = " << mSize;
-    os << L", flavour = " << gFlavourStrings[mFlavour] << L")" << endl;
+        os << L" size=\"" << mSize << L"\"";
+    os << L" " << PrintFields() << endl;
 }
 
 void Space::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Space (width = " << mWidth << L", user requested = " <<
-        (mIsUserRequested ? L"true" : L"false") << L")" << endl;
+    os << indent(depth) << L"Space " << mWidth;
+    if (mIsUserRequested)
+        os << L" (user requested)";
+    os << endl;
 }
-
-// FIX: should print out flavour for all of these too....:
 
 void Scripts::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Scripts ";
-    switch (mPlacement)
-    {
-        case cPlacementSideset:     os << L"(sideset)"; break;
-        case cPlacementUnderOver:   os << L"(under/over)"; break;
-        case cPlacementAccent:      os << L"(accented)"; break;
-    }
-    os << endl;
+    os << indent(depth) << L"Scripts " << (mIsSideset ? L"sideset" : L"underover") << L" " << PrintFields() << endl;
 
     if (mBase.get())
     {
@@ -660,33 +695,37 @@ void Scripts::Print(wostream& os, int depth) const
 
 void Fraction::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Fraction (visible line = " << (mIsLineVisible ? L"true" : L"false") << L")" << endl;
+    os << indent(depth) << L"Fraction ";
+    if (!mIsLineVisible)
+        os << L"(no visible line) ";
+    os << PrintFields() << endl;
     mNumerator->Print(os, depth+1);
     mDenominator->Print(os, depth+1);
 }
 
 void Fenced::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Fenced (left = \"" << mLeftDelimiter << L"\", right = \"" << mRightDelimiter << L"\")" << endl;
+    os << indent(depth) << L"Fenced \"" << mLeftDelimiter << L"\" \"" << mRightDelimiter << L"\" "
+        << PrintFields() << endl;
     mChild->Print(os, depth+1);
 }
 
 void Sqrt::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Sqrt" << endl;
+    os << indent(depth) << L"Sqrt " << PrintFields() << endl;
     mChild->Print(os, depth+1);
 }
 
 void Root::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Root" << endl;
+    os << indent(depth) << L"Root " << PrintFields() << endl;
     mInside->Print(os, depth+1);
     mOutside->Print(os, depth+1);
 }
 
 void Table::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"Table" << endl;
+    os << indent(depth) << L"Table " << PrintFields() << L" " << gAlignStrings[mAlign] << endl;
     for (vector<vector<Node*> >::const_iterator row = mRows.begin(); row != mRows.end(); row++)
     {
         os << indent(depth+1) << L"Table row" << endl;
