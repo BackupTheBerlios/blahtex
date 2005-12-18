@@ -1,6 +1,6 @@
 // File "main.cpp"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -30,9 +30,14 @@
 using namespace std;
 using namespace blahtex;
 
-string gBlahtexVersion = "0.3.3";
+string gBlahtexVersion = "0.3.4";
 
-// We only use a single instance of UnicodeConverter.
+// FIX: Interesting bug. In markup like "\frac 1+", which gives something like
+// <mfrac><mn>1</mn><mo>+</mo></mfrac>
+// Firefox puts space around the + sign. I don't think it should. Interesting.
+// Not sure if this is my bug or theirs.
+
+// A single global instance of UnicodeConverter.
 UnicodeConverter gUnicodeConverter;
 
 void ShowUsage()
@@ -42,25 +47,44 @@ void ShowUsage()
         "Copyright (C) 2005, David Harvey\n\n"
         "This is free software; see the source for copying conditions. There is NO\n"
         "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
-        "Usage: blahtex [ --indented ] [ --font-substitution ] [ --spacing N ]\n"
-        "               [ --mathml-encoding type ] [ --other-encoding type ]\n"
-        "               [ --mathml ] [ --html ] [ --png ] [ --debug type ] < inputfile\n\n"
+        "Usage: blahtex [ --indented ] [ --texvc-compatibility ]\n"
+        "               [ --mathml ] [ --html ] [ --png ]\n"
+        "               [ --spacing  strict | moderate | relaxed ]\n"
+        "               [ --mathml-version-1-fonts ] [ --disallow-plane-1 ]\n"
+        "               [ --mathml-encoding  raw | numeric | short | long ]\n"
+        "               [ --other-encoding  raw | numeric ]\n"
+        "               [ --debug  parse | layout | purified ] [ --debug ... ]\n"
+        "               [ --use-ucs-package ] [ --forbid-png-incompatible-characters ]\n"
+        "               < inputfile\n"
+        "\n"
         " --indented\n"
-        "        produce nicely indented MathML tags\n\n"
-        " --font-substitution\n"
-        "        use character entities to avoid poorly-supported mathvariant font settings\n\n"
-        " --spacing 0\n"
-        "        emit MathML spacing markup wherever possible\n"
-        " --spacing 1 (default)\n"
-        "        emit spacing markup where a MathML renderer is likely to get it wrong\n"
-        " --spacing 2\n"
-        "        only emit spacing markup where specifically requested in the TeX input\n\n"
+        "        produce nicely indented MathML tags\n"
+        "\n"
+        " --texvc-compatibility\n"
+        "        recognise nonstandard texvc-specific commands\n"
+        "\n"
         " --mathml\n"
-        "        generate MathML output\n\n"
+        "        generate MathML output\n"
+        "\n"
         " --html\n"
-        "        generate HTML output (not implemented yet, if ever :-))\n\n"
+        "        generate HTML output (not implemented yet, if ever :-))\n"
+        "\n"
         " --png\n"
-        "        generate PNG output\n\n"
+        "        generate PNG output\n"
+        "\n"
+        " --spacing strict\n"
+        "        emit MathML spacing markup wherever possible\n"
+        " --spacing moderate (default)\n"
+        "        emit spacing markup where a MathML renderer is likely to have trouble\n"
+        " --spacing relaxed\n"
+        "        only emit spacing markup where specifically requested in the TeX input\n"
+        "\n"
+        " --mathml-version-1-fonts\n"
+        "        use character entities and MathML version 1 font attributes instead of \"mathvariant\"\n"
+        "\n"
+        " --disallow-plane-1\n"
+        "        force plane-1 MathML characters to be encoded as e.g. \"&Afr;\" instead of \"&#x1d504;\"\n"
+        "\n"
         " --mathml-encoding raw\n"
         "        encode non-ASCII MathML characters as raw UTF-8\n"
         " --mathml-encoding numeric (default)\n"
@@ -68,18 +92,26 @@ void ShowUsage()
         " --mathml-encoding short\n"
         "        encode non-ASCII MathML characters using short names (like \"&uarr;\")\n"
         " --mathml-encoding long\n"
-        "        encode non-ASCII MathML characters using long names (like \"&UpArrow;\")\n\n"
+        "        encode non-ASCII MathML characters using long names (like \"&UpArrow;\")\n"
+        "\n"
         " --other-encoding raw\n"
         "        encode non-ASCII, non-MathML characters as raw UTF-8\n"
         " --other-encoding numeric\n"
-        "        encode non-ASCII, non-MathML characters as numeric codes\n\n"
+        "        encode non-ASCII, non-MathML characters as numeric codes\n"
+        "\n"
         " --debug parse\n"
         "        display the parse tree (output is NOT XML)\n"
         " --debug layout\n"
         "        display the layout tree (output is NOT XML)\n"
         " --debug purified\n"
         "        display purified TeX (output is NOT XML)\n"
-    ;
+        "\n"
+        " --use-ucs-package\n"
+        "        use the LaTeX ucs package to handle some non-ASCII characters\n"        
+        "\n"
+        " --forbid-png-incompatible-characters\n"
+        "        flag an error if input contains non-ASCII characters which cannot be rendered as PNG\n"
+        "\n";
     exit(0);
 }
 
@@ -112,11 +144,13 @@ int main (int argc, char * const argv[]) {
 
         MathmlOptions mathmlOptions;
         EncodingOptions encodingOptions;
+        PurifiedTexOptions purifiedTexOptions;
 
         bool indented = false;
         bool doPng    = false;
         bool doMathml = false;
         bool doHtml   = false;
+        bool texvcCompatibility = false;
         
         bool debugLayoutTree  = false;
         bool debugParseTree   = false;
@@ -139,13 +173,27 @@ int main (int argc, char * const argv[]) {
                     if (++i == argc)
                         throw CommandLineException("Missing number after \"--spacing\" (try blahtex --help)");
                     arg = string(argv[i]);
-                    if (arg.empty() || arg[0] < '0' || arg[0] > '2')
-                        throw CommandLineException("Illegal number after \"--spacing\" (try blahtex --help)");
-                    mathmlOptions.mSpacingExplicitness = atoi(argv[i]);
+                    if (arg == "strict")
+                        mathmlOptions.mSpacingControl = cSpacingControlStrict;
+                    else if (arg == "moderate")
+                        mathmlOptions.mSpacingControl = cSpacingControlModerate;
+                    else if (arg == "relaxed")
+                        mathmlOptions.mSpacingControl = cSpacingControlRelaxed;
+                    else
+                        throw CommandLineException("Illegal string after \"--spacing\" (try blahtex --help)");
                 }
                 
-                else if (arg == "--font-substitution")
-                    mathmlOptions.mFancyFontSubstitution = true;
+                else if (arg == "--use-ucs-package")
+                    purifiedTexOptions.mUseUcsPackage = true;
+                
+                else if (arg == "--forbid-png-incompatible-characters")
+                    purifiedTexOptions.mForbidPngIncompatibleCharacters = true;
+                                
+                else if (arg == "--mathml-version-1-fonts")
+                    mathmlOptions.mMathmlVersion1Fonts = true;
+                
+                else if (arg == "--texvc-compatibility")
+                    texvcCompatibility = true;
                 
                 else if (arg == "--png")
                     doPng = true;
@@ -171,6 +219,12 @@ int main (int argc, char * const argv[]) {
                         encodingOptions.mMathmlEncoding = cMathmlEncodingLong;
                     else
                         throw CommandLineException("Illegal string after \"--mathml-encoding\" (try blahtex --help)");
+                }
+
+                else if (arg == "--disallow-plane-1")
+                {
+                    mathmlOptions  .mAllowPlane1 = false;
+                    encodingOptions.mAllowPlane1 = false;
                 }
                 
                 else if (arg == "--other-encoding")
@@ -233,7 +287,7 @@ int main (int argc, char * const argv[]) {
             wostringstream output;
 
             Instance I;
-            I.ProcessInput(input);
+            I.ProcessInput(input, texvcCompatibility);
             
             if (debugParseTree)
             {
@@ -252,7 +306,7 @@ int main (int argc, char * const argv[]) {
 
             wstring purifiedTex;
             if (doPng || debugPurifiedTex)
-                purifiedTex = I.GeneratePurifiedTex();
+                purifiedTex = I.GeneratePurifiedTex(purifiedTexOptions);
             
             if (debugPurifiedTex)
             {
@@ -300,7 +354,7 @@ int main (int argc, char * const argv[]) {
                     
                     command = shellLatex + " " + texFilename + " >/dev/null 2>/dev/null";
                     system(command.c_str());
-                    
+
                     if (!FileExists(md5 + ".dvi"))
                         throw wstring(L"Could not run latex");
 
@@ -310,7 +364,7 @@ int main (int argc, char * const argv[]) {
                     if (!FileExists(md5 + ".ps"))
                         throw wstring(L"Could not run dvips");
                     
-                    command = "/sw/bin/convert -quality 100 -density 200 -gamma 0.5 -trim " + md5 + ".ps " + md5 + ".png >/dev/null 2>/dev/null";
+                    command = "/sw/bin/convert -quality 100 -density 120 -gamma 0.75 -trim " + md5 + ".ps " + md5 + ".png >/dev/null 2>/dev/null";
                     system(command.c_str());
 
                     if (!FileExists(md5 + ".png"))

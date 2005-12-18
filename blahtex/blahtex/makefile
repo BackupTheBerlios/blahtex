@@ -1,7 +1,7 @@
 #
 # makefile
 #
-# blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+# blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 # Copyright (C) 2005, David Harvey
 #
 # This program is free software; you can redistribute it and/or modify

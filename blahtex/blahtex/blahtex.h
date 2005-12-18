@@ -1,6 +1,6 @@
 // File "blahtex.h"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -16,11 +16,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-
-// FIX: there's a bug when the input is just "\sqrt[]"; wrong error message is generated
-
-// FIX: need to add "\odot"
 
 #include <iostream>
 #include <string>
@@ -110,38 +105,66 @@ struct EncodingOptions
     // true means use code points directly; false mean use e.g. &#x1234.
     bool mOtherEncodingRaw;
     
+    // Whether to allow unicode plane-1 characters. If this false, then blahtex will never output things
+    // like "&#x1d504;", even when mMathmlEncoding == cMathmlEncodingRaw or cMathmlEncodingNumeric.
+    // Instead it will fall back on something like "&Afr;".
+    // (This flag is also present in MathmlOptions -- see below.)
+    bool mAllowPlane1;
+    
     EncodingOptions() :
-        mMathmlEncoding(cMathmlEncodingNumeric), mOtherEncodingRaw(false) { }
+        mMathmlEncoding(cMathmlEncodingNumeric), mOtherEncodingRaw(false), mAllowPlane1(true) { }
 };
 
 extern std::wstring XmlEncode(const std::wstring& input, const EncodingOptions& options);
+
+enum SpacingControl
+{
+    cSpacingControlStrict,
+    cSpacingControlModerate,
+    cSpacingControlRelaxed
+};
 
 // This class stores options for controlling the MathML output that blahtex produces.
 // In particular it is passed to both Instance::GenerateMathml and XmlNode::Print.
 struct MathmlOptions
 {
-    // mSpacingExplicitness controls how much control blahtex takes over spacing. Blahtex always uses
+    // mSpacingControl controls how much control blahtex takes over spacing. Blahtex always uses
     // TeX's rules (or an approximation thereof) to determine spacing, but this option controls how much
     // of the time it actually outputs markup (<mspace>, lspace, rspace) to implement its spacing decisions. 
     //
     // Currently there are three possible settings:
-    // 0 = Control-freak setting. Blahtex outputs spacing commands everwhere possible, doesn't leave any
-    //     choice to the MathML renderer.
-    // 1 = Moderate setting. Blahtex outputs spacing commands where it thinks a typical MathML renderer
-    //     is likely to do something visually unsatisfactory without additional help.
-    // 2 = Lowest setting. Blahtex only outputs spacing commands when the user specifically asks for them,
+    // cSpacingControlStrict:
+    //     Blahtex outputs spacing commands everwhere possible, doesn't leave any choice to the
+    //     MathML renderer.
+    // cSpacingControlModerate:
+    //     Blahtex outputs spacing commands where it thinks a typical MathML renderer is likely to do
+    //     something visually unsatisfactory without additional help.
+    //     (Note: it's very difficult to get this right, so I expect it to be under continual review.)
+    // cSpacingControlRelaxed:
+    //     Blahtex only outputs spacing commands when the user specifically asks for them,
     //     using TeX commands like "\," or "\quad".
-    int mSpacingExplicitness;
+    SpacingControl mSpacingControl;
 
-    // Setting mFancyFontSubstitution = true tells blahtex to avoid using the mathvariant values
-    // "script", "bold-script", "fraktur", "bold-fraktur", and "double-struck". Instead, it replaces
-    // any characters using these fonts with unicode code points directly. The rationale is that certain
-    // renderers (Mozilla-based in particular) don't fully implement mathvariant yet, so we need to do this
-    // substitution for them.
-    bool mFancyFontSubstitution;
+    // If this flag is set, blahtex will use MathML version 1 font attributes ("fontstyle", "fontweight",
+    // "fontfamily") instead of mathvariant, and it will handle the fancier fonts ("script", "bold-script",
+    // "fraktur", "bold-fraktur", "double-struck") by explicitly using appropriate MathML entities
+    // (e.g. "&Afr;").
+    bool mMathmlVersion1Fonts;
+
+    // See comments above in EncodingOptions.
+    bool mAllowPlane1;
     
     MathmlOptions() :
-        mSpacingExplicitness(1), mFancyFontSubstitution(false) { }
+        mSpacingControl(cSpacingControlModerate), mMathmlVersion1Fonts(false), mAllowPlane1(true) { }
+};
+
+struct PurifiedTexOptions
+{
+    bool mUseUcsPackage;
+    bool mForbidPngIncompatibleCharacters;
+    
+    PurifiedTexOptions() :
+        mUseUcsPackage(false), mForbidPngIncompatibleCharacters(false) { }
 };
 
 // These values correspond (roughly) to TeX's "atom flavors".
@@ -249,7 +272,8 @@ public:
     {
         cNonAsciiInMathMode,
         cIllegalCharacter,
-        cIllegalBlahtexSuffix,
+        cPngIncompatibleCharacter,
+        cReservedCommand,
         cTooManyTokens,
         cIllegalFinalBackslash,
         cUnrecognisedCommand,
@@ -494,6 +518,7 @@ namespace LayoutTree
     
 } // end LayoutTree namespace
 
+extern std::wstring gMathmlFontStrings[];
 
 extern wishful_hash_map<std::wstring, std::wstring> gDelimiterTable;
 
@@ -548,12 +573,11 @@ namespace ParseTree
     {
         virtual ~Node() { };
         
-        virtual void GetPurifiedTex(std::wostream& os) const = 0;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const = 0;
 
         // 'Print' recursively prints the parse tree under this node.
         // This is only used for debugging. Implemented in 'debug.cpp'.
         virtual void Print(std::wostream& os, int depth = 0) const = 0;
-
     };
 
     // Any node that occurs during math mode.
@@ -577,7 +601,7 @@ namespace ParseTree
         MathSymbol(const std::wstring& command) :
             mCommand(command) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -591,7 +615,7 @@ namespace ParseTree
         MathCommand1Arg(const std::wstring& command, std::auto_ptr<MathNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -605,7 +629,7 @@ namespace ParseTree
         MathStyleChange(const std::wstring& command, std::auto_ptr<MathNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -621,7 +645,7 @@ namespace ParseTree
             std::auto_ptr<MathNode> child1, std::auto_ptr<MathNode> child2, bool isInfix) :
             mCommand(command), mChild1(child1), mChild2(child2), mIsInfix(isInfix) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -634,7 +658,7 @@ namespace ParseTree
         MathBig(const std::wstring& command, const std::wstring& delimiter) :
             mCommand(command), mDelimiter(delimiter) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -647,7 +671,7 @@ namespace ParseTree
         MathGroup(std::auto_ptr<MathNode> child) :
             mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -658,7 +682,7 @@ namespace ParseTree
         std::vector<MathNode*> mChildren;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
         ~MathList();
     };
@@ -670,7 +694,7 @@ namespace ParseTree
         std::auto_ptr<MathNode> mBase, mUpper, mLower;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
     
@@ -686,7 +710,7 @@ namespace ParseTree
         MathLimits(const std::wstring& command, std::auto_ptr<MathNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -703,7 +727,7 @@ namespace ParseTree
             const std::wstring& leftDelimiter, const std::wstring& rightDelimiter) :
             mChild(child), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
     
@@ -713,7 +737,7 @@ namespace ParseTree
         std::vector<MathNode*> mEntries;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
         ~MathTableRow();
     };
@@ -724,7 +748,7 @@ namespace ParseTree
         std::vector<MathTableRow*> mRows;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
         ~MathTable();
     };
@@ -740,7 +764,7 @@ namespace ParseTree
         MathEnvironment(const std::wstring& name, std::auto_ptr<MathTable> table) :
             mName(name), mTable(table) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -755,7 +779,7 @@ namespace ParseTree
         EnterTextMode(const std::wstring& command, std::auto_ptr<TextNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const;
     };
 
@@ -765,7 +789,7 @@ namespace ParseTree
         std::vector<TextNode*> mChildren;
 
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
         ~TextList();
     };
@@ -778,7 +802,7 @@ namespace ParseTree
         TextGroup(std::auto_ptr<TextNode> child) :
             mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
     
@@ -791,7 +815,7 @@ namespace ParseTree
         TextSymbol(const std::wstring& command) :
             mCommand(command) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
 
@@ -804,7 +828,7 @@ namespace ParseTree
         TextStyleChange(const std::wstring& command, std::auto_ptr<TextNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
     
@@ -817,7 +841,7 @@ namespace ParseTree
         TextCommand1Arg(const std::wstring& command, std::auto_ptr<TextNode> child) :
             mCommand(command), mChild(child) { }
         virtual void Print(std::wostream& os, int depth) const;
-        virtual void GetPurifiedTex(std::wostream& os) const;
+        virtual void GetPurifiedTex(std::wostream& os, const PurifiedTexOptions& options) const;
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(const LatexTextFont& currentFont, Style currentStyle) const;
     };
 
@@ -890,6 +914,8 @@ private:
     // Returns true on success, or false if the argument is missing.
     bool ReadArgument(std::vector<std::wstring>& output);
 
+    void SkipWhitespaceRaw();
+    
     // Total approximate cost of parsing activity so far. See cMaxParseCost for more info.
     unsigned mCostIncurred;
 };
@@ -995,10 +1021,12 @@ extern wishful_hash_map<std::wstring, Parser::TokenCode> gMathTokenTable, gTextT
 class Instance
 {
 public:
+    // FIX: update doc
     Instance();
 
     // ProcessInput generates a parse tree and a layout tree from the supplied input.
-    void ProcessInput(const std::wstring& input);
+    // FIX: update doc
+    void ProcessInput(const std::wstring& input, bool texvcCompatibility = false);
 
     // GenerateMathml generates a XML tree containing MathML markup.
     // See the definition of MathmlOptions for the meaning of the options parameter.
@@ -1010,7 +1038,7 @@ public:
     
     // GeneratePurifiedTex returns a string containing a complex LaTeX file that could be fed to
     // LaTeX to produce a graphical version of the input. It includes any required \usepackage commands.
-    std::wstring GeneratePurifiedTex();
+    std::wstring GeneratePurifiedTex(const PurifiedTexOptions& options);
 
     const ParseTree::MathNode* GetParseTree() { return mParseTree.get(); }
     const LayoutTree::Node* GetLayoutTree() { return mLayoutTree.get(); }
@@ -1020,6 +1048,10 @@ private:
     // All the GenerateXXX functions in turn produce their output from these trees.
     std::auto_ptr<ParseTree::MathNode> mParseTree;
     std::auto_ptr<LayoutTree::Node> mLayoutTree;
+    
+    // This flag is set if the user has requested "strict spacing" rules (see SpacingControl) via the
+    // magic "\strictspacing" command.
+    bool mStrictSpacingRequested;
     
     // The Tokenise function splits the given input into tokens, each represented by a string.
     // The output is APPENDED to 'output'.
@@ -1037,15 +1069,15 @@ private:
 
     // gStandardMacros is a string which, in effect, gets inserted at the beginning of any input string 
     // handled by ProcessInput. It contains a sequence of "\newcommand" commands.
+    // FIX: update doc
     static std::wstring gStandardMacros;
+    static std::wstring gTexvcCompatibilityMacros;
     
     // Tokenised version of gStandardMacros (computed only once, when first used):
+    // FIX: update doc
     static std::vector<std::wstring> gStandardMacrosTokenised;
+    static std::vector<std::wstring> gTexvcCompatibilityMacrosTokenised;
 };
-
-// This functions strips off the "Blahtex" suffix from its input, if such a suffix appears.
-// The idea is to convert internal commands like "\fracBlahtex" back into plain old "\frac".
-extern std::wstring StripBlahtexSuffix(const std::wstring& input);
 
 }
 

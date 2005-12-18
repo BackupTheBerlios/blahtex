@@ -1,6 +1,6 @@
 // File "XmlNode.cpp"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -266,6 +266,7 @@ wstring XmlEncode(const wstring& input, const EncodingOptions& options)
         make_pair(L'\U00002A04', UnicodeNameInfo(L"xuplus",    L"biguplus")),
         make_pair(L'\U00002A06', UnicodeNameInfo(L"xsqcup",    L"bigsqcup")),
         make_pair(L'\U00002A0C', UnicodeNameInfo(L"qint",      L"iiiint")),
+        make_pair(L'\U00002A2F', UnicodeNameInfo(L"Cross")),
         make_pair(L'\U0000FE37', UnicodeNameInfo(L"OverBrace")),
         make_pair(L'\U0000FE38', UnicodeNameInfo(L"UnderBrace")),
         
@@ -430,7 +431,16 @@ wstring XmlEncode(const wstring& input, const EncodingOptions& options)
             }
             else
             {
-                switch (options.mMathmlEncoding)
+                MathmlEncoding encoding = options.mMathmlEncoding;
+
+                // Deal with plane-1 characters.
+                if (!options.mAllowPlane1 && static_cast<unsigned>(*ptr) >= 0x10000 &&
+                    (encoding == cMathmlEncodingNumeric || encoding == cMathmlEncodingRaw))
+                {
+                    encoding = cMathmlEncodingShort;
+                }
+                
+                switch (encoding)
                 {
                     case cMathmlEncodingLong:
                         if (!search->second.mLongName.empty())

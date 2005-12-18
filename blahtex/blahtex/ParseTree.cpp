@@ -1,6 +1,6 @@
 // File "ParseTree.cpp"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -19,51 +19,13 @@
 
 #include "blahtex.h"
 #include <stdexcept>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 
 namespace blahtex
 {
-
-static pair<wstring, wstring> gDelimiterArray[] =
-{
-    make_pair(L".",             L""),
-    make_pair(L"[",             L"["),
-    make_pair(L"]",             L"]"),
-    make_pair(L"\\lbrack",      L"["),
-    make_pair(L"\\rbrack",      L"]"),
-    make_pair(L"(",             L"("),
-    make_pair(L")",             L")"),
-    make_pair(L"<",             L"\U00002329"),
-    make_pair(L">",             L"\U0000232A"),
-    make_pair(L"\\langle",      L"\U00002329"),
-    make_pair(L"\\rangle",      L"\U0000232A"),
-    make_pair(L"/",             L"/"),
-    make_pair(L"\\backslash",   L"\U00002216"),
-    make_pair(L"\\{",           L"{"),
-    make_pair(L"\\}",           L"}"),
-    make_pair(L"\\lbrace",      L"{"),
-    make_pair(L"\\rbrace",      L"}"),
-    make_pair(L"|",             L"|"),
-    make_pair(L"\\vert",        L"|"),
-    // FIX: test this one:
-    make_pair(L"\\Vert",        L"\U00002225"),
-    make_pair(L"\\uparrow",     L"\U00002191"),
-    make_pair(L"\\downarrow",   L"\U00002193"),
-    // FIX: test this one:
-    make_pair(L"\\updownarrow", L"\U00002195"),
-    make_pair(L"\\Uparrow",     L"\U000021D1"),
-    make_pair(L"\\Downarrow",   L"\U000021D3"),
-    // FIX: test this one:
-    make_pair(L"\\Updownarrow", L"\U000021D5"),
-    make_pair(L"\\lfloor",      L"\U0000230A"),
-    make_pair(L"\\rfloor",      L"\U0000230B"),
-    make_pair(L"\\lceil",       L"\U00002308"),
-    make_pair(L"\\rceil",       L"\U00002309")
-// FIX: what about \lvert, \rvert... do these need to be here?
-};
-
-wishful_hash_map<wstring, wstring> gDelimiterTable(gDelimiterArray, END_ARRAY(gDelimiterArray));
 
 namespace ParseTree
 {
@@ -405,11 +367,6 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
             currentStyle, cFlavourOrd));
     }
 
-    // FIX: for some reason firefox is selecting perhaps a sans-serif font to render
-    // <mi mathvariant="normal">&Gamma;</mi>
-    // and for other greek letters too.
-    // Maybe should really follow Roger's suggestion re: mathml version 1 fonts
-
     static pair<wstring, wchar_t> uppercaseGreekArray[] =
     {
         make_pair(L"\\Gamma",     L'\U00000393'),
@@ -452,7 +409,6 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\;",       5),
         make_pair(L"\\quad",    18),
         make_pair(L"\\qquad",   36),
-        
         // These last two aren't quite right, but hopefully they're close enough.
         // TeX's rules are too complicated for me to care :-)
         make_pair(L"~",         6),
@@ -518,6 +474,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\rightarrow",             OperatorInfo(L"\U00002192",    cFlavourRel)),
         // FIX: for longleftarrow, longrightarrow, Longleftarrow, Longrightarrow, longmapsto, leftrightarrow, Leftrightarrow
         // can we do this using stretchiness? and specify a specific size?
+        // Problem is that firefox doesn't repect stretchy commands horizontally in a lot of cases.
+        // FIX: should also make regular \leftarrow and \rightarrow (etc) NON-STRETCHY, because they are
+        // default by stretchy in the operator dictionary.
         make_pair(L"\\longleftarrow",          OperatorInfo(L"\U00002190",    cFlavourRel)),
         make_pair(L"\\longrightarrow",         OperatorInfo(L"\U00002192",    cFlavourRel)),
         make_pair(L"\\Leftarrow",              OperatorInfo(L"\U000021D0",    cFlavourRel)),
@@ -565,9 +524,6 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\in",                     OperatorInfo(L"\U00002208",    cFlavourRel)),
         make_pair(L"\\ni",                     OperatorInfo(L"\U0000220B",    cFlavourRel)),
         make_pair(L"\\notin",                  OperatorInfo(L"\U00002209",    cFlavourRel)),
-        // FIX: \iff needs 5 mu space on each side
-        // FIX: \iff needs to be stretchy and have size set larger
-        make_pair(L"\\iff",                    OperatorInfo(L"\U000021D4",    cFlavourRel)),
         make_pair(L"\\mid",                    OperatorInfo(L"|",             cFlavourRel)),
         make_pair(L"\\sim",                    OperatorInfo(L"\U0000223C",    cFlavourRel)),
         make_pair(L"\\simeq",                  OperatorInfo(L"\U00002243",    cFlavourRel)),
@@ -592,6 +548,11 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\nless",                  OperatorInfo(L"\U0000226E",    cFlavourRel)),
         make_pair(L"\\ngeq",                   OperatorInfo(L"\U00002271",    cFlavourRel)),
         make_pair(L"\\nleq",                   OperatorInfo(L"\U00002270",    cFlavourRel)),
+// FIX: the fonts shipped with Firefox 1.5 don't know about 0x2a2f (&Cross;).
+// So I'm mapping it to 0xd7 (&times;) for now. The only downside of this is that the default operator
+// dictionary in Firefox knows that &Cross; is a binary operator, but it doesn't know this for &times;,
+// so I need to special-case the spacing for &times; (see LayoutTree::Row::BuildMathmlTree).
+//        make_pair(L"\\times",                  OperatorInfo(L"\U00002A2F",    cFlavourBin)),
         make_pair(L"\\times",                  OperatorInfo(L"\U000000D7",    cFlavourBin)),
         make_pair(L"\\div",                    OperatorInfo(L"\U000000F7",    cFlavourBin)),
         make_pair(L"\\wedge",                  OperatorInfo(L"\U00002227",    cFlavourBin)),
@@ -610,8 +571,6 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\setminus",               OperatorInfo(L"\U00002216",    cFlavourBin)),
         // FIX: how to make smallsetminus smaller?
         make_pair(L"\\smallsetminus",          OperatorInfo(L"\U00002216",    cFlavourBin)),
-        // FIX: \And needs space of 5 mu on each side (in addition to flavour-based space)
-        make_pair(L"\\And",                    OperatorInfo(L"&",             cFlavourRel)),
         make_pair(L"\\star",                   OperatorInfo(L"\U000022C6",    cFlavourBin)),
         make_pair(L"\\triangle",               OperatorInfo(L"\U000025B3",    cFlavourOrd)),
         make_pair(L"\\wr",                     OperatorInfo(L"\U00002240",    cFlavourBin)),
@@ -623,12 +582,6 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\pm",                     OperatorInfo(L"\U000000B1",    cFlavourBin)),
         make_pair(L"\\mp",                     OperatorInfo(L"\U00002213",    cFlavourBin)),
         make_pair(L"\\angle",                  OperatorInfo(L"\U00002220",    cFlavourOrd)),
-        
-        // FIX: amsmath redefines \colon, does interesting things with spacing... to think about...
-        // FIX: needs 2mu before, and 6 afterwards (NOT in addition to flavour-based space)
-        // FIX: is this the right flavour for "\colon"?
-        make_pair(L"\\colon",                  OperatorInfo(L":",             cFlavourPunct)),
-
         make_pair(L"\\Diamond",                OperatorInfo(L"\U000022C4",    cFlavourBin)),
         make_pair(L"\\nmid",                   OperatorInfo(L"\U00002224",    cFlavourRel)),    
         make_pair(L"\\square",                 OperatorInfo(L"\U000025A1",    cFlavourOrd)),
@@ -651,13 +604,14 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\cdot",                   OperatorInfo(L"\U000022C5",    cFlavourBin)),
         make_pair(L"\\vdots",                  OperatorInfo(L"\U000022EE",    cFlavourOrd)),
         make_pair(L"\\ddots",                  OperatorInfo(L"\U000022F1",    cFlavourInner)),
-        // FIX: should get mapped to one of \cdots or \ldots...
-        /*
-        make_pair(L"\\dots",                   OperatorInfo(L"", cFlavourInner)),
-        make_pair(L"\\dotsb",                  OperatorInfo(L"", cFlavourInner)),
-        make_pair(L"\\ldots",                  OperatorInfo(L"", cFlavourInner)),
-        make_pair(L"\\cdots",                  OperatorInfo(L"", cFlavourInner)),
-        */
+
+        make_pair(L"\\cdots",                  OperatorInfo(L"\U000022C5 \U000022C5 \U000022C5", cFlavourInner)),
+        make_pair(L"\\ldots",                  OperatorInfo(L". . .",         cFlavourInner)),
+        // FIX: these next two aren't right. The amsmath package does tricky things so that the dots change
+        // their vertical position depending on the surrounding operators. We chicken out and just map them
+        // to the same as \cdots and \ldots respectively.
+        make_pair(L"\\dotsb",                  OperatorInfo(L"\U000022C5 \U000022C5 \U000022C5", cFlavourInner)),
+        make_pair(L"\\dots",                   OperatorInfo(L". . .",         cFlavourInner)),
 
         make_pair(L"\\sum",                    OperatorInfo(L"\U00002211",    cFlavourOp)),
         make_pair(L"\\prod",                   OperatorInfo(L"\U0000220F",    cFlavourOp)),
@@ -685,7 +639,8 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
         make_pair(L"\\gcd",                    OperatorInfo(L"gcd",           cFlavourOp)),
         make_pair(L"\\det",                    OperatorInfo(L"det",           cFlavourOp)),
         make_pair(L"\\Pr",                     OperatorInfo(L"Pr",            cFlavourOp)),
-        // FIX: is this how we want to do these? with nbsp?
+
+        // FIX: the space between the words in these operators is a tiny bit too big.
         make_pair(L"\\limsup",                 OperatorInfo(L"lim sup",       cFlavourOp)),
         make_pair(L"\\liminf",                 OperatorInfo(L"lim inf",       cFlavourOp)),
         make_pair(L"\\injlim",                 OperatorInfo(L"inj lim",       cFlavourOp)),
@@ -770,22 +725,94 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
             (identifierLookup->second.mFlavour == cFlavourOp) ? cLimitsNoLimits : cLimitsDisplayLimits));
     }
 
+    if (mCommand == L"\\And")
+    {
+        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        row->mFlavour = cFlavourRel;
+        row->mChildren.push_back(new LayoutTree::Space(5, true));
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"&",
+            currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal, currentStyle, cFlavourOrd));
+        row->mChildren.push_back(new LayoutTree::Space(5, true));
+        return static_cast<auto_ptr<LayoutTree::Node> >(row);
+    }
+    
+    if (mCommand == L"\\iff")
+    {
+        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        row->mFlavour = cFlavourRel;
+        row->mChildren.push_back(new LayoutTree::Space(5, true));
+        // FIX: I would like to make this stretchy and set a particular size, but for some reason
+        // firefox doesn't stretch things horizontally like this. It DOES do it if the element is
+        // in a <mover> or <munder> etc, but not when it's just by itself. Very strange.
+        // This is mozilla bug 320303.
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"\U000021D4",
+            currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal, currentStyle, cFlavourOrd));
+        row->mChildren.push_back(new LayoutTree::Space(5, true));
+        return static_cast<auto_ptr<LayoutTree::Node> >(row);
+    }
+
+    if (mCommand == L"\\colon")
+    {
+        // FIX: this spacing stuff isn't quite right, but it will hopefully do.
+        // The amsmath package does all kinds of interesting things with \colon's spacing.
+        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        row->mChildren.push_back(new LayoutTree::Space(2, true));
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L":",
+            currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal, currentStyle, cFlavourOrd));
+        row->mChildren.push_back(new LayoutTree::Space(6, true));
+        return static_cast<auto_ptr<LayoutTree::Node> >(row);
+    }
+
+    if (mCommand == L"\\bmod")
+    {
+        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        row->mFlavour = cFlavourBin;
+        row->mChildren.push_back(new LayoutTree::Space(1, true));
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"mod",
+            currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal, currentStyle, cFlavourOrd));
+        row->mChildren.push_back(new LayoutTree::Space(1, true));
+        return static_cast<auto_ptr<LayoutTree::Node> >(row);
+    }
+    
+    if (mCommand == L"\\mod")
+    {
+        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        row->mChildren.push_back(new LayoutTree::Space(18, true));
+        row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"mod",
+            currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal, currentStyle, cFlavourOrd));
+        row->mChildren.push_back(new LayoutTree::Space(6, true));
+        return static_cast<auto_ptr<LayoutTree::Node> >(row);
+    }
+    
+    if (mCommand == L"\\varinjlim" || mCommand == L"\\varprojlim" ||
+        mCommand == L"\\varlimsup" || mCommand == L"\\varliminf")
+    {
+        MathmlFont font = currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal;
+        
+        auto_ptr<LayoutTree::Node> base(new LayoutTree::SymbolOperator(
+            false, L"", false, L"lim", font, currentStyle, cFlavourOp, cLimitsLimits));
+        
+        auto_ptr<LayoutTree::Scripts> node(new LayoutTree::Scripts(
+            currentStyle, cFlavourOp, cLimitsDisplayLimits, false,
+            base, auto_ptr<LayoutTree::Node>(), auto_ptr<LayoutTree::Node>()));
+        
+        if (mCommand == L"\\varinjlim")
+            node->mLower = auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolOperator(
+                false, L"", true, L"\U00002192", font, currentStyle, cFlavourOrd));
+        else if (mCommand == L"\\varprojlim")
+            node->mLower = auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolOperator(
+                false, L"", true, L"\U00002190", font, currentStyle, cFlavourOrd));
+        else if (mCommand == L"\\varliminf")
+            node->mLower = auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolOperator(
+                true, L"", true, L"\U000000AF", font, currentStyle, cFlavourOrd));
+        else if (mCommand == L"\\varlimsup")
+            node->mUpper = auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolOperator(
+                true, L"", true, L"\U000000AF", font, currentStyle, cFlavourOrd));
+        
+        return static_cast<auto_ptr<LayoutTree::Node> >(node);
+    }
+
     throw logic_error("Not implemented yet.");
-
-/*
-
-// FIX: need to think about the "largeop" attribute, and font sizes for these operators.
-// In particular need to work out how browsers size these things depending on scriptsize.
-
-        make_pair(L"\\varinjlim",              ),
-        make_pair(L"\\varprojlim",             ),
-        make_pair(L"\\varlimsup",              ),
-        make_pair(L"\\varliminf",              ),
-        make_pair(L"\\mod",                    ),
-        make_pair(L"\\bmod",                   ),
-
-
-*/
 }
 
 // Stores info about accent commands (like "\hat", "\overrightarrow", etc)
@@ -799,25 +826,35 @@ struct AccentInfo {
 
 auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const
 {
-    if (mCommand == L"\\sqrtBlahtex")
+    if (mCommand == L"\\sqrt")
     {
         return auto_ptr<LayoutTree::Node>(new LayoutTree::Sqrt(mChild->BuildLayoutTree(currentFont, currentStyle)));
     }
 
-// FIX: implement these: (NOT as accents I think...)
-//        make_pair(L"\\overbrace",           AccentInfo(L"\U0000FE37",           true)),
-//        make_pair(L"\\underbrace",          AccentInfo(L"\U0000FE38",           true)),
+    if (mCommand == L"\\overbrace" || mCommand == L"\\underbrace")
+    {
+        Style newStyle = (currentStyle == cStyleDisplay) ? cStyleDisplay : cStyleText;
+
+        auto_ptr<LayoutTree::Node> empty, brace(new LayoutTree::SymbolOperator(
+            true, L"", false, mCommand == L"\\overbrace" ? L"\U0000FE37" : L"\U0000FE38",
+            cMathmlFontNormal, cStyleScript, cFlavourOrd));
     
+        return auto_ptr<LayoutTree::Node>(new LayoutTree::Scripts(newStyle, cFlavourOp, cLimitsLimits, false,
+            mChild->BuildLayoutTree(currentFont, newStyle),
+            (mCommand == L"\\overbrace")  ? brace : empty,
+            (mCommand == L"\\underbrace") ? brace : empty));
+    }
+
     if (mCommand == L"\\pmod")
     {
         auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
         
         MathmlFont font = currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal;
 
-        row->mChildren.push_back(new LayoutTree::Space(18, true));      // "true" means user-requested, non-negotiable space
+        row->mChildren.push_back(new LayoutTree::Space(18, true));
         row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"(", font, currentStyle, cFlavourOpen));
         row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L"mod", font, currentStyle, cFlavourOrd));
-        row->mChildren.push_back(new LayoutTree::Space(6, false));      // "false" means possibly negotiable space
+        row->mChildren.push_back(new LayoutTree::Space(6, true));
         row->mChildren.push_back(mChild->BuildLayoutTree(currentFont, currentStyle).release());
         row->mChildren.push_back(new LayoutTree::SymbolOperator(false, L"", false, L")", font, currentStyle, cFlavourClose));
         
@@ -839,17 +876,15 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     static pair<wstring, wstring> negationArray[] =
     {
         // FIX: add more entries to this table
-        // FIX: label these entries so I know what the hell they are
-        // FIX: Why is 2208 listed twice???
-        make_pair(L"\U00002208",       L"\U00002209"),
-        make_pair(L"\U00002208",       L"\U00002262"),
-        make_pair(L"\U00002203",       L"\U00002204"),
-        make_pair(L"=",                L"\U00002260"),
-        make_pair(L"\U00002192",       L"\U0000219B"),
-        make_pair(L"\U00002286",       L"\U00002288"),
-        make_pair(L"\U0000223C",       L"\U00002241"),
-        make_pair(L"\U000022A9",       L"\U000022AE"),
-        make_pair(L"\U00002194",       L"\U000021AE"),
+        make_pair(L"\U00002208",       L"\U00002209"),      // Element => NotElement
+        make_pair(L"\U00002261",       L"\U00002262"),      // Congruent => NotCongruent
+        make_pair(L"\U00002203",       L"\U00002204"),      // Exists => NotExists
+        make_pair(L"=",                L"\U00002260"),      // = => NotEqual
+        make_pair(L"\U00002192",       L"\U0000219B"),      // RightArrow => nrightarrow
+        make_pair(L"\U00002286",       L"\U00002288"),      // SubsetEqual => NotSubsetEqual
+        make_pair(L"\U0000223C",       L"\U00002241"),      // Tilde => NotTilde
+        make_pair(L"\U000022A9",       L"\U000022AE"),      // Vdash => nVdash
+        make_pair(L"\U00002194",       L"\U000021AE"),      // LeftRightArrow => nleftrightarrow
     };
     static wishful_hash_map<wstring, wstring> negationTable(negationArray, END_ARRAY(negationArray));
     
@@ -893,14 +928,14 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     
     static pair<wstring, LatexMathFont::Family> fontCommandArray[] =
     {
-        make_pair(L"\\mathbfBlahtex",         LatexMathFont::cFamilyBf),
-        make_pair(L"\\mathbbBlahtex",         LatexMathFont::cFamilyBb),
-        make_pair(L"\\mathitBlahtex",         LatexMathFont::cFamilyIt),
-        make_pair(L"\\mathrmBlahtex",         LatexMathFont::cFamilyRm),
-        make_pair(L"\\mathsfBlahtex",         LatexMathFont::cFamilySf),
-        make_pair(L"\\mathttBlahtex",         LatexMathFont::cFamilyTt),
-        make_pair(L"\\mathcalBlahtex",        LatexMathFont::cFamilyCal),
-        make_pair(L"\\mathfrakBlahtex",       LatexMathFont::cFamilyFrak)
+        make_pair(L"\\mathbf",         LatexMathFont::cFamilyBf),
+        make_pair(L"\\mathbb",         LatexMathFont::cFamilyBb),
+        make_pair(L"\\mathit",         LatexMathFont::cFamilyIt),
+        make_pair(L"\\mathrm",         LatexMathFont::cFamilyRm),
+        make_pair(L"\\mathsf",         LatexMathFont::cFamilySf),
+        make_pair(L"\\mathtt",         LatexMathFont::cFamilyTt),
+        make_pair(L"\\mathcal",        LatexMathFont::cFamilyCal),
+        make_pair(L"\\mathfrak",       LatexMathFont::cFamilyFrak)
     };
     static wishful_hash_map<wstring, LatexMathFont::Family> fontCommandTable(fontCommandArray, END_ARRAY(fontCommandArray));
 
@@ -921,7 +956,6 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     
     static pair<wstring, AccentInfo> accentCommandArray[] =
     {                                                                       // stretchy?
-        // FIX: review these...
         make_pair(L"\\hat",                 AccentInfo(L"^",                    false)),
         make_pair(L"\\widehat",             AccentInfo(L"^",                    true)),
         make_pair(L"\\bar",                 AccentInfo(L"\U000000AF",           false)),
@@ -1018,7 +1052,7 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(const LatexMathFont
     bool hasParentheses;
     bool isLineVisible;
     
-    if (mCommand == L"\\fracBlahtex" || mCommand == L"\\over")
+    if (mCommand == L"\\frac" || mCommand == L"\\over")
     {
         isFractionCommand = true;
         isLineVisible = true;
@@ -1059,7 +1093,7 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(const LatexMathFont
             return inside;
     }
 
-    if (mCommand == L"\\rootBlahtex")
+    if (mCommand == L"\\rootReserved")
     {
         return auto_ptr<LayoutTree::Node>(new LayoutTree::Root(
             mChild1->BuildLayoutTree(currentFont, currentStyle),
@@ -1099,13 +1133,6 @@ auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(const LatexMathFont& cur
     {
         base = mBase->BuildLayoutTree(currentFont, currentStyle);
         flavour = base->mFlavour;
-        
-        // FIX: The next line is a slightly nasty hack.
-        // We propagate the limits setting of the base to the LayoutTree::Scripts node. Then the Scripts
-        // node can just examine its OWN limits setting to decide where to place the scripts. This probably
-        // isn't the best way to do this, because strictly speaking the limits setting doesn't apply to the
-        // scripts node itself. But it doesn't break, because the limits field on a scripts node should
-        // never actually be used for anything else (at least I can't think of a counterexample).
         limits = base->mLimits;
     }
     
@@ -1127,7 +1154,7 @@ auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(const LatexMathFont& cur
         (limits != cLimitsLimits && (limits != cLimitsDisplayLimits || currentStyle != cStyleDisplay));
     
     return auto_ptr<LayoutTree::Node>(new LayoutTree::Scripts(
-        currentStyle, flavour, limits, isSideset, base, upper, lower));
+        currentStyle, flavour, cLimitsDisplayLimits, isSideset, base, upper, lower));
 }
 
 auto_ptr<LayoutTree::Node> MathLimits::BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const
@@ -1169,22 +1196,21 @@ auto_ptr<LayoutTree::Node> MathBig::BuildLayoutTree(const LatexMathFont& current
 {
     static pair<wstring, BigInfo> bigCommandArray[] =
     {
-        // FIX: I have no idea if these sizes are correct.
-        make_pair(L"\\bigBlahtex",      BigInfo(cFlavourOrd,   L"1.5em")),
-        make_pair(L"\\bigl",            BigInfo(cFlavourOpen,  L"1.5em")),
-        make_pair(L"\\bigr",            BigInfo(cFlavourClose, L"1.5em")),
+        make_pair(L"\\big",      BigInfo(cFlavourOrd,   L"1.2em")),
+        make_pair(L"\\bigl",     BigInfo(cFlavourOpen,  L"1.2em")),
+        make_pair(L"\\bigr",     BigInfo(cFlavourClose, L"1.2em")),
 
-        make_pair(L"\\BigBlahtex",      BigInfo(cFlavourOrd,   L"2em"  )),
-        make_pair(L"\\Bigl",            BigInfo(cFlavourOpen,  L"2em"  )),
-        make_pair(L"\\Bigr",            BigInfo(cFlavourClose, L"2em"  )),
+        make_pair(L"\\Big",      BigInfo(cFlavourOrd,   L"1.8em")),
+        make_pair(L"\\Bigl",     BigInfo(cFlavourOpen,  L"1.8em")),
+        make_pair(L"\\Bigr",     BigInfo(cFlavourClose, L"1.8em")),
 
-        make_pair(L"\\biggBlahtex",     BigInfo(cFlavourOrd,   L"2.5em")),
-        make_pair(L"\\biggl",           BigInfo(cFlavourOpen,  L"2.5em")),
-        make_pair(L"\\biggr",           BigInfo(cFlavourClose, L"2.5em")),
+        make_pair(L"\\bigg",     BigInfo(cFlavourOrd,   L"2.4em")),
+        make_pair(L"\\biggl",    BigInfo(cFlavourOpen,  L"2.4em")),
+        make_pair(L"\\biggr",    BigInfo(cFlavourClose, L"2.4em")),
 
-        make_pair(L"\\BiggBlahtex",     BigInfo(cFlavourOrd,   L"3em"  )),
-        make_pair(L"\\Biggl",           BigInfo(cFlavourOpen,  L"3em"  )),
-        make_pair(L"\\Biggr",           BigInfo(cFlavourClose, L"3em"  )),
+        make_pair(L"\\Bigg",     BigInfo(cFlavourOrd,   L"3em")),
+        make_pair(L"\\Biggl",    BigInfo(cFlavourOpen,  L"3em")),
+        make_pair(L"\\Biggr",    BigInfo(cFlavourClose, L"3em")),
     };
     static wishful_hash_map<wstring, BigInfo> bigCommandTable(bigCommandArray, END_ARRAY(bigCommandArray));
     
@@ -1289,15 +1315,15 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(const LatexMathFont&
 auto_ptr<LayoutTree::Node> EnterTextMode::BuildLayoutTree(const LatexMathFont& currentFont, Style currentStyle) const
 {
     static pair<wstring, LatexTextFont> textCommandArray[] =
-    {                                                                        //  bold?  italic?
-        make_pair(L"\\hbox",             LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
-        make_pair(L"\\textBlahtex",      LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
-        make_pair(L"\\textrmBlahtex",    LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
-        make_pair(L"\\textbfBlahtex",    LatexTextFont(LatexTextFont::cFamilyRm, true,  false)),
-        make_pair(L"\\emphBlahtex",      LatexTextFont(LatexTextFont::cFamilyRm, false, true)),
-        make_pair(L"\\textitBlahtex",    LatexTextFont(LatexTextFont::cFamilyRm, false, true)),
-        make_pair(L"\\textsfBlahtex",    LatexTextFont(LatexTextFont::cFamilySf, false, false)),
-        make_pair(L"\\textttBlahtex",    LatexTextFont(LatexTextFont::cFamilyTt, false, false))
+    {                                                                 //  bold?  italic?
+        make_pair(L"\\hbox",      LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\text",      LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\textrm",    LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\textbf",    LatexTextFont(LatexTextFont::cFamilyRm, true,  false)),
+        make_pair(L"\\emph",      LatexTextFont(LatexTextFont::cFamilyRm, false, true)),
+        make_pair(L"\\textit",    LatexTextFont(LatexTextFont::cFamilyRm, false, true)),
+        make_pair(L"\\textsf",    LatexTextFont(LatexTextFont::cFamilySf, false, false)),
+        make_pair(L"\\texttt",    LatexTextFont(LatexTextFont::cFamilyTt, false, false))
     };
     static wishful_hash_map<wstring, LatexTextFont> textCommandTable(textCommandArray, END_ARRAY(textCommandArray));
     
@@ -1350,6 +1376,9 @@ auto_ptr<LayoutTree::Node> TextSymbol::BuildLayoutTree(const LatexTextFont& curr
         make_pair(L"\\{",                      L"{"),
         make_pair(L"\\}",                      L"}"),
         make_pair(L"\\textbackslash",          L"\\"),
+        // FIX: for some reason in Firefox the caret is much lower than it should be
+        make_pair(L"\\textasciicircum",        L"^"),
+        make_pair(L"\\textasciitilde",         L"~"),
         make_pair(L"\\textvisiblespace",       L"\U000023B5"),
         make_pair(L"\\O",                      L"\U000000D8"),
         make_pair(L"\\S",                      L"\U000000A7")
@@ -1395,19 +1424,19 @@ auto_ptr<LayoutTree::Node> TextCommand1Arg::BuildLayoutTree(const LatexTextFont&
 {
     LatexTextFont font = currentFont;
 
-    if (mCommand == L"\\textrmBlahtex")
+    if (mCommand == L"\\textrm")
         font.mFamily = LatexTextFont::cFamilyRm;
-    else if (mCommand == L"\\textttBlahtex")
+    else if (mCommand == L"\\texttt")
         font.mFamily = LatexTextFont::cFamilyTt;
-    else if (mCommand == L"\\textsfBlahtex")
+    else if (mCommand == L"\\textsf")
         font.mFamily = LatexTextFont::cFamilySf;
-    else if (mCommand == L"\\textitBlahtex")
+    else if (mCommand == L"\\textit")
         font.mIsItalic = true;
-    else if (mCommand == L"\\emphBlahtex")
+    else if (mCommand == L"\\emph")
         font.mIsItalic = !font.mIsItalic;
-    else if (mCommand == L"\\textbfBlahtex")
+    else if (mCommand == L"\\textbf")
         font.mIsBold = true;
-    else if (mCommand == L"\\textBlahtex" || mCommand == L"\\hbox")
+    else if (mCommand == L"\\text" || mCommand == L"\\hbox")
         // do nothing!
         { }
     else
@@ -1416,146 +1445,221 @@ auto_ptr<LayoutTree::Node> TextCommand1Arg::BuildLayoutTree(const LatexTextFont&
     return mChild->BuildLayoutTree(font, currentStyle);
 }
 
-
+/*
 // This stream insertion operator exists solely to simplify the code for GetPurifiedTex (below)
 wostream& operator<<(wostream& os, const ParseTree::Node& source)
 {
     source.GetPurifiedTex(os);
     return os;
 }
+*/
 
-void MathSymbol::GetPurifiedTex(wostream& os) const
+void MathSymbol::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << L" " << StripBlahtexSuffix(mCommand);
+    os << L" " << mCommand;
 }
 
-void MathCommand1Arg::GetPurifiedTex(wostream& os) const
+void MathCommand1Arg::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << StripBlahtexSuffix(mCommand) << L"{" << *mChild << L"}";
+    os << mCommand << L"{";
+    mChild->GetPurifiedTex(os, options);
+    os << L"}";
 }
 
-void MathStyleChange::GetPurifiedTex(wostream& os) const
+void MathStyleChange::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << StripBlahtexSuffix(mCommand) << *mChild;
+    os << mCommand;
+    mChild->GetPurifiedTex(os, options);
 }
 
-void MathCommand2Args::GetPurifiedTex(wostream& os) const
+void MathCommand2Args::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     if (mIsInfix)
     {
-        os << L"{" << *mChild1 << L"}" << mCommand << L"{" << *mChild2 << L"}";
+        os << L"{";
+        mChild1->GetPurifiedTex(os, options);
+        os << L"}" << mCommand << L"{";
+        mChild2->GetPurifiedTex(os, options);
+        os << L"}";
     }
     else
     {
-        if (mCommand == L"\\rootBlahtex")
-            os << L"\\sqrt[{" << *mChild1 << L"}]{" << *mChild2 << L"}";
+        if (mCommand == L"\\rootReserved")
+        {
+            os << L"\\sqrt[{";
+            mChild1->GetPurifiedTex(os, options);
+            os << L"}]{";
+            mChild2->GetPurifiedTex(os, options);
+            os << L"}";
+        }
         else
-            os << StripBlahtexSuffix(mCommand) << L"{" << *mChild1 << L"}{" << *mChild2 << L"}";
+        {
+            os << mCommand << L"{";
+            mChild1->GetPurifiedTex(os, options);
+            os << L"}{";
+            mChild2->GetPurifiedTex(os, options);
+            os << L"}";
+        }
     }
 }
 
-void MathGroup::GetPurifiedTex(wostream& os) const
+void MathGroup::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     // We remove nested braces here just for fun.
     if (dynamic_cast<MathGroup*>(mChild.get()))
-        os << *mChild;
+        mChild->GetPurifiedTex(os, options);
     else
-        os << L"{" << *mChild << L"}";
+    {
+        os << L"{";
+        mChild->GetPurifiedTex(os, options);
+        os << L"}";
+    }
 }
 
-void MathList::GetPurifiedTex(wostream& os) const
+void MathList::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     for (vector<MathNode*>::const_iterator ptr = mChildren.begin(); ptr != mChildren.end(); ptr++)
-        os << **ptr;
+        (*ptr)->GetPurifiedTex(os, options);
 }
 
-void MathScripts::GetPurifiedTex(wostream& os) const
+void MathScripts::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     if (mBase.get())
-        os << *mBase;
+        mBase->GetPurifiedTex(os, options);
     if (mUpper.get())
-        os << L"^{" << *mUpper << L"}";
+    {
+        os << L"^{";
+        mUpper->GetPurifiedTex(os, options);
+        os << L"}";
+    }
     if (mLower.get())
-        os << L"_{" << *mLower << L"}";
+    {
+        os << L"_{";
+        mLower->GetPurifiedTex(os, options);
+        os << L"}";
+    }
 }
 
-void MathLimits::GetPurifiedTex(wostream& os) const
+void MathLimits::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << *mChild << mCommand;
+    mChild->GetPurifiedTex(os, options);
+    os << mCommand;
 }
 
-void MathDelimited::GetPurifiedTex(wostream& os) const
+void MathDelimited::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << L"\\left" << mLeftDelimiter << *mChild << L"\\right" << mRightDelimiter;
+    os << L"\\left" << mLeftDelimiter;
+    mChild->GetPurifiedTex(os, options);
+    os << L"\\right" << mRightDelimiter;
 }
 
-void MathBig::GetPurifiedTex(wostream& os) const
+void MathBig::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << StripBlahtexSuffix(mCommand) << mDelimiter;
+    os << mCommand << mDelimiter;
 }
 
-void MathTableRow::GetPurifiedTex(wostream& os) const
+void MathTableRow::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     for (vector<MathNode*>::const_iterator ptr = mEntries.begin(); ptr != mEntries.end(); ptr++)
     {
         if (ptr != mEntries.begin())
             os << L" &";
-        os << **ptr;
+        (*ptr)->GetPurifiedTex(os, options);
     }
 }
 
-void MathTable::GetPurifiedTex(wostream& os) const
+void MathTable::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     for (vector<MathTableRow*>::const_iterator ptr = mRows.begin(); ptr != mRows.end(); ptr++)
     {
         if (ptr != mRows.begin())
             os << L" \\\\";
-        os << **ptr;
+        (*ptr)->GetPurifiedTex(os, options);
     }
 }
 
-void MathEnvironment::GetPurifiedTex(wostream& os) const
+void MathEnvironment::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << L"\\begin{" << mName << L"}" << *mTable << L"\\end{" << mName << L"}";
+    os << L"\\begin{" << mName << L"}";
+    mTable->GetPurifiedTex(os, options);
+    os << L"\\end{" << mName << L"}";
 }
 
-void TextList::GetPurifiedTex(wostream& os) const
+void TextList::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     for (vector<TextNode*>::const_iterator ptr = mChildren.begin(); ptr != mChildren.end(); ptr++)
-        os << **ptr;
+        (*ptr)->GetPurifiedTex(os, options);
 }
 
-void TextGroup::GetPurifiedTex(wostream& os) const
+void TextGroup::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
     // Let's remove nested braces, just for fun.
     if (dynamic_cast<TextGroup*>(mChild.get()))
-        os << *mChild;
+        mChild->GetPurifiedTex(os, options);
     else
-        os << L"{" << *mChild << L"}";
+    {
+        os << L"{";
+        mChild->GetPurifiedTex(os, options);
+        os << L"}";
+    }
 }
 
-void TextSymbol::GetPurifiedTex(wostream& os) const
+void TextSymbol::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
+    static wchar_t gAllowedUnicodeArray[] = {
+        161, 163, 167, 169, 172, 174, 176, 181, 182, 186, 191, 192, 193, 194, 195, 196,
+        197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 209, 210, 211, 212, 213,
+        214, 215, 216, 217, 218, 219, 220, 221, 223, 224, 225, 226, 227, 228, 229, 230,
+        231, 232, 233, 234, 235, 236, 237, 238, 241, 242, 243, 244, 245, 246, 247, 248,
+        249, 250, 251, 252, 253, 255, 256, 257, 258, 259, 262, 263, 264, 265, 266, 267,
+        268, 269, 270, 271, 274, 275, 276, 277, 278, 279, 282, 283, 284, 285, 286, 287,
+        288, 289, 290, 292, 293, 296, 297, 298, 299, 300, 301, 304, 305, 308, 309, 310,
+        311, 313, 314, 315, 316, 317, 318, 321, 322, 323, 324, 325, 326, 327, 328, 332,
+        333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348,
+        349, 350, 351, 352, 353, 354, 355, 356, 357, 360, 361, 362, 363, 364, 365, 366,
+        367, 368, 369, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 461, 462,
+        463, 464, 465, 466, 467, 468, 482, 483, 486, 487, 488, 489, 496, 500, 501, 502,
+        504, 505, 508, 509, 510, 511, 536, 537, 538, 539, 542, 543, 550, 551, 552, 553,
+        558, 559, 562, 563
+    };
+
+    static set<wchar_t> gAllowedUnicodeTable(gAllowedUnicodeArray, END_ARRAY(gAllowedUnicodeArray));
+
     if (mCommand.size() == 1 && mCommand[0] > 0x7F)
-        // Replace non-ascii characters by "?".
-        os << L"?";
+    {
+        if (options.mUseUcsPackage && gAllowedUnicodeTable.count(mCommand[0]))
+            os << L"\\unichar{" << static_cast<unsigned>(mCommand[0]) << L"}";
+        else if (options.mForbidPngIncompatibleCharacters)
+        {
+            wostringstream code;
+            code << hex << setfill(L'0') << uppercase << setw(8) << static_cast<unsigned>(mCommand[0]);
+            throw Exception(Exception::cPngIncompatibleCharacter, L"U+" + code.str());
+        }
+        else
+            os << L"?";
+    }
     else
         os << mCommand;
 }
 
-void TextStyleChange::GetPurifiedTex(wostream& os) const
+void TextStyleChange::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << StripBlahtexSuffix(mCommand) << *mChild;
+    os << mCommand;
+    mChild->GetPurifiedTex(os, options);
 }
 
-void TextCommand1Arg::GetPurifiedTex(wostream& os) const
+void TextCommand1Arg::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << StripBlahtexSuffix(mCommand) << L"{" << *mChild << L"}";
+    os << mCommand << L"{";
+    mChild->GetPurifiedTex(os, options);
+    os << L"}";
 }
 
-void EnterTextMode::GetPurifiedTex(wostream& os) const
+void EnterTextMode::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options) const
 {
-    os << StripBlahtexSuffix(mCommand) << L"{" << *mChild << L"}";
+    os << mCommand << L"{";
+    mChild->GetPurifiedTex(os, options);
+    os << L"}";
 }
 
 // ===========================================================================================================

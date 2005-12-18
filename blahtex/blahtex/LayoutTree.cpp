@@ -1,6 +1,6 @@
 // File "LayoutTree.cpp"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -26,8 +26,46 @@ using namespace std;
 
 namespace blahtex
 {
-namespace LayoutTree
+
+static pair<wstring, wstring> gDelimiterArray[] =
 {
+    make_pair(L".",             L""),
+    make_pair(L"[",             L"["),
+    make_pair(L"]",             L"]"),
+    make_pair(L"\\lbrack",      L"["),
+    make_pair(L"\\rbrack",      L"]"),
+    make_pair(L"(",             L"("),
+    make_pair(L")",             L")"),
+    make_pair(L"<",             L"\U00002329"),
+    make_pair(L">",             L"\U0000232A"),
+    make_pair(L"\\langle",      L"\U00002329"),
+    make_pair(L"\\rangle",      L"\U0000232A"),
+    make_pair(L"/",             L"/"),
+    make_pair(L"\\backslash",   L"\U00002216"),
+    make_pair(L"\\{",           L"{"),
+    make_pair(L"\\}",           L"}"),
+    make_pair(L"\\lbrace",      L"{"),
+    make_pair(L"\\rbrace",      L"}"),
+    make_pair(L"|",             L"|"),
+    make_pair(L"\\vert",        L"|"),
+    make_pair(L"\\lvert",       L"|"),
+    make_pair(L"\\rvert",       L"|"),
+    make_pair(L"\\Vert",        L"\U00002225"),
+    make_pair(L"\\lVert",       L"\U00002225"),
+    make_pair(L"\\rVert",       L"\U00002225"),
+    make_pair(L"\\uparrow",     L"\U00002191"),
+    make_pair(L"\\downarrow",   L"\U00002193"),
+    make_pair(L"\\updownarrow", L"\U00002195"),
+    make_pair(L"\\Uparrow",     L"\U000021D1"),
+    make_pair(L"\\Downarrow",   L"\U000021D3"),
+    make_pair(L"\\Updownarrow", L"\U000021D5"),
+    make_pair(L"\\lfloor",      L"\U0000230A"),
+    make_pair(L"\\rfloor",      L"\U0000230B"),
+    make_pair(L"\\lceil",       L"\U00002308"),
+    make_pair(L"\\rceil",       L"\U00002309")
+};
+
+wishful_hash_map<wstring, wstring> gDelimiterTable(gDelimiterArray, END_ARRAY(gDelimiterArray));
 
 wstring gMathmlFontStrings[] =
 {
@@ -46,6 +84,9 @@ wstring gMathmlFontStrings[] =
     L"sans-serif-bold-italic",
     L"monospace"
 };
+
+namespace LayoutTree
+{
 
 Row::~Row()
 {
@@ -106,6 +147,7 @@ XmlNode* GetCore(XmlNode* node)
     
     if (!node || node->mType == XmlNode::cString)
         return node;
+
     return (node->mText == L"msup"  || node->mText == L"msub"   || node->mText == L"msubsup"    ||
             node->mText == L"mover" || node->mText == L"munder" || node->mText == L"munderover" ||
             node->mText == L"mfrac")
@@ -147,6 +189,7 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
         // what to do. Maybe put a hard-coded limit.
         
         // If there is no space, we need to consider all the possible ways of merging adjacent nodes.
+
         // FIX: one day, when I could be bothered, need to also consider merging into bases of sub/superscripts....
         // that's going to be quite a painful piece of code.
         if (spaceWidth == 0 && previousNode && currentNode.get())
@@ -160,7 +203,7 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
             }
             else if (previousNode->mText == L"mi" && currentNode->mText == L"mi" &&
                 previousNode->mAttributes[L"mathvariant"] == L"normal" &&
-                currentNode->mAttributes[L"mathvariant"] == L"normal")
+                currentNode ->mAttributes[L"mathvariant"] == L"normal")
             {
                 previousNode->mChildren.front()->mText += currentNode->mChildren.front()->mText;
                 merged = true;
@@ -169,31 +212,68 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
 
         // FIX: what to do about negative spaces?
         
-        // Now decide about spacing. We use <mspace>, unless we have available <mo> nodes on either side,
-        // in which case we use "lspace" and/or "rspace" attributes.
         if (!merged)
         {
+            // Now decide about spacing.
+            
             XmlNode*  currentNucleus = GetCore(currentNode.get());
             XmlNode* previousNucleus = GetCore(previousNode);
 
             bool isPreviousMo = (previousNucleus && previousNucleus->mText == L"mo");
             bool isCurrentMo  = ( currentNucleus &&  currentNucleus->mText == L"mo");
 
-            // We assume that MathML renderers like to put space between <mo> nodes and other nodes,
-            // but don't like to put space between non-<mo> nodes.
-            
-            // FIX: this is not quite right yet... e.g. MathML renderers probably don't put space around "(" etc.
-            // Need to look in the operator dictionary...        
-            
             bool doSpace = false;
 
-            if (options.mSpacingExplicitness == 0 || isUserRequested)
+            if (options.mSpacingControl == cSpacingControlStrict || isUserRequested)
                 doSpace = true;
-            else if (options.mSpacingExplicitness == 1)
-                doSpace = (isPreviousMo || isCurrentMo) ? (spaceWidth == 0) : (spaceWidth != 0);
+            else if (options.mSpacingControl == cSpacingControlModerate)
+            {
+                // The user has asked for "moderate" spacing mode, so we need to give the MathML renderer
+                // a helping hand with spacing decisions, without being *too* pushy.
+
+                if (!isPreviousMo && !isCurrentMo)
+                    doSpace = (spaceWidth != 0);
+
+                // Special-casing for the "&times;" operator (since Firefox doesn't know that it's a
+                // binary operator):
+                else if (
+                    (isPreviousMo && previousNucleus->mChildren.front()->mText == L"\U000000D7") ||
+                    (isCurrentMo  &&  currentNucleus->mChildren.front()->mText == L"\U000000D7"))
+                {
+                    doSpace = true;
+                }
+
+                // FIX: add special case: put doSpace = false between &prime;s, e.g. in "x''".
+
+                else if (spaceWidth == 0)
+                {
+                    // Special-casing for zero space after ",", e.g. in a situation like "65{,}536"
+                    if (isPreviousMo && previousNucleus->mChildren.front()->mText == L",")
+                        doSpace = true;
+                    else
+                    {
+                        static wstring fenceArray[] = {L"(", L")", L"[", L"]", L"{", L"}"};
+                        static wishful_hash_set<wstring> fenceTable(fenceArray, END_ARRAY(fenceArray));
+                        
+                        if (isPreviousMo && isCurrentMo)
+                        {
+                            if (!fenceTable.count(previousNucleus->mChildren.front()->mText) &&
+                                !fenceTable.count( currentNucleus->mChildren.front()->mText))
+                            {
+                                // This handles the situation where there are two operators, neither of which
+                                // are fences, which have no space between them: e.g. "a := b".
+                                doSpace = true;
+                            }
+                        }
+                    }
+                }
+            }
 
             if (doSpace)
             {
+                // We use <mspace>, unless we have an <mo> node on either side (or both sides),
+                // in which case we use "lspace" and/or "rspace" attributes.
+            
                 wstring widthAsString;
                 if (spaceWidth == 0)
                     widthAsString = L"0";
@@ -264,20 +344,53 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, Mat
         (mText.size() == 1 && mText[0] >= L'0' && mText[0] <= '9') ? L"mn" : L"mi"));
         // FIX: what about merging commas, decimal points into <mn> nodes? Might need to special-case it.
 
-    if (options.mFancyFontSubstitution && mText.size() == 1)
+    if (options.mMathmlVersion1Fonts && mText.size() == 1)
     {
         wchar_t replacement = 0;
         wchar_t baseUppercase = 0, baseLowercase = 0;
-        
+
         switch (mFont)
         {
-            case cMathmlFontBoldScript:     baseUppercase = L'\U0001D4D0'; break;
-            case cMathmlFontScript:         baseUppercase = L'\U0001D49C'; break;
-            case cMathmlFontFraktur:        baseUppercase = L'\U0001D504';
-                                            baseLowercase = L'\U0001D51E'; break;
-            case cMathmlFontBoldFraktur:    baseUppercase = L'\U0001D56C';
-                                            baseLowercase = L'\U0001D586'; break;
-            case cMathmlFontDoubleStruck:   baseUppercase = L'\U0001D538'; break;
+            case cMathmlFontBoldScript:
+                if (options.mAllowPlane1)
+                {
+                    baseUppercase = L'\U0001D4D0';
+                    break;
+                }
+                else
+                {
+                    node->mAttributes[L"mathvariant"] = L"bold";
+                    baseUppercase = L'\U0001D49C';
+                    break;
+                }
+                
+            case cMathmlFontScript:
+                baseUppercase = L'\U0001D49C';
+                break;
+
+            case cMathmlFontBoldFraktur:   
+                if (options.mAllowPlane1)
+                {
+                    baseUppercase = L'\U0001D56C';
+                    baseLowercase = L'\U0001D586'; 
+                    break;
+                }
+                else
+                {
+                    node->mAttributes[L"mathvariant"] = L"bold";
+                    baseUppercase = L'\U0001D504';
+                    baseLowercase = L'\U0001D51E';
+                    break;
+                }
+                
+            case cMathmlFontFraktur:
+                baseUppercase = L'\U0001D504';
+                baseLowercase = L'\U0001D51E';
+                break;
+
+            case cMathmlFontDoubleStruck:
+                baseUppercase = L'\U0001D538';
+                break;
         }
         
         if (baseUppercase && mText[0] >= 'A' && mText[0] <= 'Z')
@@ -319,12 +432,6 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, Mat
     }
 
     node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
-    
-    // We put in the font explicitly here. This makes it easier (in Row::BuildMathmlTree) to work out
-    // which adjacent nodes to merge. In most cases this "mathvariant" attribute will subsequently get
-    // removed. e.g. it might start as "<mi mathvariant="italic">x</mi>", but then the mathvariant can
-    // get removed because it is the MathML default.
-    // FIX: move this comment to Row::BuildMathmlTree.
     node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
 
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
@@ -332,7 +439,7 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, Mat
 
 auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
 {
-    static wchar_t stretchyArray[] =
+    static wchar_t stretchyByDefaultArray[] =
     {
         L'(',
         L')',
@@ -369,7 +476,14 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, 
         L'\U00002A04',      // biguplus
         L'\U000022C0'       // Wedge
     };
-    static wishful_hash_set<wchar_t> stretchyTable(stretchyArray, END_ARRAY(stretchyArray));
+    static wishful_hash_set<wchar_t> stretchyByDefaultTable(stretchyByDefaultArray, END_ARRAY(stretchyByDefaultArray));
+
+    static wchar_t accentByDefaultArray[] =
+    {
+        L'\U0000FE37',
+        L'\U0000FE38'
+    };
+    static wishful_hash_set<wchar_t> accentByDefaultTable(accentByDefaultArray, END_ARRAY(accentByDefaultArray));
     
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
     node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
@@ -383,7 +497,7 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, 
         if (!mSize.empty())
             node->mAttributes[L"minsize"] = node->mAttributes[L"maxsize"] = mSize;
     }
-    else if (mText.size() == 1 && stretchyTable.count(mText[0]))
+    else if (mText.size() == 1 && stretchyByDefaultTable.count(mText[0]))
         node->mAttributes[L"stretchy"] = L"false";
     
     if (mIsAccent)
@@ -391,6 +505,8 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, 
         node->mAttributes[L"accent"] = L"true";
         return node;
     }
+    else if (mText.size() == 1 && accentByDefaultTable.count(mText[0]))
+        node->mAttributes[L"accent"] = L"false";
     
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
@@ -447,8 +563,11 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, MathmlE
         // FIX: this code might let the user induce quadratic time, with something like this:
         // "\textstyle \mathop{\mathop{\mathop{\mathop{x}\limits^x}\limits^x}\limits^x}\limits^x" etc
         
+        // FIX: we could add a table to check whether the operator inside is likely to need movablelimits
+        // adjusted because of the operator dictionary.
+        
         XmlNode* core = GetCore(node->mChildren.front());
-        if (core->mText == L"mo" && !node->mChildren.back()->mAttributes.count(L"accent"))
+        if (core->mText == L"mo")
             core->mAttributes[L"movablelimits"] = L"false";
     }
        

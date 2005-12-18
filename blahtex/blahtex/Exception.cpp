@@ -1,6 +1,6 @@
 // File "Exception.cpp"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,8 @@ namespace blahtex {
 pair<Exception::Code, wstring> gCodesAsTextArray[] = {
     make_pair( Exception::cNonAsciiInMathMode,                     L"NonAsciiInMathMode" ),
     make_pair( Exception::cIllegalCharacter,                       L"IllegalCharacter" ),
-    make_pair( Exception::cIllegalBlahtexSuffix,                   L"IllegalBlahtexSuffix" ),
+    make_pair( Exception::cPngIncompatibleCharacter,               L"PngIncompatibleCharacter" ),
+    make_pair( Exception::cReservedCommand,                        L"ReservedCommand" ),
     make_pair( Exception::cTooManyTokens,                          L"TooManyTokens" ),
     make_pair( Exception::cIllegalFinalBackslash,                  L"IllegalFinalBackslash" ),
     make_pair( Exception::cUnrecognisedCommand,                    L"UnrecognisedCommand" ),
@@ -74,8 +75,11 @@ pair<Exception::Code, wstring> gEnglishMessagesArray[] = {
     make_pair(Exception::cIllegalCharacter,
         L"Illegal character in input"),
 
-    make_pair(Exception::cIllegalBlahtexSuffix,
-        L"The command suffix \"Blahtex\" is reserved for internal use"),
+    make_pair(Exception::cPngIncompatibleCharacter,
+        L"Blahtex is unable to generate a correct PNG for the character $0"),
+
+    make_pair(Exception::cReservedCommand,
+        L"The command \"$0\" is reserved for internal use by blahtex"),
 
     make_pair(Exception::cTooManyTokens,
         L"The input is too long"),
@@ -119,10 +123,10 @@ pair<Exception::Code, wstring> gEnglishMessagesArray[] = {
         L"The command \"$0\" has already been defined; you cannot redefine it"),
 
     make_pair(Exception::cMissingOrIllegalParameterCount,
-        L"Missing or illegal parameter count after \"[\" (must be a single digit between 1 and 9 inclusive)"),
+        L"Missing or illegal parameter count in definition of \"$0\" (must be a single digit between 1 and 9 inclusive)"),
 
     make_pair(Exception::cMissingOrIllegalParameterIndex,
-        L"Missing or illegal parameter index after \"#\""),
+        L"Missing or illegal parameter index in definition of \"$0\""),
 
     make_pair(Exception::cUnmatchedOpenBracket,
         L"Encountered open bracket \"[\" without matching close bracket \"]\""),

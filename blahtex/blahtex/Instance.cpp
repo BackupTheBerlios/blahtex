@@ -1,6 +1,6 @@
 // File "Instance.cpp"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -20,6 +20,8 @@
 #include "blahtex.h"
 #include <sstream>
 #include <stdexcept>
+#include <algorithm>
+#include <iterator>
 
 using namespace std;
 
@@ -54,6 +56,10 @@ wstring gAmsmathCommandsArray[] =
     L"\\dotsb",
     L"\\operatorname",
     L"\\operatornamewithlimits",
+    L"\\lvert",
+    L"\\rvert",
+    L"\\lVert",
+    L"\\rVert",
 
     // The following commands are all defined in regular latex, but amsmath redefines them to have
     // slightly different properties:
@@ -125,7 +131,7 @@ set<wstring> gAmsmathCommands (gAmsmathCommandsArray,  END_ARRAY(gAmsmathCommand
 set<wstring> gAmsfontsCommands(gAmsfontsCommandsArray, END_ARRAY(gAmsfontsCommandsArray));
 set<wstring> gAmssymbCommands (gAmssymbCommandsArray,  END_ARRAY(gAmssymbCommandsArray));
 
-wstring Instance::gStandardMacros =
+wstring Instance::gTexvcCompatibilityMacros =
     // First we have some macros which are not part of tex/latex/amslatex (i.e. amsmath, amsfonts, amssymb
     // packages), but which texvc recognises, so for backward compatibility we define them here too.
     // Most of these are apparently intended to cater for those more familiar with HTML entities.
@@ -202,7 +208,9 @@ wstring Instance::gStandardMacros =
     L"\\newcommand{\\and}{\\wedge}"
     L"\\newcommand{\\or}{\\vee}"
     L"\\newcommand{\\part}{\\partial}"
+;
 
+wstring Instance::gStandardMacros =
     // The next group are standard TeX synonyms.
     L"\\newcommand{\\|}{\\Vert}"
     L"\\newcommand{\\implies}{\\;\\Longrightarrow\\;}"
@@ -224,35 +232,42 @@ wstring Instance::gStandardMacros =
     // surrounded by "safety braces". For example, "x^\frac yz" becomes "x^{y \over z}". Therefore we
     // surround them by safety braces too.
     // The blahtex parser correspondingly recognises the tokens with the "Blahtex" suffix.
-    L"\\newcommand{\\mbox}[1]{{\\hbox{#1}}}"
-    L"\\newcommand{\\text}[1]{{\\textBlahtex{#1}}}"
-    L"\\newcommand{\\textit}[1]{{\\textitBlahtex{#1}}}"
-    L"\\newcommand{\\textrm}[1]{{\\textrmBlahtex{#1}}}"
-    L"\\newcommand{\\textbf}[1]{{\\textbfBlahtex{#1}}}"
-    L"\\newcommand{\\textsf}[1]{{\\textsfBlahtex{#1}}}"
-    L"\\newcommand{\\texttt}[1]{{\\textttBlahtex{#1}}}"
-    L"\\newcommand{\\emph}[1]{{\\emphBlahtex{#1}}}"
-    L"\\newcommand{\\frac}[2]{{\\fracBlahtex{#1}{#2}}}"
-    L"\\newcommand{\\mathrm}[1]{{\\mathrmBlahtex{#1}}}"
-    L"\\newcommand{\\mathbf}[1]{{\\mathbfBlahtex{#1}}}"
-    L"\\newcommand{\\mathbb}[1]{{\\mathbbBlahtex{#1}}}"
-    L"\\newcommand{\\mathit}[1]{{\\mathitBlahtex{#1}}}"
-    L"\\newcommand{\\mathcal}[1]{{\\mathcalBlahtex{#1}}}"
-    L"\\newcommand{\\mathfrak}[1]{{\\mathfrakBlahtex{#1}}}"
-    L"\\newcommand{\\mathtt}[1]{{\\mathttBlahtex{#1}}}"
-    L"\\newcommand{\\mathsf}[1]{{\\mathsfBlahtex{#1}}}"
-    L"\\newcommand{\\big}[1]{{\\bigBlahtex#1}}"
-    L"\\newcommand{\\bigg}[1]{{\\biggBlahtex#1}}"
-    L"\\newcommand{\\Big}[1]{{\\BigBlahtex#1}}"
-    L"\\newcommand{\\Bigg}[1]{{\\BiggBlahtex#1}}"
+    // FIX: re-doc this
+    L"\\newcommand{\\mbox}             [1]{{\\hbox{#1}}}"
+    L"\\newcommand{\\textReserved}     [1]{{\\text{#1}}}"
+    L"\\newcommand{\\textitReserved}   [1]{{\\textit{#1}}}"
+    L"\\newcommand{\\textrmReserved}   [1]{{\\textrm{#1}}}"
+    L"\\newcommand{\\textbfReserved}   [1]{{\\textbf{#1}}}"
+    L"\\newcommand{\\textsfReserved}   [1]{{\\textsf{#1}}}"
+    L"\\newcommand{\\textttReserved}   [1]{{\\texttt{#1}}}"
+    L"\\newcommand{\\emphReserved}     [1]{{\\emph{#1}}}"
+    L"\\newcommand{\\fracReserved}     [2]{{\\frac{#1}{#2}}}"
+    L"\\newcommand{\\mathrmReserved}   [1]{{\\mathrm{#1}}}"
+    L"\\newcommand{\\mathbfReserved}   [1]{{\\mathbf{#1}}}"
+    L"\\newcommand{\\mathbbReserved}   [1]{{\\mathbb{#1}}}"
+    L"\\newcommand{\\mathitReserved}   [1]{{\\mathit{#1}}}"
+    L"\\newcommand{\\mathcalReserved}  [1]{{\\mathcal{#1}}}"
+    L"\\newcommand{\\mathfrakReserved} [1]{{\\mathfrak{#1}}}"
+    L"\\newcommand{\\mathttReserved}   [1]{{\\mathtt{#1}}}"
+    L"\\newcommand{\\mathsfReserved}   [1]{{\\mathsf{#1}}}"
+    L"\\newcommand{\\bigReserved}      [1]{{\\big#1}}"
+    L"\\newcommand{\\biggReserved}     [1]{{\\bigg#1}}"
+    L"\\newcommand{\\BigReserved}      [1]{{\\Big#1}}"
+    L"\\newcommand{\\BiggReserved}     [1]{{\\Bigg#1}}"
 ;
 
 vector<wstring> Instance::gStandardMacrosTokenised;
+vector<wstring> Instance::gTexvcCompatibilityMacrosTokenised;
 
 Instance::Instance()
 {
+    if (gTexvcCompatibilityMacrosTokenised.empty())
+        Tokenise(gTexvcCompatibilityMacros, gTexvcCompatibilityMacrosTokenised);
+
     if (gStandardMacrosTokenised.empty())
         Tokenise(gStandardMacros, gStandardMacrosTokenised);
+
+    mStrictSpacingRequested = false;
 }
 
 bool IsAlphabetic(wchar_t c) 
@@ -330,35 +345,94 @@ void Instance::Tokenise(const wstring& input, vector<wstring>& output)
     }
 }
 
-void Instance::ProcessInput(const wstring& input)
+void Instance::ProcessInput(const wstring& input, bool texvcCompatibility)
 {
-    vector<wstring> tokens = gStandardMacrosTokenised;
-    Tokenise(input, tokens);
-    
-    // Check that the user hasn't supplied any input directly containing the "Blahtex" suffix
-    for (vector<wstring>::const_iterator ptr = tokens.begin() + gStandardMacrosTokenised.size();
-        ptr != tokens.end(); ptr++)
+    static wstring reservedCommandArray[] =
     {
-        if (ptr->size() >= 7 && ptr->substr(ptr->size() - 7, 7) == L"Blahtex")
-            throw Exception(Exception::cIllegalBlahtexSuffix);
+        L"\\sqrt",
+        L"\\text",
+        L"\\textit",
+        L"\\textrm",
+        L"\\textbf",
+        L"\\textsf",
+        L"\\texttt",
+        L"\\emph",
+        L"\\frac",
+        L"\\mathrm",
+        L"\\mathbf",
+        L"\\mathbb",
+        L"\\mathit",
+        L"\\mathcal",
+        L"\\mathfrak",
+        L"\\mathtt",
+        L"\\mathsf",
+        L"\\big",
+        L"\\bigg",
+        L"\\Big",
+        L"\\Bigg"
+    };
+    static wishful_hash_set<wstring> reservedCommandTable(reservedCommandArray, END_ARRAY(reservedCommandArray));
+
+    vector<wstring> inputTokens;
+    Tokenise(input, inputTokens);
+
+    // Check that the user hasn't supplied any input directly containing the "Blahtex" suffix,
+    // and add Blahtex suffix to certain selected commands, and search for magic commands
+    // (currently the only magic command is "\strictspacing")
+    for (vector<wstring>::iterator ptr = inputTokens.begin(); ptr != inputTokens.end(); ptr++)
+    {
+        if (reservedCommandTable.count(*ptr))
+            *ptr += L"Reserved";
+        else if (ptr->size() >= 8 && ptr->substr(ptr->size() - 8, 8) == L"Reserved")
+            throw Exception(Exception::cReservedCommand, *ptr);
+        else if (*ptr == L"\\strictspacing")
+        {
+            mStrictSpacingRequested = true;
+            *ptr = L" ";
+        }
     }
+    
+    vector<wstring> tokens;
+    
+    if (texvcCompatibility)
+        tokens = gTexvcCompatibilityMacrosTokenised;
+
+    copy(gStandardMacrosTokenised.begin(), gStandardMacrosTokenised.end(), back_inserter(tokens));
+    copy(inputTokens.begin(), inputTokens.end(), back_inserter(tokens));
 
     Parser P;
     mParseTree = P.DoParse(tokens);
     mLayoutTree = mParseTree->BuildLayoutTree(LatexMathFont(), cStyleText);
 }
 
-// This function recursively traverses a MathML tree, and removes "extraneous" font attributes.
-// The following are examples of mathvariant tags that would get removed:
-//    <mi mathvariant="italic"> x </mi>
-//    <mi mathvariant="normal"> sin </mi>
-//    <mn mathvariant="normal> 1 </mn>
-// In each case, the mathvariant value is the MathML default so doesn't need to be specified.
-// It wouldn't hurt for it to be there, except that we don't want output that is too bloated.
-// The reason we do this so late in the processing is that it makes BuildMathmlTree() (earlier in the
-// codepath) much simpler.
-void RemoveExtraneousFontAttributes(XmlNode* node)
+struct Version1FontInfo
 {
+    wstring mFamily;
+    bool mIsItalic;
+    bool mIsBold;
+    
+    Version1FontInfo(const wstring& family, bool isItalic, bool isBold) :
+        mFamily(family), mIsItalic(isItalic), mIsBold(isBold) { }
+};
+
+// FIX: doc this
+// remove extraneous ones and replace by version 1 fonts if required
+void CleanupFontAttributes(XmlNode* node, bool mathmlVersion1Fonts)
+{
+    static pair<wstring, Version1FontInfo> version1Array[] =
+    {
+        make_pair(L"normal",                    Version1FontInfo(L"",           false, false)),
+        make_pair(L"bold",                      Version1FontInfo(L"",           false, true )),
+        make_pair(L"italic",                    Version1FontInfo(L"",           true,  false)),
+        make_pair(L"bold-italic",               Version1FontInfo(L"",           true,  true )),
+        make_pair(L"sans-serif",                Version1FontInfo(L"sans-serif", false, false)),
+        make_pair(L"bold-sans-serif",           Version1FontInfo(L"sans-serif", false, true )),
+        make_pair(L"sans-serif-italic",         Version1FontInfo(L"sans-serif", true,  false)),
+        make_pair(L"sans-serif-bold-italic",    Version1FontInfo(L"sans-serif", true,  true )),
+        make_pair(L"monospace",                 Version1FontInfo(L"monospace",  false, false))
+    };
+    static wishful_hash_map<wstring, Version1FontInfo> version1Table(version1Array, END_ARRAY(version1Array));
+    
     if (node->mType == XmlNode::cTag)
     {
         map<wstring, wstring>::iterator search = node->mAttributes.find(L"mathvariant");
@@ -366,49 +440,82 @@ void RemoveExtraneousFontAttributes(XmlNode* node)
         {
             if (search->second == L"")
                 node->mAttributes.erase(search);
-            else if (node->mText == L"mi")
+            else
             {
-                int count = node->mChildren.front()->mText.size();
-                if ((count == 1 && search->second == L"italic") || (count > 1 && search->second == L"normal"))
+                MathmlFont defaultMathmlFont;
+                bool defaultItalic;
+                
+                if (node->mText == L"mi" && node->mChildren.front()->mText.size() == 1)
+                {
+                    defaultMathmlFont = cMathmlFontItalic;
+                    defaultItalic = true;
+                }
+                else
+                {
+                    defaultMathmlFont = cMathmlFontNormal;
+                    defaultItalic = false;
+                }
+                
+                if (mathmlVersion1Fonts)
+                {
+                    wishful_hash_map<wstring, Version1FontInfo>::const_iterator lookup = version1Table.find(search->second);
+                    if (lookup == version1Table.end())
+                        throw logic_error("Unexpected mathvariant value in CleanupFontAttributes");
+                
                     node->mAttributes.erase(search);
-            }
-            else if (node->mText == L"mn" || node->mText == L"mtext")
-            {
-                if (search->second == L"normal")
-                    node->mAttributes.erase(search);
+                    if (!lookup->second.mFamily.empty())
+                        node->mAttributes[L"fontfamily"] = lookup->second.mFamily;
+                    if (lookup->second.mIsItalic != defaultItalic)
+                        node->mAttributes[L"fontstyle"] = lookup->second.mIsItalic ? L"italic" : L"normal";
+                    if (lookup->second.mIsBold)
+                        node->mAttributes[L"fontweight"] = L"bold";
+                }
+                else
+                {
+                    if (gMathmlFontStrings[defaultMathmlFont] == search->second)
+                        node->mAttributes.erase(search);
+                }
             }
         }
-    
+        
         for (list<XmlNode*>::iterator child = node->mChildren.begin(); child != node->mChildren.end(); child++)
-            RemoveExtraneousFontAttributes(*child);
+            CleanupFontAttributes(*child, mathmlVersion1Fonts);
     }
 }
 
 auto_ptr<XmlNode> Instance::GenerateMathml(const MathmlOptions& options)
 {
-    // FIX: Check the layout tree has actually been generated
-    auto_ptr<XmlNode> root = mLayoutTree->BuildMathmlTree(options, cStyleText);
-    RemoveExtraneousFontAttributes(root.get());
+    if (!mLayoutTree.get())
+        throw logic_error("Layout tree not yet built in Instance::GenerateMathml");
+    
+    MathmlOptions optionsCopy = options;
+    if (mStrictSpacingRequested)
+        optionsCopy.mSpacingControl = cSpacingControlStrict;
+    
+    auto_ptr<XmlNode> root = mLayoutTree->BuildMathmlTree(optionsCopy, cStyleText);
+    CleanupFontAttributes(root.get(), options.mMathmlVersion1Fonts);
+
     return root;
 }
 
 auto_ptr<XmlNode> Instance::GenerateHtml()
 {
-    // FIX: Check the layout tree has actually been generated
+    if (!mLayoutTree.get())
+        throw logic_error("Layout tree not yet built in Instance::GenerateHtml");
+        
     return auto_ptr<XmlNode>(new XmlNode(XmlNode::cTag, L"html"));
 }
 
-wstring Instance::GeneratePurifiedTex()
+wstring Instance::GeneratePurifiedTex(const PurifiedTexOptions& options)
 {
-    // Check the parse tree has actually been generated
     if (!mParseTree.get())
-        throw logic_error("Parse tree not built yet in call to Instance::GeneratePurifiedTex");
+        throw logic_error("Parse tree not yet built in Instance::GeneratePurifiedTex");
 
     wostringstream os;
-    mParseTree->GetPurifiedTex(os);
+    mParseTree->GetPurifiedTex(os, options);
     wstring latex = os.str();
     
-    // Work out which commands appeared in the purified latex output, so we can work out which packages
+    // Work out which commands appeared in the purified TeX output, so we can work out which packages
     // need to be included.
     
     vector<wstring> tokens;
@@ -429,16 +536,18 @@ wstring Instance::GeneratePurifiedTex()
         output += L"\\usepackage{amsfonts}\n";
     if (!disjoint(commands, gAmssymbCommands))
         output += L"\\usepackage{amssymb}\n";
+    if (commands.count(L"\\unichar"))
+        output += L"\\usepackage{ucs}\n";
         
     output +=
         L"\\pagestyle{empty}\n"
         L"\\begin{document}\n"        
-        L"$$\n";
+        L"$\n";
 
     output += latex;
     
     output += 
-        L"\n$$\n"
+        L"\n$\n"
         L"\\end{document}\n";
 
     return output;

@@ -1,6 +1,6 @@
 // File "Parser.cpp"
 // 
-// blahtex (version 0.3.3): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -31,8 +31,7 @@ using namespace std;
 
 namespace blahtex {
 
-// Commands ending with Blahtex are used internally, and are not allowed in the input supplied by the user.
-// See gStandardMacros for more information on this.
+// FIX: the tokeniser needs a token limit!!!!
 
 pair<wstring, Parser::TokenCode> gMathTokenArray[] =
 {    
@@ -57,22 +56,22 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"'",                        Parser::cPrime),
 
     make_pair(L"\\hbox",                   Parser::cEnterTextMode),
-    make_pair(L"\\emphBlahtex",            Parser::cEnterTextMode),
-    make_pair(L"\\textBlahtex",            Parser::cEnterTextMode),
-    make_pair(L"\\textitBlahtex",          Parser::cEnterTextMode),
-    make_pair(L"\\textbfBlahtex",          Parser::cEnterTextMode),
-    make_pair(L"\\textrmBlahtex",          Parser::cEnterTextMode),
-    make_pair(L"\\textttBlahtex",          Parser::cEnterTextMode),
-    make_pair(L"\\textsfBlahtex",          Parser::cEnterTextMode),
+    make_pair(L"\\emph",                   Parser::cEnterTextMode),
+    make_pair(L"\\text",                   Parser::cEnterTextMode),
+    make_pair(L"\\textit",                 Parser::cEnterTextMode),
+    make_pair(L"\\textbf",                 Parser::cEnterTextMode),
+    make_pair(L"\\textrm",                 Parser::cEnterTextMode),
+    make_pair(L"\\texttt",                 Parser::cEnterTextMode),
+    make_pair(L"\\textsf",                 Parser::cEnterTextMode),
 
-    make_pair(L"\\sqrtBlahtex",            Parser::cCommand1Arg),
+    make_pair(L"\\sqrt",                   Parser::cCommand1Arg),
     make_pair(L"\\pmod",                   Parser::cCommand1Arg),
     make_pair(L"\\operatorname",           Parser::cCommand1Arg),
     make_pair(L"\\operatornamewithlimits", Parser::cCommand1Arg),
 
-    make_pair(L"\\rootBlahtex",            Parser::cCommand2Args),
+    make_pair(L"\\rootReserved",           Parser::cCommand2Args),
     make_pair(L"\\binom",                  Parser::cCommand2Args),
-    make_pair(L"\\fracBlahtex",            Parser::cCommand2Args),
+    make_pair(L"\\frac",                   Parser::cCommand2Args),
     make_pair(L"\\cfrac",                  Parser::cCommand2Args),
 
     make_pair(L"\\over",                   Parser::cCommandInfix),
@@ -82,16 +81,16 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\left",                   Parser::cLeft),
     make_pair(L"\\right",                  Parser::cRight),
 
-    make_pair(L"\\bigBlahtex",             Parser::cBig),
+    make_pair(L"\\big",                    Parser::cBig),
     make_pair(L"\\bigl",                   Parser::cBig),
     make_pair(L"\\bigr",                   Parser::cBig),
-    make_pair(L"\\BigBlahtex",             Parser::cBig),
+    make_pair(L"\\Big",                    Parser::cBig),
     make_pair(L"\\Bigl",                   Parser::cBig),
     make_pair(L"\\Bigr",                   Parser::cBig),
-    make_pair(L"\\biggBlahtex",            Parser::cBig),
+    make_pair(L"\\bigg",                   Parser::cBig),
     make_pair(L"\\biggl",                  Parser::cBig),
     make_pair(L"\\biggr",                  Parser::cBig),
-    make_pair(L"\\BiggBlahtex",            Parser::cBig),
+    make_pair(L"\\Bigg",                   Parser::cBig),
     make_pair(L"\\Biggl",                  Parser::cBig),
     make_pair(L"\\Biggr",                  Parser::cBig),
 
@@ -208,14 +207,14 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\tilde",                  Parser::cCommand1Arg),
     make_pair(L"\\widetilde",              Parser::cCommand1Arg),
     
-    make_pair(L"\\mathbfBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\mathbbBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\mathrmBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\mathitBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\mathcalBlahtex",         Parser::cCommand1Arg),
-    make_pair(L"\\mathfrakBlahtex",        Parser::cCommand1Arg),
-    make_pair(L"\\mathsfBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\mathttBlahtex",          Parser::cCommand1Arg),
+    make_pair(L"\\mathbf",                 Parser::cCommand1Arg),
+    make_pair(L"\\mathbb",                 Parser::cCommand1Arg),
+    make_pair(L"\\mathrm",                 Parser::cCommand1Arg),
+    make_pair(L"\\mathit",                 Parser::cCommand1Arg),
+    make_pair(L"\\mathcal",                Parser::cCommand1Arg),
+    make_pair(L"\\mathfrak",               Parser::cCommand1Arg),
+    make_pair(L"\\mathsf",                 Parser::cCommand1Arg),
+    make_pair(L"\\mathtt",                 Parser::cCommand1Arg),
     make_pair(L"\\boldsymbol",             Parser::cCommand1Arg),
 
     make_pair(L"\\rm",                     Parser::cStyleChange),
@@ -544,6 +543,8 @@ pair<wstring, Parser::TokenCode> gTextTokenArray[] =
     make_pair(L"\\}",                      Parser::cSymbol),
     make_pair(L"\\textbackslash",          Parser::cSymbol),
     make_pair(L"\\textvisiblespace",       Parser::cSymbol),
+    make_pair(L"\\textasciicircum",        Parser::cSymbol),
+    make_pair(L"\\textasciitilde",         Parser::cSymbol),
     make_pair(L"\\O",                      Parser::cSymbol),
     make_pair(L"\\S",                      Parser::cSymbol),
 
@@ -578,13 +579,13 @@ pair<wstring, Parser::TokenCode> gTextTokenArray[] =
     make_pair(L"\\qquad",                  Parser::cSymbolUnsafe),
 
     make_pair(L"\\hbox",                   Parser::cCommand1Arg),
-    make_pair(L"\\emphBlahtex",            Parser::cCommand1Arg),
-    make_pair(L"\\textBlahtex",            Parser::cCommand1Arg),
-    make_pair(L"\\textitBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\textbfBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\textrmBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\textttBlahtex",          Parser::cCommand1Arg),
-    make_pair(L"\\textsfBlahtex",          Parser::cCommand1Arg),
+    make_pair(L"\\emph",                   Parser::cCommand1Arg),
+    make_pair(L"\\text",                   Parser::cCommand1Arg),
+    make_pair(L"\\textit",                 Parser::cCommand1Arg),
+    make_pair(L"\\textbf",                 Parser::cCommand1Arg),
+    make_pair(L"\\textrm",                 Parser::cCommand1Arg),
+    make_pair(L"\\texttt",                 Parser::cCommand1Arg),
+    make_pair(L"\\textsf",                 Parser::cCommand1Arg),
 
     make_pair(L"\\rm",                     Parser::cStyleChange),
     make_pair(L"\\it",                     Parser::cStyleChange),
@@ -607,7 +608,7 @@ Parser::TokenCode Parser::GetMathTokenCode(const wstring& token) const
         if (token == L"%" || token == L"#" || token == L"$")
             throw Exception(Exception::cIllegalCommandInMathModeWithHint, token, L"\\" + token);
         else if (token == L"`" || token == L"\"")
-            throw Exception(Exception::cIllegalCommandInMathMode, L"`");
+            throw Exception(Exception::cIllegalCommandInMathMode, token);
 
         throw logic_error("Unexpected illegal character in Parser::GetMathTokenCode");
     }
@@ -615,7 +616,7 @@ Parser::TokenCode Parser::GetMathTokenCode(const wstring& token) const
     if (token[0] == L'\\')
     {
         if (gTextTokenTable.count(token))
-            throw Exception(Exception::cIllegalCommandInMathMode, StripBlahtexSuffix(token));
+            throw Exception(Exception::cIllegalCommandInMathMode, token);
         else
             throw Exception(Exception::cUnrecognisedCommand, token);
     }
@@ -644,14 +645,16 @@ Parser::TokenCode Parser::GetTextTokenCode(const wstring& token) const
             throw Exception(Exception::cIllegalCommandInTextModeWithHint, token, L"\\" + token);
         else if (token == L"\\\\")
             throw Exception(Exception::cIllegalCommandInTextModeWithHint, L"\\\\", L"\\textbackslash");
+        else if (token == L"^")
+            throw Exception(Exception::cIllegalCommandInTextModeWithHint, L"^", L"\\textasciicircum");
         else
-            throw Exception(Exception::cIllegalCommandInTextMode, StripBlahtexSuffix(token));
+            throw Exception(Exception::cIllegalCommandInTextMode, token);
     }
 
     if (token[0] == L'\\')
     {
         if (gMathTokenTable.count(token))
-            throw Exception(Exception::cIllegalCommandInTextMode, StripBlahtexSuffix(token));
+            throw Exception(Exception::cIllegalCommandInTextMode, token);
         else
             throw Exception(Exception::cUnrecognisedCommand, token);
     }
@@ -702,12 +705,11 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathField()
             return field;
         }
 
-        // FIX: make sure this code gets duplicated for ParseTextField:
         case cEndOfInput:
             throw Exception(Exception::cMissingOpenBraceAtEnd);
     }
 
-    throw Exception(Exception::cMissingOpenBraceBefore, StripBlahtexSuffix(command));
+    throw Exception(Exception::cMissingOpenBraceBefore, command);
 }
 
 auto_ptr<ParseTree::MathTable> Parser::ParseMathTable()
@@ -896,7 +898,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 
                 mTokenSource->SkipWhitespace();
                 if (mTokenSource->Peek() != L"{")
-                    throw Exception(Exception::cMissingOpenBraceAfter, StripBlahtexSuffix(command));
+                    throw Exception(Exception::cMissingOpenBraceAfter, command);
 
                 output->mChildren.push_back(new ParseTree::EnterTextMode(command, ParseTextField()));                        
                 break;
@@ -935,9 +937,9 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 mTokenSource->SkipWhitespace();
                 wstring delimiter = mTokenSource->Get();
                 if (delimiter.empty())
-                    throw Exception(Exception::cMissingDelimiter, StripBlahtexSuffix(command));
+                    throw Exception(Exception::cMissingDelimiter, command);
                 else if (!gDelimiterTable.count(delimiter))
-                    throw Exception(Exception::cIllegalDelimiter, StripBlahtexSuffix(command));
+                    throw Exception(Exception::cIllegalDelimiter, command);
                 
                 output->mChildren.push_back(new ParseTree::MathBig(command, delimiter));
                 break;
@@ -1063,10 +1065,12 @@ auto_ptr<ParseTree::TextNode> Parser::ParseTextField()
             mTokenSource->Advance();
             return field;
         }
-        
-        default:
-            throw Exception(Exception::cMissingOpenBraceBefore, StripBlahtexSuffix(command));
+
+        case cEndOfInput:
+            throw Exception(Exception::cMissingOpenBraceAtEnd);
     }
+
+    throw Exception(Exception::cMissingOpenBraceBefore, command);
 }
 
 auto_ptr<ParseTree::TextNode> Parser::ParseTextList()
@@ -1138,14 +1142,6 @@ auto_ptr<ParseTree::TextNode> Parser::ParseTextList()
 
     // Hmmm... gcc seems to think the control flow can reach here; I beg to differ.
     throw logic_error("Unexpected control flow in Parser::ParseTextField");
-}
-
-wstring StripBlahtexSuffix(const wstring& input)
-{
-    if (input.size() >= 7 && input.substr(input.size() - 7, 7) == L"Blahtex")
-        return input.substr(0, input.size() - 7);
-    else
-        return input;
 }
 
 }
