@@ -51,7 +51,7 @@ class MathRenderer {
                   }
                   $descriptorspec = array(0 => array("pipe", "r"),
                                           1 => array("pipe", "w"));
-		  $options = '--mathml --texvc-compatibility --mathml-version-1-fonts --mathml-encoding raw --use-ucs-package';
+		  $options = '--mathml --texvc-compatibility --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package';
                   $process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
                   if (!$process) {
                     return $this->_error( 'math_unknown_error', '#1' );
