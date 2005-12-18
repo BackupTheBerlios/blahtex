@@ -104,12 +104,7 @@ if(isset($wgExtraNamespaces)) {
 	MW_MATH_HTML => 'mw_math_html',
 	MW_MATH_SOURCE => 'mw_math_source',
 	MW_MATH_MODERN => 'mw_math_modern',
-	MW_MATH_MATHML_OLD => 'mw_math_mathml_old',
-	MW_MATH_MATHML_TH => 'mw_math_mathml_th',
-	MW_MATH_MATHML_TX => 'mw_math_mathml_tx',
-	MW_MATH_MATHML_AX => 'mw_math_mathml_ax',
-	MW_MATH_MATHML_AXX => 'mw_math_mathml_axx',
-	MW_MATH_MATHML_MIX => 'mw_math_mathml_mix'
+	MW_MATH_MATHML => 'mw_math_mathml'
 );
 
 # Whether to use user or default setting in Language::date()
@@ -1695,12 +1690,7 @@ article [[Train]].
 'mw_math_html' => 'HTML if possible or else PNG',
 'mw_math_source' => 'Leave it as TeX (for text browsers)',
 'mw_math_modern' => 'Recommended for modern browsers',
-'mw_math_mathml_old' => 'MathML via texvc',
-'mw_math_mathml_th' => 'MathML with media type text/html',
-'mw_math_mathml_tx' => 'MathML with media type text/xml',
-'mw_math_mathml_ax' => 'MathML with media type application/xml',
-'mw_math_mathml_axx' => 'MathML with media type application/xhtml+xml',
-'mw_math_mathml_mix' => 'MathML with application/xhtml+xml and text/html',
+'mw_math_mathml' => 'MathML (experimental)',
 
 # Patrolling
 'markaspatrolleddiff'   => "Mark as patrolled",

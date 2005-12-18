@@ -452,18 +452,11 @@ class OutputPage {
 		# Disable temporary placeholders, so that the skin produces HTML
 		$sk->postParseLinkColour( false );
 
-		switch ($wgUser->getOption('math')) {
-		case MW_MATH_PNG:
-		case MW_MATH_SIMPLE:
-		case MW_MATH_HTML:
-		case MW_MATH_SOURCE:
-		case MW_MATH_MODERN: 
-		case MW_MATH_MATHML_OLD:
-		case MW_MATH_MATHML_TH: $mimeType = 'text/html'; break;
-		case MW_MATH_MATHML_TX: $mimeType = 'text/xml'; break;
-		case MW_MATH_MATHML_AX: $mimeType = 'application/xml'; break;
-		case MW_MATH_MATHML_AXX: 
-		case MW_MATH_MATHML_MIX: $mimeType = 'application/xhtml+xml'; break;
+		/* Send page as XHTML if the user has selected MathML and the browser accepts XHTML */
+		if ($wgUser->getOption('math') == MW_MATH_MATHML && stristr($_SERVER['HTTP_ACCEPT'], 'application/xhtml+xml')) {
+		  $mimeType = 'application/xhtml+xml'; 
+		} else {
+		  $mimeType = 'text/html';
 		}
 
 		header( "Content-type: $mimeType; charset={$wgOutputEncoding}" );

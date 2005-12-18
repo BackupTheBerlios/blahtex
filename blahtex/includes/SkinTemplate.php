@@ -221,48 +221,17 @@ class SkinTemplate extends Skin {
 		if ($wgUseTrackbacks && $out->isArticleRelated())
 			$tpl->set( 'trackbackhtml', $wgTitle->trackbackRDF());
 
-		switch ($wgUser->getOption('math')) {
-		case MW_MATH_PNG:
-		case MW_MATH_SIMPLE:
-		case MW_MATH_HTML:
-		case MW_MATH_SOURCE:
-		case MW_MATH_MODERN:
-		case MW_MATH_MATHML_OLD:
-		  $tpl->set( 'mimetype', 'text/html' );
-		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.0 Transitional//EN' );
-		  $tpl->set( 'dtd', 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd' );
-		  $tpl->set( 'xmlheaders', '' );
-		  break;
-		case MW_MATH_MATHML_TH:
-		  $tpl->set( 'mimetype', 'text/html' );
-		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
-		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
-		  $tpl->set( 'xmlheaders', '' );
-		  break;
-		case MW_MATH_MATHML_TX:
-		  $tpl->set( 'mimetype', 'text/xml' );
-		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
-		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
-		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n" );
-		  break;
-		case MW_MATH_MATHML_AX:
-		  $tpl->set( 'mimetype', 'application/xml' );
-		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
-		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
-		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n" );
-		  break;
-		case MW_MATH_MATHML_AXX:
+		/* Send page as XHTML if the user has selected MathML and the browser accepts XHTML */
+		if ($wgUser->getOption('math') == MW_MATH_MATHML && stristr($_SERVER['HTTP_ACCEPT'], 'application/xhtml+xml')) {
 		  $tpl->set( 'mimetype', 'application/xhtml+xml' );
 		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
 		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
 		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n" );
-		  break;
-		case MW_MATH_MATHML_MIX:
+		} else {
 		  $tpl->set( 'mimetype', 'text/html' );
-		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
-		  $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
-		  $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n" );
-		  break;
+		  $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.0 Transitional//EN' );
+		  $tpl->set( 'dtd', 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd' );
+		  $tpl->set( 'xmlheaders', '' );
 		}
 
 		$tpl->setRef( 'jsmimetype', $wgJsMimeType );
