@@ -1,6 +1,6 @@
 // File "UnicodeConverter.h"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -27,22 +27,28 @@
 // - 'wstring' (in internal wchar_t format, which may be big-endian or little-endian depending on platform).
 // 
 // Implemented in 'UnicodeConverter.cpp'.
-class UnicodeConverter {
+class UnicodeConverter
+{
     public:
-        UnicodeConverter();
+        UnicodeConverter() :
+            mIsOpen(false) { }
+        
         ~UnicodeConverter();
 
-        // Open() must be called before using this object. A std::runtime_error object will be thrown if
-        //    (1) we are running on a platform with less than 4 bytes per wchar_t, or
-        //    (2) an appropriate 'iconv_t' converter object can't be created
+        // Open() must be called before using this object.
+        // It will throw a std::runtime_error object if
+        //    (1) we are running on a platform with less than 4 bytes per wchar_t
+        // or (2) an appropriate 'iconv_t' converter object can't be created
         void Open();
 
         std::wstring ConvertIn(const std::string& input);
         std::string ConvertOut(const std::wstring& input);
         
-        // The above 'ConvertIn' and 'ConvertOut' functions will throw this exception object if
-        // something goes wrong during conversion (e.g. invalid UTF-8 input).
-        class Exception {
+        // The above 'ConvertIn' and 'ConvertOut' functions will throw this exception object
+        // if their input is invalid (e.g. invalid UTF-8).
+        // More serious problems report a std::logic_error.
+        class Exception
+        {
         };
     
     private:
@@ -51,14 +57,6 @@ class UnicodeConverter {
         // mOutHandle is the iconv object handling wchar_t => UTF-8, mInHandle does the other way.
         iconv_t mOutHandle;
         iconv_t mInHandle;
-
-        // We keep per-instance data buffers to avoid repetitious allocate/free calls.
-        unsigned mBufSize;
-        char*    mNarrowBuf;
-        wchar_t* mWideBuf;
-
-        // Reallocates mNarrowBuf and mWideBuf if necessary to accomodate newSize characters.
-        void EnsureBufSize(unsigned newSize);
 };
 
 // end of file @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

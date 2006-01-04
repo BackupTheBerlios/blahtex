@@ -1,6 +1,6 @@
 // File "XmlNode.cpp"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -118,7 +118,6 @@ wstring XmlEncode(const wstring& input, const EncodingOptions& options)
         make_pair(L'\U00002021', UnicodeNameInfo(L"Dagger",    L"ddagger")),
         make_pair(L'\U00002022', UnicodeNameInfo(L"bull",      L"bullet")),
         make_pair(L'\U00002032', UnicodeNameInfo(L"prime")),
-        make_pair(L'\U000020D7', UnicodeNameInfo(L"WRONG",     L"WRONG")),
         make_pair(L'\U0000210F', UnicodeNameInfo(L"hbar",      L"planck")),
         make_pair(L'\U00002111', UnicodeNameInfo(L"Im",        L"imagpart")),
         make_pair(L'\U00002113', UnicodeNameInfo(L"ell")),
@@ -474,9 +473,7 @@ wstring XmlEncode(const wstring& input, const EncodingOptions& options)
 
 void XmlNode::Print(wostream& os, const EncodingOptions& options, bool indent, int depth) const {
     if (mType == cString)
-    {
         os << XmlEncode(mText, options);
-    }
     else
     {
         os << L"<" << mText;

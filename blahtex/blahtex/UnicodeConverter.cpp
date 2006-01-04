@@ -1,6 +1,6 @@
 // File "UnicodeConverter.cpp"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -20,41 +20,26 @@
 #include "UnicodeConverter.h"
 #include <iostream>
 #include <stdexcept>
+#include <cerrno>
 
 using namespace std;
 
-UnicodeConverter::UnicodeConverter() {
-    mIsOpen = false;
-}
-
-UnicodeConverter::~UnicodeConverter() {
-    if (mIsOpen) {
+UnicodeConverter::~UnicodeConverter()
+{
+    if (mIsOpen)
+    {
         iconv_close(mInHandle);
         iconv_close(mOutHandle);
-        delete[] mNarrowBuf;
-        delete[] mWideBuf;
     }
 }
 
-// Precondition: mIsOpen == true
-void UnicodeConverter::EnsureBufSize(unsigned newSize) {
-    if (newSize > mBufSize) {
-        delete[] mNarrowBuf;
-        delete[] mWideBuf;
-        mBufSize = newSize;
-        mNarrowBuf = new char[mBufSize];
-        mWideBuf = new wchar_t[mBufSize];
-    }
-}
-
-void UnicodeConverter::Open() {
+void UnicodeConverter::Open()
+{
     if (mIsOpen)
-        throw logic_error("UnicodeConverter::Open() called on already open object");
+        throw logic_error("UnicodeConverter::Open called on already open object");
 
     if (sizeof(wchar_t) != 4)
-        throw runtime_error(
-            "Blahtex runtime error: "
-            "the wchar_t data type on this system is not four bytes wide.");
+        throw runtime_error("The wchar_t data type on this system is not four bytes wide");
     
     // Determine endian-ness of wchar_t.
     // (Really we should be able to just use "WCHAR_T", which apparently works on linux, but not on darwin.)
@@ -62,68 +47,110 @@ void UnicodeConverter::Open() {
     const char* UcsString = (*(reinterpret_cast<char*>(&testChar)) == 'A') ? "UCS-4LE" : "UCS-4BE";
 
     mInHandle = iconv_open(UcsString, "UTF-8");
+    if (mInHandle == (iconv_t)(-1))
+    {
+        switch (errno)
+        {
+            case EMFILE:    throw runtime_error("iconv_open failed with errno == EMFILE");
+            case ENFILE:    throw runtime_error("iconv_open failed with errno == ENFILE");
+            case ENOMEM:    throw runtime_error("iconv_open failed with errno == ENOMEM");
+            case EINVAL:    throw runtime_error("iconv_open failed with errno == EINVAL");
+            default:        throw runtime_error("iconv_open failed with unknown error code");
+        }
+    }
+
     mOutHandle = iconv_open("UTF-8", UcsString);
-    if (mInHandle == (iconv_t)(-1) || mOutHandle == (iconv_t)(-1))
-        throw runtime_error("Blahtex runtime error: iconv_open call failed.");
+    if (mOutHandle == (iconv_t)(-1))
+    {
+        switch (errno)
+        {
+            case EMFILE:    throw runtime_error("iconv_open failed with errno == EMFILE");
+            case ENFILE:    throw runtime_error("iconv_open failed with errno == ENFILE");
+            case ENOMEM:    throw runtime_error("iconv_open failed with errno == ENOMEM");
+            case EINVAL:    throw runtime_error("iconv_open failed with errno == EINVAL");
+            default:        throw runtime_error("iconv_open failed with unknown error code");
+        }
+    }
     
-    mBufSize = 1024;
-    mNarrowBuf = new char[mBufSize];
-    mWideBuf = new wchar_t[mBufSize];
     mIsOpen = true;
 }
 
-wstring UnicodeConverter::ConvertIn(const string& input) {
+wstring UnicodeConverter::ConvertIn(const string& input)
+{
     if (!mIsOpen)
-        throw logic_error("UnicodeConverter::ConvertIn() called before Open()");
+        throw logic_error("UnicodeConverter::ConvertIn called before UnicodeConverter::Open");
 
-    // The following garbage is needed to handle the unfortunate inconsistency between linux and BSD
-    // definitions for the second parameter of 'iconv'. BSD (including Mac OS X) requires 'const char*',
-    // whereas Linux requires 'char*', and neither option seems to produce error-free, warning-free
+    char* inputBuf  = new char[input.size()];
+    memcpy(inputBuf, input.c_str(), input.size());
+
+    char* outputBuf = new char[input.size() * 4];
+
+    // The following garbage is needed to handle the unfortunate inconsistency between Linux and BSD
+    // definitions for the second parameter of iconv. BSD (including Mac OS X) requires const char*,
+    // whereas Linux requires char*, and neither option seems to produce error-free, warning-free
     // compilation on both systems simultaneously.
 #ifdef BLAHTEX_ICONV_CONST
     const
 #endif
-    char* source;
-    char* dest;
+    char* source = inputBuf;
+    char* dest = outputBuf;
 
-    EnsureBufSize(input.size());
-
-    source = mNarrowBuf;
-    dest = reinterpret_cast<char*>(mWideBuf);
-    memcpy(mNarrowBuf, input.c_str(), input.size());
-    
     size_t  inBytesLeft = input.size();
-    size_t outBytesLeft = 4 * input.size();
-
-    if (iconv(mInHandle, &source, &inBytesLeft, &dest, &outBytesLeft) == -1)
-        throw UnicodeConverter::Exception();
+    size_t outBytesLeft = input.size() * 4;
     
-    return wstring(mWideBuf, input.size() - outBytesLeft / 4);
+    if (iconv(mInHandle, &source, &inBytesLeft, &dest, &outBytesLeft) == -1)
+    {
+        delete[] inputBuf;
+        delete[] outputBuf;
+        switch (errno)
+        {
+            case EILSEQ:
+            case EINVAL:    throw UnicodeConverter::Exception();
+            default:        throw logic_error("Conversion problem in UnicodeConverter::ConvertIn");
+        }
+    }
+    
+    wstring output(reinterpret_cast<wchar_t*>(outputBuf), input.size() - outBytesLeft / 4);
+    delete[] inputBuf;
+    delete[] outputBuf;
+    return output;
 }
 
-string UnicodeConverter::ConvertOut(const wstring& input) {
+string UnicodeConverter::ConvertOut(const wstring& input)
+{
     if (!mIsOpen)
-        throw logic_error("UnicodeConverter::ConvertOut() called before Open()");
+        throw logic_error("UnicodeConverter::ConvertOut called before UnicodeConverter::Open");
+
+    wchar_t* inputBuf = new wchar_t[input.size()];
+    wmemcpy(inputBuf, input.c_str(), input.size());
+
+    char* outputBuf = new char[input.size() * 4];
 
 #ifdef BLAHTEX_ICONV_CONST
     const
 #endif
-    char* source;
-    char* dest;
+    char* source = reinterpret_cast<char*>(inputBuf);
+    char* dest = outputBuf;
 
-    EnsureBufSize(input.size());
-
-    source = reinterpret_cast<char*>(mWideBuf);
-    dest = mNarrowBuf;
-    wmemcpy(mWideBuf, input.c_str(), input.size());
-
-    size_t  inBytesLeft = 4 * input.size();
-    size_t outBytesLeft = 4 * input.size();
+    size_t  inBytesLeft = input.size() * 4;
+    size_t outBytesLeft = input.size() * 4;
     
     if (iconv(mOutHandle, &source, &inBytesLeft, &dest, &outBytesLeft) == -1)
-        throw UnicodeConverter::Exception();
+    {
+        delete[] inputBuf;
+        delete[] outputBuf;
+        switch (errno)
+        {
+            case EILSEQ:
+            case EINVAL:    throw UnicodeConverter::Exception();
+            default:        throw logic_error("Conversion problem in UnicodeConverter::ConvertIn");
+        }
+    }
 
-    return string(mNarrowBuf, 4 * input.size() - outBytesLeft);
+    string output(outputBuf, input.size() * 4 - outBytesLeft);
+    delete[] inputBuf;
+    delete[] outputBuf;
+    return output;
 }
 
 // end of file @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

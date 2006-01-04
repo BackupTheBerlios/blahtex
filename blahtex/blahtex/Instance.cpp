@@ -1,6 +1,6 @@
 // File "Instance.cpp"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -228,12 +228,14 @@ wstring Instance::gStandardMacros =
     L"\\newcommand{\\Bbb}{\\mathbb}"
     L"\\newcommand{\\bold}{\\mathbf}"
     
+    L"\\newcommand{\\mboxReserved}     [1]{\\mbox{#1}}"
+
     // The following macros are implemented in (ams)latex in such a way that they get completely
     // surrounded by "safety braces". For example, "x^\frac yz" becomes "x^{y \over z}". Therefore we
     // surround them by safety braces too.
     // The blahtex parser correspondingly recognises the tokens with the "Blahtex" suffix.
     // FIX: re-doc this
-    L"\\newcommand{\\mbox}             [1]{{\\hbox{#1}}}"
+        
     L"\\newcommand{\\textReserved}     [1]{{\\text{#1}}}"
     L"\\newcommand{\\textitReserved}   [1]{{\\textit{#1}}}"
     L"\\newcommand{\\textrmReserved}   [1]{{\\textrm{#1}}}"
@@ -295,7 +297,7 @@ void Instance::Tokenise(const wstring& input, vector<wstring>& output)
             // FIX: test this:
             // Disallow non-printable, non-whitespace ASCII
             if (*ptr < L' ')
-                throw Exception(Exception::cIllegalCharacter);
+                throw Exception(L"IllegalCharacter");
             output.push_back(wstring(1, *ptr++));
         }
         else
@@ -304,7 +306,7 @@ void Instance::Tokenise(const wstring& input, vector<wstring>& output)
             wstring token = L"\\";
             
             if (++ptr == input.end())
-                throw Exception(Exception::cIllegalFinalBackslash);
+                throw Exception(L"IllegalFinalBackslash");
             if (IsAlphabetic(*ptr))
             {
                 // plain alphabetic commands
@@ -319,12 +321,12 @@ void Instance::Tokenise(const wstring& input, vector<wstring>& output)
                     while (ptr != input.end() && iswspace(*ptr))
                         ptr++;
                     if (ptr == input.end() || *ptr != L'{')
-                        throw Exception(Exception::cMissingOpenBraceAfter, token);
+                        throw Exception(L"MissingOpenBraceAfter", token);
                     token += *ptr++;
                     while (ptr != input.end() && *ptr != L'}')
                         token += *ptr++;
                     if (ptr == input.end())
-                        throw Exception(Exception::cUnmatchedOpenBrace);
+                        throw Exception(L"UnmatchedOpenBrace");
                     token += *ptr++;
                 }
             }
@@ -350,6 +352,7 @@ void Instance::ProcessInput(const wstring& input, bool texvcCompatibility)
     static wstring reservedCommandArray[] =
     {
         L"\\sqrt",
+        L"\\mbox",
         L"\\text",
         L"\\textit",
         L"\\textrm",
@@ -384,7 +387,7 @@ void Instance::ProcessInput(const wstring& input, bool texvcCompatibility)
         if (reservedCommandTable.count(*ptr))
             *ptr += L"Reserved";
         else if (ptr->size() >= 8 && ptr->substr(ptr->size() - 8, 8) == L"Reserved")
-            throw Exception(Exception::cReservedCommand, *ptr);
+            throw Exception(L"ReservedCommand", *ptr);
         else if (*ptr == L"\\strictspacing")
         {
             mStrictSpacingRequested = true;
@@ -460,8 +463,14 @@ void CleanupFontAttributes(XmlNode* node, bool mathmlVersion1Fonts)
                 {
                     wishful_hash_map<wstring, Version1FontInfo>::const_iterator lookup = version1Table.find(search->second);
                     if (lookup == version1Table.end())
-                        throw logic_error("Unexpected mathvariant value in CleanupFontAttributes");
-                
+                    {
+                        // FIX: the only time we might end up here is when we have a fraktur digit.
+                        // TeX has decent fraktur digits, but unicode doesn't seem to list them.
+                        // Therefore we can't access them with version 1 font attributes, so let's just
+                        // map it to bold instead.
+                        lookup = version1Table.find(L"bold");
+                    }
+
                     node->mAttributes.erase(search);
                     if (!lookup->second.mFamily.empty())
                         node->mAttributes[L"fontfamily"] = lookup->second.mFamily;
@@ -492,18 +501,11 @@ auto_ptr<XmlNode> Instance::GenerateMathml(const MathmlOptions& options)
     if (mStrictSpacingRequested)
         optionsCopy.mSpacingControl = cSpacingControlStrict;
     
-    auto_ptr<XmlNode> root = mLayoutTree->BuildMathmlTree(optionsCopy, cStyleText);
+    unsigned nodeCount = 0;
+    auto_ptr<XmlNode> root = mLayoutTree->BuildMathmlTree(optionsCopy, cStyleText, nodeCount);
     CleanupFontAttributes(root.get(), options.mMathmlVersion1Fonts);
 
     return root;
-}
-
-auto_ptr<XmlNode> Instance::GenerateHtml()
-{
-    if (!mLayoutTree.get())
-        throw logic_error("Layout tree not yet built in Instance::GenerateHtml");
-        
-    return auto_ptr<XmlNode>(new XmlNode(XmlNode::cTag, L"html"));
 }
 
 wstring Instance::GeneratePurifiedTex(const PurifiedTexOptions& options)

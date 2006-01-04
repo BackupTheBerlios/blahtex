@@ -1,6 +1,6 @@
 // File "MacroProcessor.cpp"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -91,7 +91,7 @@ bool MacroProcessor::ReadArgument(vector<wstring>& output)
             output.push_back(token);
         }
         if (braceDepth > 0)
-            throw Exception(Exception::cUnmatchedOpenBrace);
+            throw Exception(L"UnmatchedOpenBrace");
     }
     else
     {
@@ -118,24 +118,24 @@ void MacroProcessor::HandleNewcommand()
     // gobble opening brace
     SkipWhitespaceRaw();
     if (mTokens.empty() || mTokens.back() != L"{")
-        throw Exception(Exception::cMissingOpenBraceAfter, L"\\newcommand");
+        throw Exception(L"MissingOpenBraceAfter", L"\\newcommand");
     mTokens.pop_back();
 
     // grab new command being defined
     SkipWhitespaceRaw();
     if (mTokens.empty() || mTokens.back().empty() || mTokens.back()[0] != L'\\')
-        throw Exception(Exception::cMissingCommandAfterNewcommand);
+        throw Exception(L"MissingCommandAfterNewcommand");
     wstring newCommand = mTokens.back();
     if (mMacros.count(newCommand) || gMathTokenTable.count(newCommand) || gTextTokenTable.count(newCommand))
-        throw Exception(Exception::cIllegalRedefinition, StripReservedSuffix(newCommand));
+        throw Exception(L"IllegalRedefinition", StripReservedSuffix(newCommand));
     mTokens.pop_back();
     
     // gobble close brace
     SkipWhitespaceRaw();
     if (mTokens.empty())
-        throw Exception(Exception::cUnmatchedOpenBrace);
+        throw Exception(L"UnmatchedOpenBrace");
     if (mTokens.back() != L"}")
-        throw Exception(Exception::cMissingCommandAfterNewcommand);
+        throw Exception(L"MissingCommandAfterNewcommand");
     mTokens.pop_back();
     
     Macro& macro = mMacros[newCommand];
@@ -148,15 +148,15 @@ void MacroProcessor::HandleNewcommand()
         
         SkipWhitespaceRaw();
         if (mTokens.empty() || mTokens.back().size() != 1)
-            throw Exception(Exception::cMissingOrIllegalParameterCount, newCommand);
+            throw Exception(L"MissingOrIllegalParameterCount", newCommand);
         macro.mParameterCount = static_cast<int>(mTokens.back()[0] - L'0');
         if (macro.mParameterCount <= 0 || macro.mParameterCount > 9)
-            throw Exception(Exception::cMissingOrIllegalParameterCount, newCommand);
+            throw Exception(L"MissingOrIllegalParameterCount", newCommand);
         mTokens.pop_back();
         
         SkipWhitespaceRaw();
         if (mTokens.empty() || mTokens.back() != L"]")
-            throw Exception(Exception::cUnmatchedOpenBracket);
+            throw Exception(L"UnmatchedOpenBracket");
         mTokens.pop_back();
     }
     
@@ -165,7 +165,7 @@ void MacroProcessor::HandleNewcommand()
     
     // Read and store the tokens which make up the macro replacement.
     if (!ReadArgument(macro.mReplacement))
-        throw Exception(Exception::cNotEnoughArguments, L"\\newcommand");
+        throw Exception(L"NotEnoughArguments", L"\\newcommand");
 }
 
 wstring MacroProcessor::Peek()
@@ -173,7 +173,7 @@ wstring MacroProcessor::Peek()
     while (!mTokens.empty())
     {
         if (mTokens.size() + (++mCostIncurred) >= cMaxParseCost)
-            throw Exception(Exception::cTooManyTokens);
+            throw Exception(L"TooManyTokens");
 
         if (mIsTokenReady)
             return mTokens.back();
@@ -207,14 +207,14 @@ wstring MacroProcessor::Peek()
                     else if (*ptr == L"}")
                     {
                         if (--braceDepth < 0)
-                            throw Exception(Exception::cUnmatchedCloseBrace);
+                            throw Exception(L"UnmatchedCloseBrace");
                     }
                     ptr++;
                 }
                 if (ptr == mTokens.rend())
-                    throw Exception(Exception::cUnmatchedOpenBracket);
+                    throw Exception(L"UnmatchedOpenBracket");
                 if (*ptr != L"]")
-                    throw Exception(Exception::cNotEnoughArguments, L"\\sqrt");
+                    throw Exception(L"NotEnoughArguments", L"\\sqrt");
                 *ptr = L"}";
                 mTokens.push_back(L"\\rootReserved");
                 mIsTokenReady = true;
@@ -245,7 +245,7 @@ wstring MacroProcessor::Peek()
             vector<vector<wstring> > arguments(macro.mParameterCount);
             for (int argumentIndex = 0; argumentIndex < macro.mParameterCount; argumentIndex++)
                 if (!ReadArgument(arguments[argumentIndex]))
-                    throw Exception(Exception::cNotEnoughArguments, StripReservedSuffix(token));
+                    throw Exception(L"NotEnoughArguments", StripReservedSuffix(token));
 
             // ... and now write the replacement, substituting arguments as we go.
             const vector<wstring>& replacement = macro.mReplacement;
@@ -256,14 +256,14 @@ wstring MacroProcessor::Peek()
                 if (*source == L"#")
                 {
                     if (++source == replacement.end())
-                        throw Exception(Exception::cMissingOrIllegalParameterIndex, token);
+                        throw Exception(L"MissingOrIllegalParameterIndex", token);
                     if (source->size() != 1)
-                        throw Exception(Exception::cMissingOrIllegalParameterIndex, token);
+                        throw Exception(L"MissingOrIllegalParameterIndex", token);
                     int parameterIndex = static_cast<int>((*source)[0] - '1');
                     // FIX: perhaps this next error should be flagged when reading the definition of the
                     // macro rather than during macro expansion
                     if (parameterIndex < 0 || parameterIndex >= macro.mParameterCount)
-                        throw Exception(Exception::cMissingOrIllegalParameterIndex, token);
+                        throw Exception(L"MissingOrIllegalParameterIndex", token);
                     copy(arguments[parameterIndex].begin(), arguments[parameterIndex].end(), back_inserter(output));
                     mCostIncurred += arguments[parameterIndex].size();
                 }

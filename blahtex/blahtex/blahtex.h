@@ -1,6 +1,6 @@
 // File "blahtex.h"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -161,10 +161,9 @@ struct MathmlOptions
 struct PurifiedTexOptions
 {
     bool mUseUcsPackage;
-    bool mForbidPngIncompatibleCharacters;
     
     PurifiedTexOptions() :
-        mUseUcsPackage(false), mForbidPngIncompatibleCharacters(false) { }
+        mUseUcsPackage(false) { }
 };
 
 // These values correspond (roughly) to TeX's "atom flavors".
@@ -257,6 +256,7 @@ struct XmlNode
     void Print(std::wostream& os, const EncodingOptions& options, bool indent, int depth = 0) const;
 };
 
+// FIX: re-doc this
 // Exception is the type of object thrown by all parts of the blahtex core. They indicate some kind of syntax
 // error in the input. They do not include more serious errors like memory errors, or debug assertions.
 // (We use std::exception for these.)
@@ -264,76 +264,26 @@ struct XmlNode
 // Each exception consists of an mCode plus zero or more arguments (mArgs).
 //
 // Implemented in Exception.cpp.
-class Exception
+struct Exception
 {
-public:
-    // mCode may be assigned any of the following:
-    enum Code
+    Exception(const std::wstring& code) :
+        mCode(code) { }
+
+    Exception(const std::wstring& code, const std::wstring& arg1) :
+        mCode(code)
     {
-        cNonAsciiInMathMode,
-        cIllegalCharacter,
-        cPngIncompatibleCharacter,
-        cReservedCommand,
-        cTooManyTokens,
-        cIllegalFinalBackslash,
-        cUnrecognisedCommand,
-        cIllegalCommandInMathMode,
-        cIllegalCommandInMathModeWithHint,
-        cIllegalCommandInTextMode,
-        cIllegalCommandInTextModeWithHint,
-        cMissingOpenBraceBefore,
-        cMissingOpenBraceAfter,
-        cMissingOpenBraceAtEnd,
-        cNotEnoughArguments,
-        cMissingCommandAfterNewcommand,
-        cIllegalRedefinition,
-        cMissingOrIllegalParameterCount,
-        cMissingOrIllegalParameterIndex,
-        cUnmatchedOpenBracket,
-        cUnmatchedOpenBrace,
-        cUnmatchedCloseBrace,
-        cUnmatchedLeft,
-        cUnmatchedRight,
-        cUnmatchedBegin,
-        cUnmatchedEnd,
-        cUnexpectedNextCell,
-        cUnexpectedNextRow,
-        cMismatchedBeginAndEnd,
-        cCasesRowTooBig,
-        cMissingDelimiter,
-        cIllegalDelimiter,
-        cMisplacedLimits,
-        cDoubleSuperscript,
-        cDoubleSubscript,
-        cAmbiguousInfix,
-        cUnavailableSymbolFontCombination,
-        cInvalidNegation
-    };
-
-    Exception(Code code);
-    Exception(Code code, const std::wstring& arg1);
-    Exception(Code code, const std::wstring& arg1, const std::wstring& arg2);
-
-    // Returns a string describing this exception. It will be of the form:
-    // "<inputError><id>X</id><arg>arg1</arg><arg>arg2</arg><message>Y</message></inputError>", where
-    // - X is a string corresponding to the error code (e.g. cTooManyTokens becomes "TooManyTokens")
-    // - arg1, arg2 etc are the (zero or more) arguments of the error, and
-    // - Y is an human-readable description of the exception.
-    //
-    // The output will be XML-safe; e.g. "&" gets translated to "&amp;".
-    // If encodingRaw is true, then non-ASCII characters will be encoded as unicode code points, otherwise
-    // it will use numeric entities like "&#x1234;".
-    std::wstring GetXml(bool encodingRaw) const;
+        mArgs.push_back(arg1);
+    }
     
-private:
-    Code mCode;
+    Exception(const std::wstring& code, const std::wstring& arg1, const std::wstring& arg2) :
+        mCode(code)
+    {
+        mArgs.push_back(arg1);
+        mArgs.push_back(arg2);
+    }
+    
+    std::wstring mCode;
     std::vector<std::wstring> mArgs;
-
-    // Returns short string corresponding to mCode, e.g. returns "TooManyTokens" if mCode == cTooManyTokens.
-    std::wstring GetCodeAsText() const;
-    
-    // These store the list of error code names and english message equivalents.
-    static wishful_hash_map<Code, std::wstring> gCodesAsTextTable, gEnglishMessagesTable;
 };
 
 // The LayoutTree namespace contains all classes that represents nodes in the layout tree.
@@ -366,7 +316,7 @@ namespace LayoutTree
         // The "environment" parameter tells BuildMathmlTree what assumptions to make about its rendering
         // environment. It uses these to decide whether to insert extra <mstyle> tags.
         virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options,
-            MathmlEnvironment inheritedEnvironment) const = 0;
+            MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const = 0;
 
         // This function recursively prints the layout tree under this node. Only used for debugging.
         virtual void Print(std::wostream& os, int depth = 0) const = 0;
@@ -384,7 +334,7 @@ namespace LayoutTree
             Node(style, cFlavourOrd, cLimitsDisplayLimits) { }
         ~Row();
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
 
@@ -397,7 +347,7 @@ namespace LayoutTree
             Node(style, flavour, limits), mText(text), mFont(font) { }
 
         virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options,
-            MathmlEnvironment inheritedEnvironment) const = 0;
+            MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const = 0;
         virtual void Print(std::wostream& os, int depth = 0) const = 0;
     };
     
@@ -406,7 +356,7 @@ namespace LayoutTree
         SymbolPlain(const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits = cLimitsDisplayLimits) :
             Symbol(text, font, style, flavour, limits) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
 
@@ -415,7 +365,7 @@ namespace LayoutTree
         SymbolText(const std::wstring& text, MathmlFont font, Style style) :
             Symbol(text, font, style, cFlavourOrd, cLimitsDisplayLimits) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -428,7 +378,7 @@ namespace LayoutTree
         SymbolOperator(bool isStretchy, const std::wstring& size, bool isAccent, const std::wstring& text, MathmlFont font, Style style, Flavour flavour, Limits limits = cLimitsDisplayLimits) :
             Symbol(text, font, style, flavour, limits), mIsStretchy(isStretchy), mSize(size), mIsAccent(isAccent) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -440,7 +390,7 @@ namespace LayoutTree
         Space(int width, bool isUserRequested) :
             Node(cStyleDisplay, cFlavourOrd, cLimitsDisplayLimits), mWidth(width), mIsUserRequested(isUserRequested) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -453,7 +403,7 @@ namespace LayoutTree
         Scripts(Style style, Flavour flavour, Limits limits, bool isSideset, std::auto_ptr<Node> base, std::auto_ptr<Node> upper, std::auto_ptr<Node> lower) :
             Node(style, flavour, limits), mIsSideset(isSideset), mBase(base), mUpper(upper), mLower(lower) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
 
@@ -465,7 +415,7 @@ namespace LayoutTree
         Fraction(Style style, std::auto_ptr<Node> numerator, std::auto_ptr<Node> denominator, bool isLineVisible) :
             Node(style, cFlavourOrd, cLimitsDisplayLimits), mNumerator(numerator), mDenominator(denominator), mIsLineVisible(isLineVisible) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -475,9 +425,9 @@ namespace LayoutTree
         std::auto_ptr<Node> mChild;
 
         Fenced(Style style, const std::wstring& leftDelimiter, const std::wstring& rightDelimiter, std::auto_ptr<Node> child) :
-            Node(style, cFlavourOrd, cLimitsDisplayLimits), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter), mChild(child) { }
+            Node(style, cFlavourInner, cLimitsDisplayLimits), mLeftDelimiter(leftDelimiter), mRightDelimiter(rightDelimiter), mChild(child) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -488,7 +438,7 @@ namespace LayoutTree
         Sqrt(std::auto_ptr<Node> child) :
             Node(child->mStyle, cFlavourOrd, cLimitsDisplayLimits), mChild(child) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -499,7 +449,7 @@ namespace LayoutTree
         Root(std::auto_ptr<Node> inside, std::auto_ptr<Node> outside) :
             Node(inside->mStyle, cFlavourOrd, cLimitsDisplayLimits), mInside(inside), mOutside(outside) { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
 
@@ -512,7 +462,7 @@ namespace LayoutTree
             Node(style, cFlavourOrd, cLimitsDisplayLimits), mAlign(cAlignCentre) { }
         
         ~Table();
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const;
+        virtual std::auto_ptr<XmlNode> BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const;
         virtual void Print(std::wostream& os, int depth = 0) const;
     };
     
@@ -926,6 +876,8 @@ private:
 // but also takes into account e.g. time taken during macro expansion, searching for matching braces...)
 const unsigned cMaxParseCost = 20000;
 
+const unsigned cMaxMathmlNodeCount = 2500;
+
 // The Parser class actually does the parsing work. It runs the supplied input tokens through a
 // MacroProcessor, and builds a parse tree from the resulting token stream.
 class Parser
@@ -1033,9 +985,6 @@ public:
     // Returns the root node.
     std::auto_ptr<XmlNode> GenerateMathml(const MathmlOptions& options);
 
-    // GenerateHtml is not implemented yet.
-    std::auto_ptr<XmlNode> GenerateHtml();
-    
     // GeneratePurifiedTex returns a string containing a complex LaTeX file that could be fed to
     // LaTeX to produce a graphical version of the input. It includes any required \usepackage commands.
     std::wstring GeneratePurifiedTex(const PurifiedTexOptions& options);

@@ -1,6 +1,6 @@
 // File "LayoutTree.cpp"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -116,6 +116,25 @@ MathmlEnvironment::MathmlEnvironment(Style style)
     }
 }
 
+// FIX: doc this. Remember to mention it only works for nodes which can have either zero or one child.
+void CollapseMrow(XmlNode& node)
+{
+    if (!node.mChildren.empty() && node.mChildren.front()->mText == L"mrow")
+    {
+        list<XmlNode*> temp;
+        temp.swap(node.mChildren.front()->mChildren);
+        delete node.mChildren.front();
+        node.mChildren.clear();
+        node.mChildren.swap(temp);
+    }
+}
+
+void IncrementNodeCount(unsigned& nodeCount)
+{
+    if (++nodeCount >= cMaxMathmlNodeCount)
+        throw Exception(L"TooManyMathmlNodes");
+}
+
 auto_ptr<XmlNode> InsertMstyle(auto_ptr<XmlNode> node, MathmlEnvironment sourceEnvironment, MathmlEnvironment targetEnvironment)
 {
     if (sourceEnvironment.mDisplayStyle == targetEnvironment.mDisplayStyle &&
@@ -135,6 +154,7 @@ auto_ptr<XmlNode> InsertMstyle(auto_ptr<XmlNode> node, MathmlEnvironment sourceE
         newNode->mAttributes[L"scriptlevel"] = os.str();
     }
     
+    CollapseMrow(*newNode);
     return newNode;
 }
 
@@ -154,9 +174,10 @@ XmlNode* GetCore(XmlNode* node)
         ? GetCore(node->mChildren.front()) : node;
 }
 
-auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mrow"));
+    IncrementNodeCount(nodeCount);
 
     if (mChildren.empty())
         return node;
@@ -180,13 +201,9 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
 
         auto_ptr<XmlNode> currentNode;
         if (child != mChildren.end())
-            currentNode = (*child)->BuildMathmlTree(options, MathmlEnvironment(mStyle));
+            currentNode = (*child)->BuildMathmlTree(options, MathmlEnvironment(mStyle), nodeCount);
 
         bool merged = false;
-        
-        // FIX: it's possible for a nasty user to generate quadratic length input by
-        // inputting a table with one long row and lots of empty rows. This sucks. Not sure
-        // what to do. Maybe put a hard-coded limit.
         
         // If there is no space, we need to consider all the possible ways of merging adjacent nodes.
 
@@ -219,8 +236,24 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
             XmlNode*  currentNucleus = GetCore(currentNode.get());
             XmlNode* previousNucleus = GetCore(previousNode);
 
-            bool isPreviousMo = (previousNucleus && previousNucleus->mText == L"mo");
-            bool isCurrentMo  = ( currentNucleus &&  currentNucleus->mText == L"mo");
+            bool isPreviousMo = false, isCurrentMo = false;
+            bool isPreviousMi = false, isCurrentMi = false;
+            
+            if (previousNucleus)
+            {
+                if (previousNucleus->mText == L"mo")
+                    isPreviousMo = true;
+                else if (previousNucleus->mText == L"mi")
+                    isPreviousMi = true;
+            }
+
+            if (currentNucleus)
+            {
+                if (currentNucleus->mText == L"mo")
+                    isCurrentMo = true;
+                else if (currentNucleus->mText == L"mi")
+                    isCurrentMi = true;
+            }
 
             bool doSpace = false;
 
@@ -231,7 +264,13 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
                 // The user has asked for "moderate" spacing mode, so we need to give the MathML renderer
                 // a helping hand with spacing decisions, without being *too* pushy.
 
-                if (!isPreviousMo && !isCurrentMo)
+                // Special-casing for neighbouring <mi> nodes, since Firefox sometimes likes to put
+                // extra space between them:
+                // FIX: this could be more discriminating with respect to fontstyle attributes...
+                if (isPreviousMi && isCurrentMi)
+                    doSpace = true;
+                
+                else if (!isPreviousMo && !isCurrentMo)
                     doSpace = (spaceWidth != 0);
 
                 // Special-casing for the "&times;" operator (since Firefox doesn't know that it's a
@@ -242,14 +281,19 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
                 {
                     doSpace = true;
                 }
-
-                // FIX: add special case: put doSpace = false between &prime;s, e.g. in "x''".
-
+                
                 else if (spaceWidth == 0)
                 {
                     // Special-casing for zero space after ",", e.g. in a situation like "65{,}536"
                     if (isPreviousMo && previousNucleus->mChildren.front()->mText == L",")
                         doSpace = true;
+                    // Special-casing for neighbouring &prime; operators
+                    else if (
+                        (isPreviousMo && previousNucleus->mChildren.front()->mText == L"\U00002032") &&
+                        (isCurrentMo  &&  currentNucleus->mChildren.front()->mText == L"\U00002032"))
+                    {
+                        doSpace = false;
+                    }
                     else
                     {
                         static wstring fenceArray[] = {L"(", L")", L"[", L"]", L"{", L"}"};
@@ -294,9 +338,10 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
                     currentNucleus->mAttributes[L"lspace"] = widthAsString;
                 else
                 {
-                    if (spaceWidth != 0)
+                    if (spaceWidth != 0 || (isPreviousMi && isCurrentMi))
                     {
                         XmlNode* spaceNode = new XmlNode(XmlNode::cTag, L"mspace");
+                        IncrementNodeCount(nodeCount);
                         spaceNode->mAttributes[L"width"] = widthAsString;
                         node->mChildren.push_back(spaceNode);
                     }
@@ -322,7 +367,7 @@ auto_ptr<XmlNode> Row::BuildMathmlTree(const MathmlOptions& options, MathmlEnvir
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Space::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Space::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     if (!mIsUserRequested)
         throw logic_error("Unexpected lonely automatic space in Space::BuildMathmlTree");
@@ -333,16 +378,18 @@ auto_ptr<XmlNode> Space::BuildMathmlTree(const MathmlOptions& options, MathmlEnv
     wos << fixed << setprecision(3) << (mWidth / 18.0) << L"em";
 
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mspace"));
+    IncrementNodeCount(nodeCount);
     node->mAttributes[L"width"] = wos.str();
 
     return node;
 }
 
-auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag,
         (mText.size() == 1 && mText[0] >= L'0' && mText[0] <= '9') ? L"mn" : L"mi"));
         // FIX: what about merging commas, decimal points into <mn> nodes? Might need to special-case it.
+    IncrementNodeCount(nodeCount);
 
     if (options.mMathmlVersion1Fonts && mText.size() == 1)
     {
@@ -427,17 +474,19 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(const MathmlOptions& options, Mat
         if (replacement)
         {
             node->mChildren.push_back(new XmlNode(XmlNode::cString, wstring(1, replacement)));
+            IncrementNodeCount(nodeCount);
             return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
         }
     }
 
     node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
+    IncrementNodeCount(nodeCount);
     node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
 
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     static wchar_t stretchyByDefaultArray[] =
     {
@@ -486,7 +535,9 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, 
     static wishful_hash_set<wchar_t> accentByDefaultTable(accentByDefaultArray, END_ARRAY(accentByDefaultArray));
     
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
+    IncrementNodeCount(nodeCount);
     node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
+    IncrementNodeCount(nodeCount);
 
     if (mFont != cMathmlFontNormal)
         node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
@@ -511,15 +562,17 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(const MathmlOptions& options, 
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> SymbolText::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> SymbolText::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mtext"));
+    IncrementNodeCount(nodeCount);
     node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
     node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
+    IncrementNodeCount(nodeCount);
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     MathmlEnvironment scriptEnvironment = MathmlEnvironment(mStyle);
     scriptEnvironment.mDisplayStyle = false;
@@ -527,12 +580,16 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, MathmlE
 
     auto_ptr<XmlNode> base;
     if (mBase.get())
-        base = mBase->BuildMathmlTree(options, MathmlEnvironment(mStyle));
+        base = mBase->BuildMathmlTree(options, MathmlEnvironment(mStyle), nodeCount);
     else
+    {
         // An empty base gets represented by "<mrow/>"
         base.reset(new XmlNode(XmlNode::cTag, L"mrow"));
+        IncrementNodeCount(nodeCount);
+    }
 
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L""));
+    IncrementNodeCount(nodeCount);
     node->mChildren.push_back(base.release());
 
     if (mUpper.get())
@@ -540,19 +597,19 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, MathmlE
         if (mLower.get())
         {
             node->mText = mIsSideset ? L"msubsup" : L"munderover";
-            node->mChildren.push_back(mLower->BuildMathmlTree(options, scriptEnvironment).release());
-            node->mChildren.push_back(mUpper->BuildMathmlTree(options, scriptEnvironment).release());
+            node->mChildren.push_back(mLower->BuildMathmlTree(options, scriptEnvironment, nodeCount).release());
+            node->mChildren.push_back(mUpper->BuildMathmlTree(options, scriptEnvironment, nodeCount).release());
         }
         else
         {
             node->mText = mIsSideset ? L"msup" : L"mover";
-            node->mChildren.push_back(mUpper->BuildMathmlTree(options, scriptEnvironment).release());
+            node->mChildren.push_back(mUpper->BuildMathmlTree(options, scriptEnvironment, nodeCount).release());
         }
     }
     else
     {
         node->mText = mIsSideset ? L"msub" : L"munder";
-        node->mChildren.push_back(mLower->BuildMathmlTree(options, scriptEnvironment).release());
+        node->mChildren.push_back(mLower->BuildMathmlTree(options, scriptEnvironment, nodeCount).release());
     }
 
     if (!mIsSideset && mStyle != cStyleDisplay)
@@ -574,7 +631,7 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(const MathmlOptions& options, MathmlE
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Fraction::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Fraction::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     MathmlEnvironment smallerEnvironment = MathmlEnvironment(mStyle);
     
@@ -584,17 +641,18 @@ auto_ptr<XmlNode> Fraction::BuildMathmlTree(const MathmlOptions& options, Mathml
         smallerEnvironment.mScriptLevel++;
     
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mfrac"));
-    node->mChildren.push_back(mNumerator  ->BuildMathmlTree(options, smallerEnvironment).release());
-    node->mChildren.push_back(mDenominator->BuildMathmlTree(options, smallerEnvironment).release());
+    IncrementNodeCount(nodeCount);
+    node->mChildren.push_back(mNumerator  ->BuildMathmlTree(options, smallerEnvironment, nodeCount).release());
+    node->mChildren.push_back(mDenominator->BuildMathmlTree(options, smallerEnvironment, nodeCount).release());
     if (!mIsLineVisible)
         node->mAttributes[L"linethickness"] = L"0";
 
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
-    auto_ptr<XmlNode> inside = mChild->BuildMathmlTree(options, MathmlEnvironment(mStyle));
+    auto_ptr<XmlNode> inside = mChild->BuildMathmlTree(options, MathmlEnvironment(mStyle), nodeCount);
 
     if (mLeftDelimiter.empty() && mRightDelimiter.empty())
         return inside;
@@ -602,16 +660,20 @@ auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, MathmlEn
     if (inside->mText != L"mrow")
     {
         auto_ptr<XmlNode> temp(new XmlNode(XmlNode::cTag, L"mrow"));
+        IncrementNodeCount(nodeCount);
         temp->mChildren.push_back(inside.release());
         inside = temp;
     }
 
     auto_ptr<XmlNode> output(new XmlNode(XmlNode::cTag, L"mrow"));
+    IncrementNodeCount(nodeCount);
 
     if (!mLeftDelimiter.empty())
     {
         auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
+        IncrementNodeCount(nodeCount);
         node->mChildren.push_back(new XmlNode(XmlNode::cString, mLeftDelimiter));
+        IncrementNodeCount(nodeCount);
         node->mAttributes[L"stretchy"] = L"true";
         output->mChildren.push_back(node.release());
     }
@@ -621,7 +683,9 @@ auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, MathmlEn
     if (!mRightDelimiter.empty())
     {
         auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
+        IncrementNodeCount(nodeCount);
         node->mChildren.push_back(new XmlNode(XmlNode::cString, mRightDelimiter));
+        IncrementNodeCount(nodeCount);
         node->mAttributes[L"stretchy"] = L"true";
         output->mChildren.push_back(node.release());
     }
@@ -629,27 +693,28 @@ auto_ptr<XmlNode> Fenced::BuildMathmlTree(const MathmlOptions& options, MathmlEn
     return InsertMstyle(output, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Sqrt::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Sqrt::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"msqrt"));
-    node->mChildren.push_back(mChild->BuildMathmlTree(options, MathmlEnvironment(mStyle)).release());
+    IncrementNodeCount(nodeCount);
+    node->mChildren.push_back(mChild->BuildMathmlTree(options, MathmlEnvironment(mStyle), nodeCount).release());
+    CollapseMrow(*node);
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Root::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Root::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mroot"));
-    node->mChildren.push_back(mOutside->BuildMathmlTree(options, MathmlEnvironment(false, 2)).release());
-    node->mChildren.push_back(mInside ->BuildMathmlTree(options, MathmlEnvironment(mStyle)).release());
+    IncrementNodeCount(nodeCount);
+    node->mChildren.push_back(mInside ->BuildMathmlTree(options, MathmlEnvironment(mStyle), nodeCount).release());
+    node->mChildren.push_back(mOutside->BuildMathmlTree(options, MathmlEnvironment(false, 2), nodeCount).release());
     return InsertMstyle(node, inheritedEnvironment, MathmlEnvironment(mStyle));
 }
 
-auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment) const
+auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, MathmlEnvironment inheritedEnvironment, unsigned& nodeCount) const
 {
-    // FIX: remember can kill <mrow> tags inside <mtd> tags i.e. make them implied....
-    // and NOT JUST HERE... this happens for many types of tags.
-
     auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mtable"));
+    IncrementNodeCount(nodeCount);
     
     int tableWidth = 0;
     for (vector<vector<Node*> >::const_iterator row = mRows.begin(); row != mRows.end(); row++)
@@ -671,15 +736,24 @@ auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, MathmlEnv
     for (vector<vector<Node*> >::const_iterator inRow = mRows.begin(); inRow != mRows.end(); inRow++)
     {
         auto_ptr<XmlNode> outRow(new XmlNode(XmlNode::cTag, L"mtr"));
+        IncrementNodeCount(nodeCount);
         int count = 0;
         for (vector<Node*>::const_iterator inEntry = inRow->begin(); inEntry != inRow->end(); inEntry++, count++)
         {
             auto_ptr<XmlNode> outEntry(new XmlNode(XmlNode::cTag, L"mtd"));
-            outEntry->mChildren.push_back((*inEntry)->BuildMathmlTree(options, MathmlEnvironment(mStyle)).release());
+            IncrementNodeCount(nodeCount);
+            outEntry->mChildren.push_back((*inEntry)->BuildMathmlTree(options, MathmlEnvironment(mStyle), nodeCount).release());
+            // FIX: this next line should be uncommented, except that Firefox has a bug (#236963) where it
+            // doesn't correctly put an "inferred mrow" inside a <mtd> block, so stuff inside the <mtd>
+            // doesn't stretch properly unless we put in an mrow.
+//            CollapseMrow(*outEntry);
             outRow->mChildren.push_back(outEntry.release());
         }
         for (; count < tableWidth; count++)
+        {
             outRow->mChildren.push_back(new XmlNode(XmlNode::cTag, L"mtd"));
+            IncrementNodeCount(nodeCount);
+        }
 
         node->mChildren.push_back(outRow.release());
     }
@@ -693,6 +767,7 @@ auto_ptr<XmlNode> Table::BuildMathmlTree(const MathmlOptions& options, MathmlEnv
     if (tableEnvironment.mScriptLevel != inheritedEnvironment.mScriptLevel)
     {
         auto_ptr<XmlNode> styleNode(new XmlNode(XmlNode::cTag, L"mstyle"));
+        IncrementNodeCount(nodeCount);
         styleNode->mChildren.push_back(node.release());
 
         wostringstream os;

@@ -1,6 +1,6 @@
 // File "Parser.cpp"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -56,6 +56,7 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"'",                        Parser::cPrime),
 
     make_pair(L"\\hbox",                   Parser::cEnterTextMode),
+    make_pair(L"\\mbox",                   Parser::cEnterTextMode),
     make_pair(L"\\emph",                   Parser::cEnterTextMode),
     make_pair(L"\\text",                   Parser::cEnterTextMode),
     make_pair(L"\\textit",                 Parser::cEnterTextMode),
@@ -579,6 +580,7 @@ pair<wstring, Parser::TokenCode> gTextTokenArray[] =
     make_pair(L"\\qquad",                  Parser::cSymbolUnsafe),
 
     make_pair(L"\\hbox",                   Parser::cCommand1Arg),
+    make_pair(L"\\mbox",                   Parser::cCommand1Arg),
     make_pair(L"\\emph",                   Parser::cCommand1Arg),
     make_pair(L"\\text",                   Parser::cCommand1Arg),
     make_pair(L"\\textit",                 Parser::cCommand1Arg),
@@ -606,9 +608,9 @@ Parser::TokenCode Parser::GetMathTokenCode(const wstring& token) const
             
         // Give the user some helpful hints if they try to use certain illegal commands.
         if (token == L"%" || token == L"#" || token == L"$")
-            throw Exception(Exception::cIllegalCommandInMathModeWithHint, token, L"\\" + token);
+            throw Exception(L"IllegalCommandInMathModeWithHint", token, L"\\" + token);
         else if (token == L"`" || token == L"\"")
-            throw Exception(Exception::cIllegalCommandInMathMode, token);
+            throw Exception(L"IllegalCommandInMathMode", token);
 
         throw logic_error("Unexpected illegal character in Parser::GetMathTokenCode");
     }
@@ -616,20 +618,20 @@ Parser::TokenCode Parser::GetMathTokenCode(const wstring& token) const
     if (token[0] == L'\\')
     {
         if (gTextTokenTable.count(token))
-            throw Exception(Exception::cIllegalCommandInMathMode, token);
+            throw Exception(L"IllegalCommandInMathMode", token);
         else
-            throw Exception(Exception::cUnrecognisedCommand, token);
+            throw Exception(L"UnrecognisedCommand", token);
     }
     
     if (token[0] > 0x7F)
-        throw Exception(Exception::cNonAsciiInMathMode);
+        throw Exception(L"NonAsciiInMathMode");
 
     if ((token[0] >= L'a' && token[0] <= L'z') ||
         (token[0] >= L'A' && token[0] <= L'Z') ||
         (token[0] >= L'0' && token[0] <= L'9'))
         return cSymbol;
 
-    throw Exception(Exception::cUnrecognisedCommand, token);
+    throw Exception(L"UnrecognisedCommand", token);
 }
 
 Parser::TokenCode Parser::GetTextTokenCode(const wstring& token) const
@@ -642,21 +644,21 @@ Parser::TokenCode Parser::GetTextTokenCode(const wstring& token) const
             
         // Give the user some helpful hints if they try to use certain illegal commands.
         if (token == L"&" || token == L"_" || token == L"%" || token == L"#" || token == L"$")
-            throw Exception(Exception::cIllegalCommandInTextModeWithHint, token, L"\\" + token);
+            throw Exception(L"IllegalCommandInTextModeWithHint", token, L"\\" + token);
         else if (token == L"\\\\")
-            throw Exception(Exception::cIllegalCommandInTextModeWithHint, L"\\\\", L"\\textbackslash");
+            throw Exception(L"IllegalCommandInTextModeWithHint", L"\\\\", L"\\textbackslash");
         else if (token == L"^")
-            throw Exception(Exception::cIllegalCommandInTextModeWithHint, L"^", L"\\textasciicircum");
+            throw Exception(L"IllegalCommandInTextModeWithHint", L"^", L"\\textasciicircum");
         else
-            throw Exception(Exception::cIllegalCommandInTextMode, token);
+            throw Exception(L"IllegalCommandInTextMode", token);
     }
 
     if (token[0] == L'\\')
     {
         if (gMathTokenTable.count(token))
-            throw Exception(Exception::cIllegalCommandInTextMode, token);
+            throw Exception(L"IllegalCommandInTextMode", token);
         else
-            throw Exception(Exception::cUnrecognisedCommand, token);
+            throw Exception(L"UnrecognisedCommand", token);
     }
     
     if ((token[0] >= L'a' && token[0] <= L'z') ||
@@ -665,7 +667,7 @@ Parser::TokenCode Parser::GetTextTokenCode(const wstring& token) const
         (token[0] > 0x7F))
         return cSymbol;
 
-    throw Exception(Exception::cUnrecognisedCommand, token);
+    throw Exception(L"UnrecognisedCommand", token);
 }
 
 auto_ptr<ParseTree::MathNode> Parser::DoParse(const vector<wstring>& input)
@@ -676,11 +678,11 @@ auto_ptr<ParseTree::MathNode> Parser::DoParse(const vector<wstring>& input)
     switch (GetMathTokenCode(mTokenSource->Peek()))
     {
         case cEndOfInput:     return output;
-        case cEndGroup:       throw Exception(Exception::cUnmatchedCloseBrace);
-        case cRight:          throw Exception(Exception::cUnmatchedRight);
-        case cNextCell:       throw Exception(Exception::cUnexpectedNextCell);
-        case cNextRow:        throw Exception(Exception::cUnexpectedNextRow);
-        case cEndEnvironment: throw Exception(Exception::cUnmatchedEnd);
+        case cEndGroup:       throw Exception(L"UnmatchedCloseBrace");
+        case cRight:          throw Exception(L"UnmatchedRight");
+        case cNextCell:       throw Exception(L"UnexpectedNextCell");
+        case cNextRow:        throw Exception(L"UnexpectedNextRow");
+        case cEndEnvironment: throw Exception(L"UnmatchedEnd");
     }
 
     throw logic_error("Unexpected token code in Parser::DoParse");
@@ -700,16 +702,16 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathField()
         {
             auto_ptr<ParseTree::MathNode> field(new ParseTree::MathGroup(ParseMathList()));
             if (mTokenSource->Peek() != L"}")
-                throw Exception(Exception::cUnmatchedOpenBrace);
+                throw Exception(L"UnmatchedOpenBrace");
             mTokenSource->Advance();
             return field;
         }
 
         case cEndOfInput:
-            throw Exception(Exception::cMissingOpenBraceAtEnd);
+            throw Exception(L"MissingOpenBraceAtEnd");
     }
 
-    throw Exception(Exception::cMissingOpenBraceBefore, command);
+    throw Exception(L"MissingOpenBraceBefore", command);
 }
 
 auto_ptr<ParseTree::MathTable> Parser::ParseMathTable()
@@ -858,7 +860,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 mTokenSource->Advance();
                 output->mChildren.push_back(new ParseTree::MathGroup(ParseMathList()));
                 if (mTokenSource->Peek() != L"}")
-                    throw Exception(Exception::cUnmatchedOpenBrace);
+                    throw Exception(L"UnmatchedOpenBrace");
                 mTokenSource->Advance();
                 break;
             }                
@@ -873,10 +875,10 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 
                 wstring endCommand = mTokenSource->Get();
                 if (GetMathTokenCode(endCommand) != cEndEnvironment)
-                    throw Exception(Exception::cUnmatchedBegin, beginCommand);
+                    throw Exception(L"UnmatchedBegin", beginCommand);
                 
                 if (name != endCommand.substr(5, endCommand.size() - 6))
-                    throw Exception(Exception::cMismatchedBeginAndEnd, beginCommand, endCommand);
+                    throw Exception(L"MismatchedBeginAndEnd", beginCommand, endCommand);
                 
                 if (name == L"cases")
                 {
@@ -885,7 +887,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                         row != table->mRows.end(); row++)
 
                         if ((*row)->mEntries.size() > 2)
-                            throw Exception(Exception::cCasesRowTooBig);
+                            throw Exception(L"CasesRowTooBig");
                 }
 
                 output->mChildren.push_back(new ParseTree::MathEnvironment(name, table));
@@ -898,7 +900,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 
                 mTokenSource->SkipWhitespace();
                 if (mTokenSource->Peek() != L"{")
-                    throw Exception(Exception::cMissingOpenBraceAfter, command);
+                    throw Exception(L"MissingOpenBraceAfter", command);
 
                 output->mChildren.push_back(new ParseTree::EnterTextMode(command, ParseTextField()));                        
                 break;
@@ -910,22 +912,22 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 mTokenSource->SkipWhitespace();
                 wstring left = mTokenSource->Get();
                 if (left.empty())
-                    throw Exception(Exception::cMissingDelimiter, L"\\left");
+                    throw Exception(L"MissingDelimiter", L"\\left");
                 else if (!gDelimiterTable.count(left))
-                    throw Exception(Exception::cIllegalDelimiter, L"\\left");
+                    throw Exception(L"IllegalDelimiter", L"\\left");
 
                 auto_ptr<ParseTree::MathNode> child = ParseMathList();
 
                 if (mTokenSource->Peek() != L"\\right")
-                    throw Exception(Exception::cUnmatchedLeft);
+                    throw Exception(L"UnmatchedLeft");
 
                 mTokenSource->Advance();
                 mTokenSource->SkipWhitespace();
                 wstring right = mTokenSource->Get();
                 if (right.empty())
-                    throw Exception(Exception::cMissingDelimiter, L"\\right");
+                    throw Exception(L"MissingDelimiter", L"\\right");
                 else if (!gDelimiterTable.count(right))
-                    throw Exception(Exception::cIllegalDelimiter, L"\\right");
+                    throw Exception(L"IllegalDelimiter", L"\\right");
                 
                 output->mChildren.push_back(new ParseTree::MathDelimited(child, left, right));
                 break;
@@ -937,9 +939,9 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 mTokenSource->SkipWhitespace();
                 wstring delimiter = mTokenSource->Get();
                 if (delimiter.empty())
-                    throw Exception(Exception::cMissingDelimiter, command);
+                    throw Exception(L"MissingDelimiter", command);
                 else if (!gDelimiterTable.count(delimiter))
-                    throw Exception(Exception::cIllegalDelimiter, command);
+                    throw Exception(L"IllegalDelimiter", command);
                 
                 output->mChildren.push_back(new ParseTree::MathBig(command, delimiter));
                 break;
@@ -950,7 +952,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 mTokenSource->Advance();
                 ParseTree::MathScripts* target = PrepareScripts(output.get());
                 if (target->mUpper.get())
-                    throw Exception(Exception::cDoubleSuperscript);
+                    throw Exception(L"DoubleSuperscript");
                 target->mUpper = ParseMathField();
                 break;
             }
@@ -960,7 +962,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 mTokenSource->Advance();
                 ParseTree::MathScripts* target = PrepareScripts(output.get());
                 if (target->mLower.get())
-                    throw Exception(Exception::cDoubleSubscript);
+                    throw Exception(L"DoubleSubscript");
                 target->mLower = ParseMathField();
                 break;
             }
@@ -977,7 +979,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 
                 ParseTree::MathScripts* target = PrepareScripts(output.get());
                 if (target->mUpper.get())
-                    throw Exception(Exception::cDoubleSuperscript);
+                    throw Exception(L"DoubleSuperscript");
                 
                 if (mTokenSource->Peek() == L"^")
                 {
@@ -993,7 +995,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
             {
                 wstring command = mTokenSource->Get();
                 if (output->mChildren.empty())
-                    throw Exception(Exception::cMisplacedLimits, command);
+                    throw Exception(L"MisplacedLimits", command);
 
                 ParseTree::MathScripts* scripts = dynamic_cast<ParseTree::MathScripts*>(output->mChildren.back());
                 if (scripts)
@@ -1030,7 +1032,7 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
             case cCommandInfix:
             {
                 if (!infixCommand.empty())
-                    throw Exception(Exception::cAmbiguousInfix, mTokenSource->Peek());
+                    throw Exception(L"AmbiguousInfix", mTokenSource->Peek());
                 
                 infixNumerator = output;
                 infixCommand = mTokenSource->Get();
@@ -1061,16 +1063,16 @@ auto_ptr<ParseTree::TextNode> Parser::ParseTextField()
         {
             auto_ptr<ParseTree::TextNode> field(new ParseTree::TextGroup(ParseTextList()));
             if (mTokenSource->Peek() != L"}")
-                throw Exception(Exception::cUnmatchedOpenBrace);
+                throw Exception(L"UnmatchedOpenBrace");
             mTokenSource->Advance();
             return field;
         }
 
         case cEndOfInput:
-            throw Exception(Exception::cMissingOpenBraceAtEnd);
+            throw Exception(L"MissingOpenBraceAtEnd");
     }
 
-    throw Exception(Exception::cMissingOpenBraceBefore, command);
+    throw Exception(L"MissingOpenBraceBefore", command);
 }
 
 auto_ptr<ParseTree::TextNode> Parser::ParseTextList()
@@ -1108,7 +1110,7 @@ auto_ptr<ParseTree::TextNode> Parser::ParseTextList()
                 mTokenSource->Advance();
                 output->mChildren.push_back(new ParseTree::TextGroup(ParseTextList()));
                 if (mTokenSource->Peek() != L"}")
-                    throw Exception(Exception::cUnmatchedOpenBrace);
+                    throw Exception(L"UnmatchedOpenBrace");
                 mTokenSource->Advance();
                 break;
             }

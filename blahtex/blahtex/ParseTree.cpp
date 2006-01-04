@@ -1,6 +1,6 @@
 // File "ParseTree.cpp"
 // 
-// blahtex (version 0.3.4): a LaTeX to MathML converter designed with MediaWiki in mind
+// blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2005, David Harvey
 // 
 // This program is free software; you can redistribute it and/or modify
@@ -213,8 +213,8 @@ auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(const LatexMathFont& curren
             foundFirst = true;
         else
         {
-            Flavour  leftFlavour = dynamic_cast<LayoutTree::Fenced*>(*previousAtom) ? cFlavourClose : (*previousAtom)->mFlavour;
-            Flavour rightFlavour = dynamic_cast<LayoutTree::Fenced*>(*currentAtom)  ? cFlavourOpen  : (*currentAtom)->mFlavour;
+            Flavour leftFlavour = (*previousAtom)->mFlavour;
+            Flavour rightFlavour = (*currentAtom)->mFlavour;
 
             int width = 
 
@@ -308,9 +308,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
                 font.mFamily = defaultFamily;
 
             if (fancyFontsIllegal && font.mFamily == LatexMathFont::cFamilyCal)
-                throw Exception(Exception::cUnavailableSymbolFontCombination, mCommand, L"cal");
+                throw Exception(L"UnavailableSymbolFontCombination", mCommand, L"cal");
             if (fancyFontsIllegal && font.mFamily == LatexMathFont::cFamilyBb)
-                throw Exception(Exception::cUnavailableSymbolFontCombination, mCommand, L"bb");
+                throw Exception(L"UnavailableSymbolFontCombination", mCommand, L"bb");
             
             return auto_ptr<LayoutTree::Node>(new LayoutTree::SymbolPlain(
                 mCommand, font.GetMathmlApproximation(), currentStyle, cFlavourOrd));
@@ -388,11 +388,11 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(const LatexMathFont& curr
     {
         LatexMathFont font = currentFont;
         if (font.mFamily == LatexMathFont::cFamilyCal)
-            throw Exception(Exception::cUnavailableSymbolFontCombination, mCommand, L"cal");
+            throw Exception(L"UnavailableSymbolFontCombination", mCommand, L"cal");
         if (font.mFamily == LatexMathFont::cFamilyBb)
-            throw Exception(Exception::cUnavailableSymbolFontCombination, mCommand, L"bb");
+            throw Exception(L"UnavailableSymbolFontCombination", mCommand, L"bb");
         if (font.mFamily == LatexMathFont::cFamilyFrak)
-            throw Exception(Exception::cUnavailableSymbolFontCombination, mCommand, L"frak");
+            throw Exception(L"UnavailableSymbolFontCombination", mCommand, L"frak");
 
         if (font.mFamily == LatexMathFont::cFamilyDefault)
             font.mFamily = LatexMathFont::cFamilyRm;
@@ -893,11 +893,11 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
         auto_ptr<LayoutTree::Node> child = mChild->BuildLayoutTree(currentFont, currentStyle);
         LayoutTree::SymbolOperator* childAsOperator = dynamic_cast<LayoutTree::SymbolOperator*>(child.get());
         if (!childAsOperator)
-            throw Exception(Exception::cInvalidNegation);
+            throw Exception(L"InvalidNegation");
 
         wishful_hash_map<wstring, wstring>::const_iterator negationLookup = negationTable.find(childAsOperator->mText);
         if (negationLookup == negationTable.end())
-            throw Exception(Exception::cInvalidNegation);
+            throw Exception(L"InvalidNegation");
 
         childAsOperator->mText = negationLookup->second;
         return child;
@@ -956,8 +956,10 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(const LatexMathFont&
     
     static pair<wstring, AccentInfo> accentCommandArray[] =
     {                                                                       // stretchy?
-        make_pair(L"\\hat",                 AccentInfo(L"^",                    false)),
-        make_pair(L"\\widehat",             AccentInfo(L"^",                    true)),
+        // FIX: there's some funny inconsistency between the definition of &Hat; among MathML versions.
+        // I was originally using plain "^" for these accents, but Roger recommended using 0x302 instead.
+        make_pair(L"\\hat",                 AccentInfo(L"\U00000302",           false)),
+        make_pair(L"\\widehat",             AccentInfo(L"\U00000302",           true)),
         make_pair(L"\\bar",                 AccentInfo(L"\U000000AF",           false)),
         make_pair(L"\\overline",            AccentInfo(L"\U000000AF",           true)),
         make_pair(L"\\underline",           AccentInfo(L"\U000000AF",           true)),
@@ -1096,8 +1098,8 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(const LatexMathFont
     if (mCommand == L"\\rootReserved")
     {
         return auto_ptr<LayoutTree::Node>(new LayoutTree::Root(
-            mChild1->BuildLayoutTree(currentFont, currentStyle),
-            mChild2->BuildLayoutTree(currentFont, cStyleScriptScript)));            
+            mChild2->BuildLayoutTree(currentFont, currentStyle),
+            mChild1->BuildLayoutTree(currentFont, cStyleScriptScript)));
     }
     
     if (mCommand == L"\\cfrac")
@@ -1162,7 +1164,7 @@ auto_ptr<LayoutTree::Node> MathLimits::BuildLayoutTree(const LatexMathFont& curr
     auto_ptr<LayoutTree::Node> node = mChild->BuildLayoutTree(currentFont, currentStyle);
 
     if (node->mFlavour != cFlavourOp)
-        throw Exception(Exception::cMisplacedLimits, mCommand);
+        throw Exception(L"MisplacedLimits", mCommand);
     
     if (mCommand == L"\\limits")
         node->mLimits = cLimitsLimits;
@@ -1316,6 +1318,7 @@ auto_ptr<LayoutTree::Node> EnterTextMode::BuildLayoutTree(const LatexMathFont& c
 {
     static pair<wstring, LatexTextFont> textCommandArray[] =
     {                                                                 //  bold?  italic?
+        make_pair(L"\\mbox",      LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
         make_pair(L"\\hbox",      LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
         make_pair(L"\\text",      LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
         make_pair(L"\\textrm",    LatexTextFont(LatexTextFont::cFamilyRm, false, false)),
@@ -1331,7 +1334,7 @@ auto_ptr<LayoutTree::Node> EnterTextMode::BuildLayoutTree(const LatexMathFont& c
     if (textCommand == textCommandTable.end())
         throw logic_error("Unexpected command in EnterTextMode::BuildLayoutTree");
 
-    Style style = (mCommand == L"\\hbox") ? cStyleText : currentStyle;
+    Style style = (mCommand == L"\\hbox" || mCommand == L"\\mbox") ? cStyleText : currentStyle;
     return mChild->BuildLayoutTree(textCommand->second, style);
 }
 
@@ -1436,7 +1439,7 @@ auto_ptr<LayoutTree::Node> TextCommand1Arg::BuildLayoutTree(const LatexTextFont&
         font.mIsItalic = !font.mIsItalic;
     else if (mCommand == L"\\textbf")
         font.mIsBold = true;
-    else if (mCommand == L"\\text" || mCommand == L"\\hbox")
+    else if (mCommand == L"\\text" || mCommand == L"\\hbox" || mCommand == L"\\mbox")
         // do nothing!
         { }
     else
@@ -1629,14 +1632,12 @@ void TextSymbol::GetPurifiedTex(wostream& os, const PurifiedTexOptions& options)
     {
         if (options.mUseUcsPackage && gAllowedUnicodeTable.count(mCommand[0]))
             os << L"\\unichar{" << static_cast<unsigned>(mCommand[0]) << L"}";
-        else if (options.mForbidPngIncompatibleCharacters)
+        else
         {
             wostringstream code;
             code << hex << setfill(L'0') << uppercase << setw(8) << static_cast<unsigned>(mCommand[0]);
-            throw Exception(Exception::cPngIncompatibleCharacter, L"U+" + code.str());
+            throw Exception(L"PngIncompatibleCharacter", L"U+" + code.str());
         }
-        else
-            os << L"?";
     }
     else
         os << mCommand;
