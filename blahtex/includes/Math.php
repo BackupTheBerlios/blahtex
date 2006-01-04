@@ -4,6 +4,56 @@
  * @package MediaWiki
  */
 
+class blahtexOutputParser  {
+        var $parser;
+	var $stack;
+	var $results;
+
+	function blahtexOutputParser()
+	{
+	  $this->parser = xml_parser_create("UTF-8");
+	  $this->stack = array();
+	  $this->results = array();
+	  
+	  xml_set_object($this->parser, $this);
+	  xml_parser_set_option($this->parser, XML_OPTION_CASE_FOLDING, 0);
+	  xml_set_element_handler($this->parser, "startElement", "stopElement");
+	  xml_set_character_data_handler($this->parser, "characterData");
+	}
+	
+	function parse($data)
+	{
+	  // We splice out any segment between <markup> and </markup>  so that the XML parser doesn't have to
+	  // deal with all the MathML tags.
+	  $markupBegin = strpos($data, "<markup>");
+	  if (!($markupBegin === false)) {
+	      $markupEnd = strpos($data, "</markup>");
+	      $this->results["mathmlMarkup"] = trim(substr($data, $markupBegin + 8, $markupEnd - $markupBegin - 8));
+	      $data = substr($data, 0, $markupBegin + 8) . substr($data, $markupEnd);
+	  }
+	  xml_parse($this->parser, $data);
+	  return $this->results;
+	}
+	
+	function startElement($parser, $name, $attributes)
+	{
+	  if (count($this->stack) == 0)
+	    array_push($this->stack, $name);
+	  else
+	    array_push($this->stack, $this->stack[count($this->stack)-1] . ":$name");
+	}
+	
+	function stopElement($parser, $name)
+	{
+	  array_pop($this->stack);
+	}
+	
+	function characterData($parser, $data)
+	{
+	  $this->results[$this->stack[count($this->stack)-1]] = $data;
+	}
+}
+
 /**
  * Takes LaTeX fragments, sends them to a helper program (texvc) for rendering
  * to rasterized PNG and HTML and MathML approximations. An appropriate
@@ -41,52 +91,7 @@ class MathRenderer {
 		}
 		
                 if( $this->mode == MW_MATH_MATHML && $wgBlahtex) {
-
-                  # Pipe contents through blahtex
-                  if (function_exists('is_executable') && !is_executable($wgBlahtex)) {
-                    return $this->_error( 'math_noblahtex', $wgBlahtex );
-                  }
-                  $descriptorspec = array(0 => array("pipe", "r"),
-                                          1 => array("pipe", "w"));
-		  $options = '--mathml --texvc-compatibility --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package';
-                  $process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
-                  if (!$process) {
-                    return $this->_error( 'math_unknown_error', '#1' );
-                  }
-		  fwrite($pipes[0], '\\displaystyle ');
-                  fwrite($pipes[0], $this->tex);
-                  fclose($pipes[0]);
-                  $contents = '';
-                  while (!feof($pipes[1])) {
-                    $contents .= fgets($pipes[1], 4096);
-                  }
-                  fclose($pipes[1]);
-                  if (proc_close($process) != 0) {
-                    # exit code of blahtex is not zero; this shouldn't happen
-                    return $this->_error( 'math_unknown_error', '#2' );
-                  }
-
-		  # Parse output. Assumes output is well-formed.
-		  $contents = rtrim($contents);
-		  $firsttag = substr($contents, 1, strpos($contents, '>') - 1);
-
-		  if ($firsttag == 'mathml') {
-		    # Everything is okay
-		    $contents = substr($contents, strlen($firsttag)+2, 
-				       strpos($contents, '</'.$firsttag.'>') - (strlen($firsttag)+2));
-		    return ("<math xmlns='http://www.w3.org/1998/Math/MathML'>" . $contents . "</math>");
-		  }
-		  else if ($firsttag == 'inputError') {
-		    # The input is not valid. 
-		    # FIXME For the moment, use the 'message'
-		    $pos = strpos($contents, '<message>') + strlen('<message>');
-		    $contents = substr($contents, $pos, strpos($contents, '</message>') - $pos);
-		    return $this->_error('', $contents);
-		  }
-
-		  # Other errors are pngError, logicError, or unicodeError
-		  # but these shouldn't happen in this context
-		  return $this->_error('math_blahtex_error', $contents);
+		  return $this->runBlahtex($this->tex);
                 }
 
 		if( !$this->_recall() ) {
@@ -200,7 +205,75 @@ class MathRenderer {
 		
 		return $this->_doRender();
 	}
-	
+
+	/**
+	 * Invoke the blahtex executable and process the results
+	 */
+	function runBlahtex($tex) {
+	        list($success, $res) = $this->invokeBlahtex($tex);
+		if (!$success)
+		  return $res;
+		$parser = new blahtexOutputParser();
+		$res = $parser->parse($res);
+		return $this->processBlahtexOutput($res);
+	}
+
+	/**
+	 * Invoke the blahtex executable.
+	 * If there is an error, the return value is (false, error message).
+	 * If there is no error, the return value is (true, blatex output).
+	 */
+	function invokeBlahtex($tex)
+	{
+		global $wgBlahtex;
+
+                if (function_exists('is_executable') && !is_executable($wgBlahtex))
+                  return array(false, $this->_error('math_noblahtex', $wgBlahtex));
+
+                $descriptorspec = array(0 => array("pipe", "r"),
+                                        1 => array("pipe", "w"));
+		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package';
+                $process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
+                if (!$process) {
+                  return array(false, $this->_error('math_unknown_error', ' #1'));
+                }
+		fwrite($pipes[0], '\\displaystyle ');
+                fwrite($pipes[0], $tex);
+                fclose($pipes[0]);
+
+                $contents = '';
+                while (!feof($pipes[1])) {
+                  $contents .= fgets($pipes[1], 4096);
+                }
+                fclose($pipes[1]);
+                if (proc_close($process) != 0) {
+                  # exit code of blahtex is not zero; this shouldn't happen
+                  return array(false, $this->_error('math_unknown_error', '#2'));
+                }
+
+		return array(true, $contents);
+	}
+
+	/**
+	 * Process Blahtex output and return resulting HTML
+	 */
+	function processBlahtexOutput($results)
+	{
+	        if (isset($results["blahtex:logicError"])) {
+		  # Case I: Something went completely wrong
+		  return $this->_error('math_unknown_error', $results["blahtex:logicError"]);
+		} elseif (isset($results["blahtex:error:id"])) {
+		  # Case II: There was a syntax error in the input
+		  return $this->_error('math_syntax_error', $results["blahtex:error:message"]);
+		} elseif (isset($results["blahtex:mathml:error:id"])) {
+		  # Case III: An error occurred during the conversion to MathML
+		  return $this->_error('math_unknown_error', $results["blahtex:mathml:error:message"]);
+		} else {
+		  # Case IV: Everything went okay
+		  return "<math xmlns='http://www.w3.org/1998/Math/MathML'>{$results['mathmlMarkup']}</math>";
+		}
+	}
+
 	function _error( $msg, $append = '' ) {
 		$mf   = htmlspecialchars( wfMsg( 'math_failure' ) );
 		$munk = htmlspecialchars( wfMsg( 'math_unknown_error' ) );
