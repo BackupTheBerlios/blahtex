@@ -855,18 +855,6 @@ See [[Project:User preferences help]] for help deciphering the options.",
 'skin'			=> 'Skin',
 'math'			=> 'Math',
 'dateformat'		=> 'Date format',
-'math_failure'		=> 'Failed to parse',
-'math_unknown_error'	=> 'unknown error',
-'math_unknown_function'	=> 'unknown function ',
-'math_input_error'	=> 'input error',
-'math_lexing_error'	=> 'lexing error',
-'math_syntax_error'	=> 'syntax error',
-'math_image_error'	=> 'PNG conversion failed; check for correct installation of latex, dvips, gs, and convert',
-'math_bad_tmpdir'	=> 'Can\'t write to or create math temp directory',
-'math_bad_output'	=> 'Can\'t write to or create math output directory',
-'math_notexvc'	=> 'Missing texvc executable; please see math/README to configure.',
-'math_noblahtex' => 'Can\'t execute blahtex, which should be at ',
-'math_blahtex_error' => 'blahtex error: ',
 'prefs-personal' => 'User data',
 'prefs-rc' => 'Recent changes & stubs',
 'prefs-misc' => 'Misc',
@@ -895,6 +883,79 @@ See [[Project:User preferences help]] for help deciphering the options.",
 'defaultns'		=> 'Search in these namespaces by default:',
 'default'		=> 'default',
 'files'			=> 'Files',
+
+# Mathematics
+#
+
+'math_failure'		=> 'Failed to parse',
+'math_unknown_error'	=> 'unknown error$1',
+'math_unknown_function'	=> 'unknown function ',
+'math_input_error'	=> 'input error',
+'math_lexing_error'	=> 'lexing error $1',
+'math_syntax_error'	=> 'syntax error $1',
+'math_image_error'	=> 'PNG conversion failed; check for correct installation of latex, dvips, gs, and convert',
+'math_bad_tmpdir'	=> 'Can\'t write to or create math temp directory',
+'math_bad_output'	=> 'Can\'t write to or create math output directory',
+'math_notexvc'	        => 'Missing texvc executable; please see math/README to configure.',
+'math_noblahtex'        => 'Can\'t execute blahtex, which should be at $1',
+
+'math_NonAsciiInMathMode'               => 'Non-ASCII characters may only be used in text mode ' .
+                                           '(try enclosing the problem characters in "\\text{...}")',
+'math_IllegalCharacter'                 => 'Illegal character in input',
+'math_PngIncompatibleCharacter'         => 'Unable to correctly generate PNG containing the character $1',
+'math_ReservedCommand'                  => 'The command "$1" is reserved for internal use by blahtex',
+'math_TooManyTokens'                    => 'The input is too long',
+'math_IllegalFinalBackslash'            => 'Illegal backslash "\\" at end of input',
+'math_UnrecognisedCommand'              => 'Unrecognised command "$1"',
+'math_IllegalCommandInMathMode'         => 'The command "$1" is illegal in math mode',
+'math_IllegalCommandInMathModeWithHint' => 'The command "$1" is illegal in math mode ' .
+                                           '(perhaps you intended to use "$2" instead?)',
+'math_IllegalCommandInTextMode'         => 'The command "$1" is illegal in text mode',
+'math_IllegalCommandInTextModeWithHint' => 'The command "$1" is illegal in text mode ' .
+                                           '(perhaps you intended to use "$2" instead?)',
+'math_MissingOpenBraceBefore'           => 'Missing open brace "{" before "$1"',
+'math_MissingOpenBraceAfter'            => 'Missing open brace "{" after "$1"',
+'math_MissingOpenBraceAtEnd'            => 'Missing open brace "{" at end of input',
+'math_NotEnoughArguments'               => 'Not enough arguments were supplied for "$1"',
+'math_MissingCommandAfterNewcommand'    => 'Missing or illegal new command name after "\\newcommand" ' .
+                                           '(there must be precisely one command defined; it must begin ' .
+                                           'with a backslash "\\" and contain only alphabetic characters)',
+'math_IllegalRedefinition'              => 'The command "$1" has already been defined; you cannot redefine it',
+'math_MissingOrIllegalParameterCount'   => 'Missing or illegal parameter count in definition of "$1" ' .
+                                           '(must be a single digit between 1 and 9 inclusive)',
+'math_MissingOrIllegalParameterIndex'   => 'Missing or illegal parameter index in definition of "$1"',
+'math_UnmatchedOpenBracket'             => 'Encountered open bracket "[" without matching close bracket "]"',
+'math_UnmatchedOpenBrace'               => 'Encountered open brace "{" without matching close brace "}"',
+'math_UnmatchedCloseBrace'              => 'Encountered close brace "{" without matching open brace "}"',
+'math_UnmatchedLeft'                    => 'Encountered "\\left" without matching "\\right"',
+'math_UnmatchedRight'                   => 'Encountered "\\right" without matching "\\left"',
+'math_UnmatchedBegin'                   => 'Encountered "\\begin" without matching "\\end"',
+'math_UnmatchedEnd'                     => 'Encountered "\\end" without matching "\\begin"',
+'math_UnexpectedNextCell'               => 'The command "&" may only appear inside a "\\begin ... \\end" block',
+'math_UnexpectedNextRow'                => 'The command "\\\\" may only appear inside a "\\begin ... \\end" block',
+'math_MismatchedBeginAndEnd'            => 'Commands "$1" and "$2" do not match',
+'math_CasesRowTooBig'                   => 'There can only be two entries in each row of a "cases" block',
+'math_MissingDelimiter'                 => 'Missing delimiter after "$1"',
+'math_IllegalDelimiter'                 => 'Illegal delimiter following "$1"',
+'math_MisplacedLimits'                  => 'The command "$1" can only appear after a math operator ' .
+                                           '(consider using "\\mathop")',
+'math_DoubleSuperscript'                => 'Encountered two superscripts attached to the same base ' .
+                                           '(only one is allowed)',
+'math_DoubleSubscript'                  => 'Encountered two subscripts attached to the same base ' . 
+                                           '(only one is allowed)',
+'math_AmbiguousInfix'                   => 'Ambiguous placement of "$1" ' . 
+                                           '(try using additional braces "{ ... }" to disambiguate)',
+'math_UnavailableSymbolFontCombination' => 'The symbol "$1" is not available in the font "$2"',
+'math_InvalidNegation'                  => 'No negative version of the symbol(s) following "\\not" is available',
+'math_TooManyMathmlNodes'               => 'There are too many nodes in the MathML tree',
+
+'math_InvalidUtf8Input'                 => 'The input string was not valid UTF-8',
+'math_CannotCreateTexFile'              => 'Cannot create tex file',
+'math_CannotWriteTexFile'               => 'Cannot write to tex file',
+'math_CannotRunLatex'                   => 'Cannot run latex',
+'math_CannotRunDvips'                   => 'Cannot run dvips',
+'math_CannotRunConvert'                 => 'Cannot run convert',
+'math_CannotChangeDirectory'            => 'Cannot change working directory',
 
 # User levels special page
 #

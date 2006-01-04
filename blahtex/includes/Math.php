@@ -50,7 +50,15 @@ class blahtexOutputParser  {
 	
 	function characterData($parser, $data)
 	{
-	  $this->results[$this->stack[count($this->stack)-1]] = $data;
+	  $index = $this->stack[count($this->stack)-1];
+	  if (isset($this->results[$index])) {
+	    if (is_array($this->results[$index]))
+	      array_push($this->results[$index], $data);
+	    else
+	      $this->results[$index] = array($this->results[$index], $data);
+	  }
+	  else
+	    $this->results[$this->stack[count($this->stack)-1]] = $data;
 	}
 }
 
@@ -130,7 +138,7 @@ class MathRenderer {
 			wfDebug( "TeX output:\n $contents\n---\n" );
 		
  			if (strlen($contents) == 0) {
-			  return $this->_error( 'math_unknown_error', $cmd );
+			  return $this->_error( 'math_unknown_error' );
 			}
 			
 			$retval = substr ($contents, 0, 1);
@@ -248,7 +256,7 @@ class MathRenderer {
                 fclose($pipes[1]);
                 if (proc_close($process) != 0) {
                   # exit code of blahtex is not zero; this shouldn't happen
-                  return array(false, $this->_error('math_unknown_error', '#2'));
+                  return array(false, $this->_error('math_unknown_error', ' #2'));
                 }
 
 		return array(true, $contents);
@@ -263,27 +271,37 @@ class MathRenderer {
 		  # Case I: Something went completely wrong
 		  return $this->_error('math_unknown_error', $results["blahtex:logicError"]);
 		} elseif (isset($results["blahtex:error:id"])) {
-		  # Case II: There was a syntax error in the input
-		  return $this->_error('math_syntax_error', $results["blahtex:error:message"]);
+		  # Case II: There was a syntax error in the input. 
+		  if (isset($results["blahtex:error:arg"])) {
+		    if (is_array($results["blahtex:error:arg"])) 
+		      # Error message has two arguments
+		      return $this->_error('math_' . $results["blahtex:error:id"], 
+					   $results["blahtex:error:arg"][0], $results["blahtex:error:arg"][1]);
+		    else
+		      # Error message has one argument
+		      return $this->_error('math_' . $results["blahtex:error:id"], $results["blahtex:error:arg"]);
+		  }
+		  else	
+                    # Error message has no arguments
+		    return $this->_error('math_' . $results["blahtex:error:id"]);
 		} elseif (isset($results["blahtex:mathml:error:id"])) {
 		  # Case III: An error occurred during the conversion to MathML
-		  return $this->_error('math_unknown_error', $results["blahtex:mathml:error:message"]);
+		  return $this->_error('math_' . $results["blahtex:mathml:error:id"]);
 		} else {
 		  # Case IV: Everything went okay
 		  return "<math xmlns='http://www.w3.org/1998/Math/MathML'>{$results['mathmlMarkup']}</math>";
 		}
 	}
 
-	function _error( $msg, $append = '' ) {
-		$mf   = htmlspecialchars( wfMsg( 'math_failure' ) );
-		$munk = htmlspecialchars( wfMsg( 'math_unknown_error' ) );
-		if ($msg)
-		  $errmsg = htmlspecialchars( wfMsg( $msg ) );
+	function _error( $msg, $arg1 = '', $arg2 = '' ) {
+		$mf = htmlspecialchars( wfMsg( 'math_failure' ) );
+		if ($msg) 
+		  $errmsg = htmlspecialchars( wfMsg( $msg, $arg1, $arg2 ) );
 		else
 		  $errmsg = '';
                 $source = htmlspecialchars(str_replace("\n", ' ', $this->tex));
                 # Note: the str_replace above is because the return value must not contain newlines
-		return "<strong class='error'>$mf ($errmsg$append): $source</strong>\n";
+		return "<strong class='error'>$mf ($errmsg): $source</strong>\n";
 	}
 	
 	function _recall() {
