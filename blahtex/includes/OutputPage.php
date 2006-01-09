@@ -453,6 +453,7 @@ class OutputPage {
 		$sk->postParseLinkColour( false );
 
 		/* Send page as XHTML if the user has selected MathML and the browser accepts XHTML */
+		/* FIXME: Use $wgRequest? */
 		if ($wgUser->getOption('math') == MW_MATH_MATHML && stristr($_SERVER['HTTP_ACCEPT'], 'application/xhtml+xml')) {
 		  $mimeType = 'application/xhtml+xml'; 
 		} else {
