@@ -89,8 +89,7 @@ class MathRenderer {
 	}
 
 	function render() {
-		global $wgMathDirectory, $wgTmpDirectory, $wgInputEncoding;
-		global $wgTexvc, $wgBlahtex;
+		global $wgBlahtex;
 		$fname = 'MathRenderer::render';
 	
 		if( $this->mode == MW_MATH_SOURCE ) {
@@ -98,102 +97,38 @@ class MathRenderer {
 			return ('$ '.htmlspecialchars( $this->tex ).' $');
 		}
 		
-                if( $this->mode == MW_MATH_MATHML && $wgBlahtex) {
-		  return $this->runBlahtex($this->tex);
-                }
-
 		if( !$this->_recall() ) {
-			# Ensure that the temp and output directories are available before continuing...
-			if( !file_exists( $wgMathDirectory ) ) {
-				if( !@mkdir( $wgMathDirectory ) ) {
-					return $this->_error( 'math_bad_output' );
-				}
-			} elseif( !is_dir( $wgMathDirectory ) || !is_writable( $wgMathDirectory ) ) {
-				return $this->_error( 'math_bad_output' );
-			}
-			if( !file_exists( $wgTmpDirectory ) ) {
-				if( !@mkdir( $wgTmpDirectory ) ) {
-					return $this->_error( 'math_bad_tmpdir' );
-				}
-			} elseif( !is_dir( $wgTmpDirectory ) || !is_writable( $wgTmpDirectory ) ) {
-				return $this->_error( 'math_bad_tmpdir' );
-			}
+			$res = $this->testEnvironment();
+			if ($res)
+				return $res;
 			
-			if( function_exists( 'is_executable' ) && !is_executable( $wgTexvc ) ) {
-				return $this->_error( 'math_notexvc' );
-			}
-			$cmd = $wgTexvc . ' ' . 
-					escapeshellarg( $wgTmpDirectory ).' '.
-					escapeshellarg( $wgMathDirectory ).' '.
-					escapeshellarg( $this->tex ).' '.
-					escapeshellarg( $wgInputEncoding );
-					
-			if ( wfIsWindows() ) {
-				# Invoke it within cygwin sh, because texvc expects sh features in its default shell
-				$cmd = 'sh -c ' . wfEscapeShellArg( $cmd );
-			} 
-
-			wfDebug( "TeX: $cmd\n" );
-			$contents = `$cmd`;
-			wfDebug( "TeX output:\n $contents\n---\n" );
-		
- 			if (strlen($contents) == 0) {
-			  return $this->_error( 'math_unknown_error' );
-			}
+			// Run texvc
+			list($success, $res) = $this->invokeTexvc($this->tex);
+			if (!$success)
+				return $res;
+			$texvcError = $this->processTexvcOutput($res);
 			
-			$retval = substr ($contents, 0, 1);
-			if (($retval == 'C') || ($retval == 'M') || ($retval == 'L')) {
-				if ($retval == 'C')
-					$this->conservativeness = 2;
-				else if ($retval == 'M')
-					$this->conservativeness = 1;
-				else
-					$this->conservativeness = 0;
-				$outdata = substr ($contents, 33);
-		
-				$i = strpos($outdata, "\000");
-		
-				$this->html = substr($outdata, 0, $i);
-				$this->mathml = substr($outdata, $i+1);
-			} else if (($retval == 'c') || ($retval == 'm') || ($retval == 'l'))  {
-				$this->html = substr ($contents, 33);
-				if ($retval == 'c')
-					$this->conservativeness = 2;
-				else if ($retval == 'm')
-					$this->conservativeness = 1;
-				else
-					$this->conservativeness = 0;
-				$this->mathml = NULL;
-			} else if ($retval == 'X') {
-				$this->html = NULL;
-				$this->mathml = substr ($contents, 33);
-				$this->conservativeness = 0;
-			} else if ($retval == '+') {
-				$this->html = NULL;
-				$this->mathml = NULL;
-				$this->conservativeness = 0;
+			// Run blahtex, if configured
+			if ($wgBlahtex) {
+				list($success, $res) = $this->invokeBlahtex($this->tex, $this->hash == NULL);
+				if (!$success)
+					return $res;
+				$parser = new blahtexOutputParser();
+				$res = $parser->parse($res);
+				$blahtexError = $this->processBlahtexOutput($res);
+				if ($blahtexError)
+					return $blahtexError;
 			} else {
-				$errbit = htmlspecialchars( substr($contents, 1) );
-				switch( $retval ) {
-					case 'E': return $this->_error( 'math_lexing_error', $errbit );
-					case 'S': return $this->_error( 'math_syntax_error', $errbit );
-					case 'F': return $this->_error( 'math_unknown_function', $errbit );
-					default:  return $this->_error( 'math_unknown_error', $errbit );
-				}
+				if ($texvcError)
+					return $texvcError;
 			}
-		
-			$this->hash = substr ($contents, 1, 32);
-			if (!preg_match("/^[a-f0-9]{32}$/", $this->hash)) {
-				return $this->_error( 'math_unknown_error' );
-			}
-		
-			if( !file_exists( "$wgMathDirectory/{$this->hash}.png" ) ) {
-				return $this->_error( 'math_image_error' );
-			}
-			
+
 			# Now save it back to the DB:
 			if ( !wfReadOnly() ) {
-				$outmd5_sql = pack('H32', $this->hash);
+				if ($this->hash)
+					$outmd5_sql = pack('H32', $this->hash);
+				else
+					$outmd5_sql = '';
 			
 				$md5_sql = pack('H32', $this->md5); # Binary packed, not hex
 				
@@ -208,42 +143,154 @@ class MathRenderer {
 				  ), $fname, array( 'IGNORE' ) 
 				);
 			}
-			
 		}
-		
+		  
 		return $this->_doRender();
 	}
 
 	/**
-	 * Invoke the blahtex executable and process the results
+	 * Test whether the necessary directories and executables exists.
+	 * Returns an error message if there is a problem, and false otherwise.
 	 */
-	function runBlahtex($tex) {
-	        list($success, $res) = $this->invokeBlahtex($tex);
-		if (!$success)
-		  return $res;
-		$parser = new blahtexOutputParser();
-		$res = $parser->parse($res);
-		return $this->processBlahtexOutput($res);
+	function testEnvironment()
+	{
+	        global $wgMathDirectory, $wgTmpDirectory, $wgTexvc, $wgBlahtex;
+
+                if( !file_exists( $wgMathDirectory ) ) {
+			if( !@mkdir( $wgMathDirectory ) ) {
+				return $this->_error( 'math_bad_output' );
+			}
+		} elseif( !is_dir( $wgMathDirectory ) || !is_writable( $wgMathDirectory ) ) {
+			return $this->_error( 'math_bad_output' );
+		}
+		if( !file_exists( $wgTmpDirectory ) ) {
+			if( !@mkdir( $wgTmpDirectory ) ) {
+				return $this->_error( 'math_bad_tmpdir' );
+			}
+		} elseif( !is_dir( $wgTmpDirectory ) || !is_writable( $wgTmpDirectory ) ) {
+			return $this->_error( 'math_bad_tmpdir' );
+		}
+		
+		if( function_exists( 'is_executable' ) && !is_executable( $wgTexvc ) ) {
+			return $this->_error( 'math_notexvc' );
+		}
+                if ($wgBlahtex && function_exists('is_executable') && !is_executable($wgBlahtex))
+			return $this->_error('math_noblahtex', $wgBlahtex);
+
+		return false;
+	}
+
+	/**
+	 * Invoke the texvc executable.
+	 * If there is an error, the return value is (false, error message).
+	 * If there is no error, the return value is (true, texvc output).
+	 */
+	function invokeTexvc($tex)
+	{
+	        global $wgMathDirectory, $wgTmpDirectory, $wgTexvc, $wgInputEncoding;
+
+		$cmd = $wgTexvc . ' ' . 
+			escapeshellarg( $wgTmpDirectory ).' '.
+			escapeshellarg( $wgMathDirectory ).' '.
+			escapeshellarg( $this->tex ).' '.
+			escapeshellarg( $wgInputEncoding );
+					
+		if ( wfIsWindows() ) {
+			// Invoke it within cygwin sh, because texvc expects sh features in its default shell
+			$cmd = 'sh -c ' . wfEscapeShellArg( $cmd );
+		} 
+		
+		wfDebug( "TeX: $cmd\n" );
+		$contents = `$cmd`;
+		wfDebug( "TeX output:\n $contents\n---\n" );
+		
+		if (strlen($contents) == 0) {
+			return array(false, $this->_error( 'math_unknown_error' ));
+		}
+
+		return array(true, $contents);
+	}
+
+        /**
+	 * Process texvc output and fill the mathml, html, hash, and conservativeness fields.
+	 * Returns an error message, or false if no error occurred.
+	 */
+        function processTexvcOutput($contents) {
+		global $wgMathDirectory;
+
+		$retval = substr ($contents, 0, 1);
+		if (($retval == 'C') || ($retval == 'M') || ($retval == 'L')) {
+			if ($retval == 'C')
+				$this->conservativeness = 2;
+			else if ($retval == 'M')
+				$this->conservativeness = 1;
+			else
+				$this->conservativeness = 0;
+			$outdata = substr ($contents, 33);
+			
+			$i = strpos($outdata, "\000");
+			
+			$this->html = substr($outdata, 0, $i);
+			$this->mathml = substr($outdata, $i+1);
+		} else if (($retval == 'c') || ($retval == 'm') || ($retval == 'l'))  {
+			$this->html = substr ($contents, 33);
+			if ($retval == 'c')
+				$this->conservativeness = 2;
+			else if ($retval == 'm')
+				$this->conservativeness = 1;
+			else
+				$this->conservativeness = 0;
+			$this->mathml = NULL;
+		} else if ($retval == 'X') {
+			$this->html = NULL;
+			$this->mathml = substr ($contents, 33);
+			$this->conservativeness = 0;
+		} else if ($retval == '+') {
+			$this->html = NULL;
+			$this->mathml = NULL;
+			$this->conservativeness = 0;
+		} else {
+			$errbit = htmlspecialchars( substr($contents, 1) );
+			switch( $retval ) {
+			case 'E': return $this->_error( 'math_lexing_error', $errbit );
+			case 'S': return $this->_error( 'math_syntax_error', $errbit );
+			case 'F': return $this->_error( 'math_unknown_function', $errbit );
+			default:  return $this->_error( 'math_unknown_error', $errbit );
+			}
+		}
+
+		$this->hash = NULL;
+		$hash = substr ($contents, 1, 32);
+		if (!preg_match("/^[a-f0-9]{32}$/", $hash)) {
+			return $this->_error( 'math_unknown_error' );
+		}
+		
+		if( !file_exists( "$wgMathDirectory/{$hash}.png" ) ) {
+			return $this->_error( 'math_image_error' );
+		}
+		
+		$this->hash = $hash;
+		return false;
 	}
 
 	/**
 	 * Invoke the blahtex executable.
 	 * If there is an error, the return value is (false, error message).
 	 * If there is no error, the return value is (true, blatex output).
+	 * FIXME: Assumes standard input encoding
 	 */
-	function invokeBlahtex($tex)
+	function invokeBlahtex($tex, $makePNG)
 	{
-		global $wgBlahtex;
-
-                if (function_exists('is_executable') && !is_executable($wgBlahtex))
-                  return array(false, $this->_error('math_noblahtex', $wgBlahtex));
+		global $wgBlahtex, $wgMathDirectory, $wgTmpDirectory;
 
                 $descriptorspec = array(0 => array("pipe", "r"),
                                         1 => array("pipe", "w"));
 		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package';
+		if ($makePNG)
+			$options = "$options --png --temp-directory $wgTmpDirectory --png-directory $wgMathDirectory";
                 $process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
                 if (!$process) {
-                  return array(false, $this->_error('math_unknown_error', ' #1'));
+			return array(false, $this->_error('math_unknown_error', ' #1'));
                 }
 		fwrite($pipes[0], '\\displaystyle ');
                 fwrite($pipes[0], $tex);
@@ -251,56 +298,68 @@ class MathRenderer {
 
                 $contents = '';
                 while (!feof($pipes[1])) {
-                  $contents .= fgets($pipes[1], 4096);
+			$contents .= fgets($pipes[1], 4096);
                 }
                 fclose($pipes[1]);
                 if (proc_close($process) != 0) {
-                  # exit code of blahtex is not zero; this shouldn't happen
-                  return array(false, $this->_error('math_unknown_error', ' #2'));
+			// exit code of blahtex is not zero; this shouldn't happen
+			return array(false, $this->_error('math_unknown_error', ' #2'));
                 }
 
 		return array(true, $contents);
 	}
 
-	/**
-	 * Process Blahtex output and return resulting HTML
+        /**
+	 * Process blahtex output and update the mathml and png fields.
+	 * Returns an error message, or false if no error occurred.
 	 */
 	function processBlahtexOutput($results)
 	{
 	        if (isset($results["blahtex:logicError"])) {
-		  # Case I: Something went completely wrong
-		  return $this->_error('math_unknown_error', $results["blahtex:logicError"]);
+			// Case I: Something went completely wrong
+			return $this->_error('math_unknown_error', $results["blahtex:logicError"]);
+
 		} elseif (isset($results["blahtex:error:id"])) {
-		  # Case II: There was a syntax error in the input. 
-		  if (isset($results["blahtex:error:arg"])) {
-		    if (is_array($results["blahtex:error:arg"])) 
-		      # Error message has two arguments
-		      return $this->_error('math_' . $results["blahtex:error:id"], 
-					   $results["blahtex:error:arg"][0], $results["blahtex:error:arg"][1]);
-		    else
-		      # Error message has one argument
-		      return $this->_error('math_' . $results["blahtex:error:id"], $results["blahtex:error:arg"]);
-		  }
-		  else	
-                    # Error message has no arguments
-		    return $this->_error('math_' . $results["blahtex:error:id"]);
-		} elseif (isset($results["blahtex:mathml:error:id"])) {
-		  # Case III: An error occurred during the conversion to MathML
-		  return $this->_error('math_' . $results["blahtex:mathml:error:id"]);
+			// Case II: There was a syntax error in the input. 
+			if (isset($results["blahtex:error:arg"])) {
+				if (is_array($results["blahtex:error:arg"])) 
+					// Error message has two arguments
+					return $this->_error('math_' . $results["blahtex:error:id"], 
+							     $results["blahtex:error:arg"][0], $results["blahtex:error:arg"][1]);
+				else
+					// Error message has one argument
+					return $this->_error('math_' . $results["blahtex:error:id"], $results["blahtex:error:arg"]);
+			}
+			else	
+				// Error message has no arguments
+				return $this->_error('math_' . $results["blahtex:error:id"]);
+
+		} elseif (isset($results["mathmlMarkup"]) || isset($results["blahtex:png:md5"])) {
+			// Case III: We got some results
+			if (isset($results["mathmlMarkup"])) 	
+				$this->mathml = $results['mathmlMarkup'];
+			if (isset($results["blahtex:png:md5"])) 
+				$this->hash = $results["blahtex:png:md5"];
+			return false;
+
 		} else {
-		  # Case IV: Everything went okay
-		  return "<math xmlns='http://www.w3.org/1998/Math/MathML'>{$results['mathmlMarkup']}</math>";
+			// Case IV: There is an error somewhere
+			if (isset($results["blahtex:mathml:error:id"])) 
+				return $this->_error('math_' . $results["blahtex:mathml:error:id"]);	
+			if (isset($results["blahtex:png:error:id"]))
+				return $this->_error('math_' . $results["blahtex:png:error:id"]);	
+			return array(false, $this->_error('math_unknown_error', ' #3'));
 		}
 	}
 
 	function _error( $msg, $arg1 = '', $arg2 = '' ) {
 		$mf = htmlspecialchars( wfMsg( 'math_failure' ) );
 		if ($msg) 
-		  $errmsg = htmlspecialchars( wfMsg( $msg, $arg1, $arg2 ) );
+			$errmsg = htmlspecialchars( wfMsg( $msg, $arg1, $arg2 ) );
 		else
-		  $errmsg = '';
+			$errmsg = '';
                 $source = htmlspecialchars(str_replace("\n", ' ', $this->tex));
-                # Note: the str_replace above is because the return value must not contain newlines
+                // Note: the str_replace above is because the return value must not contain newlines
 		return "<strong class='error'>$mf ($errmsg): $source</strong>\n";
 	}
 	
@@ -317,17 +376,23 @@ class MathRenderer {
 		);
 
 		if( $rpage !== false ) {
-			# Tailing 0x20s can get dropped by the database, add it back on if necessary:
-			$xhash = unpack( 'H32md5', $rpage->math_outputhash . "                " );
-			$this->hash = $xhash ['md5'];
+			if( $rpage->math_outputhash == '' )
+				$this->hash = NULL;
+			else {
+				// Tailing 0x20s can get dropped by the database, add them back on if necessary:
+				$xhash = unpack( 'H32md5', $rpage->math_outputhash . "                " );
+				$this->hash = $xhash ['md5'];
+			}
 			
 			$this->conservativeness = $rpage->math_html_conservativeness;
 			$this->html = $rpage->math_html;
 			$this->mathml = $rpage->math_mathml;
 			
-			if( file_exists( "$wgMathDirectory/{$this->hash}.png" ) ) {
+			if( $this->hash && !file_exists( "$wgMathDirectory/{$this->hash}.png" ) ) 
+				$this->hash = NULL;
+
+			if( $this->html || $this->mathml || $this->hash )
 				return true;
-			}
 		}
 		
 		# Missing from the database and/or the render cache
@@ -335,19 +400,65 @@ class MathRenderer {
 	}
 
 	/**
-	 * Select among PNG, HTML, or MathML output depending on
+	 * Select among PNG, HTML, or MathML output depending on the user's preference
 	 */
 	function _doRender() {
-		if( $this->mode == MW_MATH_MATHML && $this->mathml != '' ) {
+
+		switch( $this->mode ) {
+
+		case MW_MATH_PNG: 
+			if( $this->hash )
+				$choice = 'png';
+			elseif ( $this->html )
+				$choice = 'html';
+			else
+				$choice = 'mathml';
+			break;
+
+		case MW_MATH_SIMPLE:
+			if( $this->hash && ( !$this->html || $this->conservativeness != 2 ))
+				$choice = 'png';
+			elseif ( $this->html )
+				$choice = 'html';
+			else
+				$choice = 'mathml';
+			break;
+
+		case MW_MATH_HTML:
+			if ( $this->html )
+				$choice = 'html';
+			elseif( $this->hash )
+				$choice = 'png';
+			else
+				$choice = 'mathml';
+			break;
+
+		case MW_MATH_MODERN:
+			if( $this->hash && ( !$this->html || $this->conservativeness == 2 ))
+				$choice = 'png';
+			elseif ( $this->html )
+				$choice = 'html';
+			else
+				$choice = 'mathml';
+			break;
+
+		case MW_MATH_MATHML:
+			if ( $this->mathml )
+				$choice = 'mathml';
+			elseif( $this->hash )
+				$choice = 'png';
+			else
+				$choice = 'html';
+			break;
+
+		}
+
+		if( $choice == 'mathml' )
 			return "<math xmlns='http://www.w3.org/1998/Math/MathML'>{$this->mathml}</math>";
-		}
-		if (($this->mode == MW_MATH_PNG) || ($this->html == '') ||
-		   (($this->mode == MW_MATH_SIMPLE) && ($this->conservativeness != 2)) ||
-		   (($this->mode == MW_MATH_MODERN || $this->mode == MW_MATH_MATHML) && ($this->conservativeness == 0))) {
+		elseif( $choice == 'png' )
 			return $this->_linkToMathImage();
-		} else {
+		else
 			return '<span class="texhtml">'.$this->html.'</span>';
-		}
 	}
 
 	function _linkToMathImage() {
