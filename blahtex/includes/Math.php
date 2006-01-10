@@ -434,7 +434,7 @@ class MathRenderer {
 			break;
 
 		case MW_MATH_MODERN:
-			if( $this->hash && ( !$this->html || $this->conservativeness == 2 ))
+			if( $this->hash && ( !$this->html || $this->conservativeness == 0 ))
 				$choice = 'png';
 			elseif ( $this->html )
 				$choice = 'html';
