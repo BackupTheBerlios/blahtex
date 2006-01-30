@@ -1,10 +1,10 @@
-blahtex version 0.3.7  --  README file
+blahtex version 0.4  --  README file
 ======================================
 
-The file blahtex-0.3.7.tar.gz contains the source code and documentation
-for blahtex version 0.3.7. It should contain the following files:
+The file blahtex-0.4.tar.gz contains the source code and documentation
+for blahtex version 0.4. It should contain the following files:
 
-  blahtex-0.3.7-manual.pdf    ( <== READ THIS !!! )
+  blahtex-0.4-manual.pdf        ( <== READ THIS !!! )
   README
   GNU-GPL
   history.pdf
@@ -47,4 +47,4 @@ For more information, troubleshooting, bug reports, ....
 
 -----------------------
 David Harvey
-28th January 2006
+29th January 2006

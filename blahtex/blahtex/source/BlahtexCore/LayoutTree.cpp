@@ -1,6 +1,6 @@
 // File "LayoutTree.cpp"
 //
-// blahtex (version 0.3.7)
+// blahtex (version 0.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //

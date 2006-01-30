@@ -1,6 +1,6 @@
 // File "ParseTree2.cpp"
 //
-// blahtex (version 0.3.7)
+// blahtex (version 0.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -841,17 +841,8 @@ pair<wstring, IdentifierInfo> identifierArray[] =
     make_pair(L"\\arccos",
         IdentifierInfo(false, L"arccos", LayoutTree::Node::cFlavourOp)
     ),
-    make_pair(L"\\arcsec",
-        IdentifierInfo(false, L"arcsec", LayoutTree::Node::cFlavourOp)
-    ),
-    make_pair(L"\\arccsc",
-        IdentifierInfo(false, L"arccsc", LayoutTree::Node::cFlavourOp)
-    ),
     make_pair(L"\\arctan",
         IdentifierInfo(false, L"arctan", LayoutTree::Node::cFlavourOp)
-    ),
-    make_pair(L"\\arccot",
-        IdentifierInfo(false, L"arccot", LayoutTree::Node::cFlavourOp)
     ),
     make_pair(L"\\sinh",
         IdentifierInfo(false, L"sinh", LayoutTree::Node::cFlavourOp)

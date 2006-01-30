@@ -1,7 +1,7 @@
 #
 # makefile
 #
-# blahtex (version 0.3.7)
+# blahtex (version 0.4)
 # a TeX to MathML converter designed with MediaWiki in mind
 # Copyright (C) 2006, David Harvey
 #
@@ -52,7 +52,7 @@ HEADERS = \
 OBJECTS = $(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SOURCES)))
 
 linux : CFLAGS = -O3
-mac : CFLAGS = -O3 -DBLAHTEX_ICONV_CONST
+mac : CFLAGS = -O3  -DBLAHTEX_ICONV_CONST
 
 CXXFLAGS = $(CFLAGS)
 

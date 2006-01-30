@@ -1,6 +1,6 @@
 // File "Parser.cpp"
 //
-// blahtex (version 0.3.7)
+// blahtex (version 0.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -269,10 +269,7 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\cot",                    Parser::cSymbolUnsafe),
     make_pair(L"\\arcsin",                 Parser::cSymbolUnsafe),
     make_pair(L"\\arccos",                 Parser::cSymbolUnsafe),
-    make_pair(L"\\arcsec",                 Parser::cSymbolUnsafe),
-    make_pair(L"\\arccsc",                 Parser::cSymbolUnsafe),
     make_pair(L"\\arctan",                 Parser::cSymbolUnsafe),
-    make_pair(L"\\arccot",                 Parser::cSymbolUnsafe),
     make_pair(L"\\sinh",                   Parser::cSymbolUnsafe),
     make_pair(L"\\cosh",                   Parser::cSymbolUnsafe),
     make_pair(L"\\tanh",                   Parser::cSymbolUnsafe),

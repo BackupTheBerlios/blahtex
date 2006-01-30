@@ -1,6 +1,6 @@
 // File "main.cpp"
 //
-// blahtex (version 0.3.7)
+// blahtex (version 0.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -31,7 +31,7 @@
 using namespace std;
 using namespace blahtex;
 
-string gBlahtexVersion = "0.3.7";
+string gBlahtexVersion = "0.4";
 
 // A single global instance of UnicodeConverter.
 UnicodeConverter gUnicodeConverter;

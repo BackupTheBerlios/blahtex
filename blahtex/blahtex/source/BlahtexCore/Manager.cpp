@@ -1,6 +1,6 @@
 // File "Manager.cpp"
 //
-// blahtex (version 0.3.7)
+// blahtex (version 0.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -179,8 +179,12 @@ wstring gAmsmathCommandsArray[] =
     L"\\iint",
     L"\\iiint",
     L"\\iiiint",
+    L"\\varlimsup",
+    L"\\varliminf",
     L"\\varinjlim",
-    L"\\varprojlim"
+    L"\\varprojlim",
+    L"\\injlim",
+    L"\\projlim",
     L"\\dotsb",
     L"\\operatorname",
     L"\\operatornamewithlimits",
@@ -191,6 +195,7 @@ wstring gAmsmathCommandsArray[] =
     L"\\substack",
     L"\\overset",
     L"\\underset",
+    L"\\mod",
 
     // The following commands are all defined in regular latex, but amsmath
     // redefines them to have slightly different properties:
@@ -213,6 +218,7 @@ wstring gAmsmathCommandsArray[] =
     L"\\texttt",
     L"\\textsf",
     L"\\dots",
+    L"\\dotsb",
     L"\\colon"
 };
 
@@ -337,7 +343,6 @@ wstring Manager::gTexvcCompatibilityMacros =
     L"\\newcommand{\\sdot}{\\cdot}"
     L"\\newcommand{\\ang}{\\angle}"
     L"\\newcommand{\\thetasym}{\\theta}"
-    L"\\newcommand{\\sgn}{\\operatorname{sgn}}"
     L"\\newcommand{\\Alpha}{A}"
     L"\\newcommand{\\Beta}{B}"
     L"\\newcommand{\\Epsilon}{E}"
@@ -350,6 +355,10 @@ wstring Manager::gTexvcCompatibilityMacros =
     L"\\newcommand{\\Rho}{P}"
     L"\\newcommand{\\Tau}{T}"
     L"\\newcommand{\\Chi}{X}"
+    L"\\newcommand{\\arccot}{\\operatorname{arccot}}"
+    L"\\newcommand{\\arcsec}{\\operatorname{arcsec}}"
+    L"\\newcommand{\\arccsc}{\\operatorname{arccsc}}"
+    L"\\newcommand{\\sgn}{\\operatorname{sgn}}"
 
     // The commands in this next group are defined in tex/latex/amslatex,
     // but they don't get mapped to what texvc thinks (e.g. "\part" is used
