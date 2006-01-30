@@ -11,54 +11,54 @@ class blahtexOutputParser  {
 
 	function blahtexOutputParser()
 	{
-	  $this->parser = xml_parser_create("UTF-8");
-	  $this->stack = array();
-	  $this->results = array();
-	  
-	  xml_set_object($this->parser, $this);
-	  xml_parser_set_option($this->parser, XML_OPTION_CASE_FOLDING, 0);
-	  xml_set_element_handler($this->parser, "startElement", "stopElement");
-	  xml_set_character_data_handler($this->parser, "characterData");
+		$this->parser = xml_parser_create("UTF-8");
+		$this->stack = array();
+		$this->results = array();
+		
+		xml_set_object($this->parser, $this);
+		xml_parser_set_option($this->parser, XML_OPTION_CASE_FOLDING, 0);
+		xml_set_element_handler($this->parser, "startElement", "stopElement");
+		xml_set_character_data_handler($this->parser, "characterData");
 	}
 	
 	function parse($data)
 	{
-	  // We splice out any segment between <markup> and </markup>  so that the XML parser doesn't have to
-	  // deal with all the MathML tags.
-	  $markupBegin = strpos($data, "<markup>");
-	  if (!($markupBegin === false)) {
-	      $markupEnd = strpos($data, "</markup>");
-	      $this->results["mathmlMarkup"] = trim(substr($data, $markupBegin + 8, $markupEnd - $markupBegin - 8));
-	      $data = substr($data, 0, $markupBegin + 8) . substr($data, $markupEnd);
-	  }
-	  xml_parse($this->parser, $data);
-	  return $this->results;
+		// We splice out any segment between <markup> and </markup>  so that the XML parser doesn't have to
+		// deal with all the MathML tags.
+		$markupBegin = strpos($data, "<markup>");
+		if (!($markupBegin === false)) {
+			$markupEnd = strpos($data, "</markup>");
+			$this->results["mathmlMarkup"] = trim(substr($data, $markupBegin + 8, $markupEnd - $markupBegin - 8));
+			$data = substr($data, 0, $markupBegin + 8) . substr($data, $markupEnd);
+		}
+		xml_parse($this->parser, $data);
+		return $this->results;
 	}
 	
 	function startElement($parser, $name, $attributes)
 	{
-	  if (count($this->stack) == 0)
-	    array_push($this->stack, $name);
-	  else
-	    array_push($this->stack, $this->stack[count($this->stack)-1] . ":$name");
+		if (count($this->stack) == 0)
+			array_push($this->stack, $name);
+		else
+			array_push($this->stack, $this->stack[count($this->stack)-1] . ":$name");
 	}
 	
 	function stopElement($parser, $name)
 	{
-	  array_pop($this->stack);
+		array_pop($this->stack);
 	}
 	
 	function characterData($parser, $data)
 	{
-	  $index = $this->stack[count($this->stack)-1];
-	  if (isset($this->results[$index])) {
-	    if (is_array($this->results[$index]))
-	      array_push($this->results[$index], $data);
-	    else
-	      $this->results[$index] = array($this->results[$index], $data);
-	  }
-	  else
-	    $this->results[$this->stack[count($this->stack)-1]] = $data;
+		$index = $this->stack[count($this->stack)-1];
+		if (isset($this->results[$index])) {
+			if (is_array($this->results[$index]))
+				array_push($this->results[$index], $data);
+			else
+				$this->results[$index] = array($this->results[$index], $data);
+		}
+		else
+			$this->results[$this->stack[count($this->stack)-1]] = $data;
 	}
 }
 
