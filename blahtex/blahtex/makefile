@@ -1,8 +1,9 @@
 #
 # makefile
 #
-# blahtex (version 0.3.5): a TeX to MathML converter designed with MediaWiki in mind
-# Copyright (C) 2005, David Harvey
+# blahtex (version 0.3.7)
+# a TeX to MathML converter designed with MediaWiki in mind
+# Copyright (C) 2006, David Harvey
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,28 +21,48 @@
 #
 
 SOURCES = \
-	Parser.cpp \
-	MacroProcessor.cpp \
-	ParseTree.cpp \
-	LayoutTree.cpp \
-	XmlNode.cpp \
-	Instance.cpp \
-	Messages.cpp \
-	md5.c \
-	md5Wrapper.cpp \
-	UnicodeConverter.cpp \
-	main.cpp
+	source/main.cpp \
+	source/md5.c \
+	source/md5Wrapper.cpp \
+	source/Messages.cpp \
+	source/UnicodeConverter.cpp \
+	source/BlahtexCore/Interface.cpp \
+	source/BlahtexCore/LayoutTree.cpp \
+	source/BlahtexCore/MacroProcessor.cpp \
+	source/BlahtexCore/Manager.cpp \
+	source/BlahtexCore/Parser.cpp \
+	source/BlahtexCore/ParseTree1.cpp \
+	source/BlahtexCore/ParseTree2.cpp \
+	source/BlahtexCore/ParseTree3.cpp \
+	source/BlahtexCore/XmlNode.cpp
+	
+HEADERS = \
+	source/md5.h \
+	source/md5Wrapper.h \
+	source/UnicodeConverter.h \
+	source/BlahtexCore/Interface.h \
+	source/BlahtexCore/LayoutTree.h \
+	source/BlahtexCore/MacroProcessor.h \
+	source/BlahtexCore/Manager.h \
+	source/BlahtexCore/Misc.h \
+	source/BlahtexCore/Parser.h \
+	source/BlahtexCore/ParseTree.h \
+	source/BlahtexCore/XmlNode.h
 
 OBJECTS = $(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SOURCES)))
 
-CFLAGS = -O3
+linux : CFLAGS = -O3
+mac : CFLAGS = -O3 -DBLAHTEX_ICONV_CONST
+
 CXXFLAGS = $(CFLAGS)
 
-linux:  $(OBJECTS)  blahtex.h  md5Wrapper.h  md5.h  UnicodeConverter.h
+linux:  $(OBJECTS)  $(HEADERS)
 	$(CXX) $(CFLAGS) -o blahtex $(OBJECTS)
 
-mac: $(SOURCES)
-	g++ -O3 -o blahtex -liconv -DBLAHTEX_ICONV_CONST $(SOURCES)
+mac: $(OBJECTS)  $(HEADERS)
+	$(CXX) $(CFLAGS) -o blahtex -liconv $(OBJECTS)
 
 clean:
 	rm -f blahtex $(OBJECTS)
+
+########## end of file ##########

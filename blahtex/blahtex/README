@@ -1,0 +1,50 @@
+blahtex version 0.3.7  --  README file
+======================================
+
+The file blahtex-0.3.7.tar.gz contains the source code and documentation
+for blahtex version 0.3.7. It should contain the following files:
+
+  blahtex-0.3.7-manual.pdf    ( <== READ THIS !!! )
+  README
+  GNU-GPL
+  history.pdf
+  makefile
+  source/main.cpp
+  source/md5.c
+  source/md5.h
+  source/md5Wrapper.cpp
+  source/md5Wrapper.h
+  source/Messages.cpp
+  source/UnicodeConverter.cpp
+  source/UnicodeConverter.h
+  source/BlahtexCore/Interface.cpp
+  source/BlahtexCore/Interface.h
+  source/BlahtexCore/LayoutTree.cpp
+  source/BlahtexCore/LayoutTree.h
+  source/BlahtexCore/MacroProcessor.cpp
+  source/BlahtexCore/MacroProcessor.h
+  source/BlahtexCore/Manager.cpp
+  source/BlahtexCore/Manager.h
+  source/BlahtexCore/Misc.h
+  source/BlahtexCore/Parser.cpp
+  source/BlahtexCore/Parser.h
+  source/BlahtexCore/ParseTree.h
+  source/BlahtexCore/ParseTree1.cpp
+  source/BlahtexCore/ParseTree2.cpp
+  source/BlahtexCore/ParseTree3.cpp
+  source/BlahtexCore/XmlNode.cpp
+  source/BlahtexCore/XmlNode.h
+
+
+Blahtex is licensed under the GNU General Public License.
+See the file "GNU-GPL" and the source code for more details.
+
+
+For more information, troubleshooting, bug reports, ....
+
+   www.blahtex.org
+
+
+-----------------------
+David Harvey
+28th January 2006
