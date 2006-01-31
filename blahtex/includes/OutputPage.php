@@ -454,13 +454,18 @@ class OutputPage {
 
 		/* Send page as XHTML if the user has selected MathML and the browser accepts XHTML */
 		/* FIXME: Use $wgRequest? */
-		if ($wgUser->getOption('math') == MW_MATH_MATHML && stristr($_SERVER['HTTP_ACCEPT'], 'application/xhtml+xml')) {
-		  $mimeType = 'application/xhtml+xml'; 
-		} else {
-		  $mimeType = 'text/html';
-		}
+                if ( $wgUser->getOption( 'math' ) == MW_MATH_MATHML ) {
+                        if ( isset( $_SERVER['HTTP_ACCEPT'] ) || stristr( $_SERVER['HTTP_ACCEPT'], 'application/xhtml+xml' )) {
+                                header( "Content-type: application/xhtml+xml; charset={$wgOutputEncoding}" );
+                        } else if ( isset( $_SERVER["HTTP_USER_AGENT"] ) && stristr( $_SERVER["HTTP_USER_AGENT"], "MathPlayer" )) {
+                                header( "Content-type: application/xhtml+xml" );
+                        } else {
+                                header( "Content-type: text/html; charset={$wgOutputEncoding}" );
+                        }
+                } else {
+                        header( "Content-type: text/html; charset={$wgOutputEncoding}" );
+                }
 
-		header( "Content-type: $mimeType; charset={$wgOutputEncoding}" );
 		header( 'Content-language: '.$wgContLanguageCode );
 
 		$exp = time() + $wgCookieExpiration;
