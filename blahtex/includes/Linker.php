@@ -252,6 +252,8 @@ class Linker {
 			$text = htmlspecialchars( $nt->getPrefixedText() );
 		}
 		$style = $this->getInternalLinkAttributesObj( $nt, $text );
+
+		if ( $aprops !== '' ) $aprops = ' ' . $aprops;
 		
 		list( $inside, $trail ) = Linker::splitTrail( $trail );
 		$r = "<a href=\"{$u}\"{$style}{$aprops}>{$prefix}{$text}{$inside}</a>{$trail}";
@@ -373,6 +375,10 @@ class Linker {
 		global $wgContLang, $wgUser, $wgThumbLimits;
 		
 		$img   = new Image( $nt );
+		if ( !$img->allowInlineDisplay() ) {
+			return $this->makeKnownLinkObj( $nt );
+		}
+
 		$url   = $img->getViewURL();
 		$prefix = $postfix = '';
 		
@@ -406,7 +412,7 @@ class Linker {
 					 $wopt = User::getDefaultOption( 'thumbsize' );
 				}
 				
-				$width = $wgThumbLimits[$wopt];
+				$width = min( $img->getWidth(), $wgThumbLimits[$wopt] );
 			}
 			
 			return $prefix.$this->makeThumbLinkObj( $img, $label, $alt, $align, $width, $height, $framed, $manual_thumb ).$postfix;
@@ -591,7 +597,7 @@ class Linker {
 	 * @access public
 	 * @todo Handle invalid or missing images better.
 	 */
-	function makeMediaLinkObj( $title, $text = '', $nourl=false ) {
+	function makeMediaLinkObj( $title, $text = '' ) {
 		if( is_null( $title ) ) {
 			### HOTFIX. Instead of breaking, return empty string.
 			return $text;
@@ -600,9 +606,6 @@ class Linker {
 			$img  = new Image( $title );
 			if( $img->exists() ) {
 				$url  = $img->getURL();
-				if( $nourl ) {
-					$url = str_replace( "http://", "http-noparse://", $url );
-				}
 				$class = 'internal';
 			} else {
 				$upload = Title::makeTitle( NS_SPECIAL, 'Upload' );
