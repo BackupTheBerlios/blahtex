@@ -1,6 +1,6 @@
 // File "XmlNode.cpp"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -359,6 +359,15 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     make_pair(L'\U000021C3',
         UnicodeNameInfo(L"dharl", L"downharpoonleft")
     ),
+    make_pair(L'\U000021CD',
+        UnicodeNameInfo(L"nlArr", L"nLeftarrow")
+    ),
+    make_pair(L'\U000021CE',
+        UnicodeNameInfo(L"nhArr", L"nLeftrightarrow")
+    ),
+    make_pair(L'\U000021CF',
+        UnicodeNameInfo(L"nrArr", L"nRightarrow")
+    ),
     make_pair(L'\U000021D0',
         UnicodeNameInfo(L"lArr", L"DoubleLeftArrow")
     ),
@@ -407,6 +416,9 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     make_pair(L'\U0000220B',
         UnicodeNameInfo(L"ni", L"ReverseElement")
     ),
+    make_pair(L'\U0000220C',
+        UnicodeNameInfo(L"notni", L"NotReverseElement")
+    ),
     make_pair(L'\U0000220F',
         UnicodeNameInfo(L"prod", L"Product")
     ),
@@ -439,6 +451,9 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     ),
     make_pair(L'\U00002225',
         UnicodeNameInfo(L"par", L"DoubleVerticalBar")
+    ),
+    make_pair(L'\U00002226',
+        UnicodeNameInfo(L"npar", L"NotDoubleVerticalBar")
     ),
     make_pair(L'\U00002227',
         UnicodeNameInfo(L"and", L"wedge")
@@ -476,11 +491,20 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     make_pair(L'\U00002243',
         UnicodeNameInfo(L"sime", L"TildeEqual")
     ),
+    make_pair(L'\U00002244',
+        UnicodeNameInfo(L"nsime", L"NotTildeEqual")
+    ),
     make_pair(L'\U00002245',
         UnicodeNameInfo(L"cong", L"TildeFullEqual")
     ),
+    make_pair(L'\U00002247',
+        UnicodeNameInfo(L"ncong", L"NotTildeFullEqual")
+    ),
     make_pair(L'\U00002248',
         UnicodeNameInfo(L"ap", L"TildeTilde")
+    ),
+    make_pair(L'\U00002249',
+        UnicodeNameInfo(L"nap", L"NotTildeTilde")
     ),
     make_pair(L'\U00002260',
         UnicodeNameInfo(L"ne", L"NotEqual")
@@ -506,6 +530,9 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     make_pair(L'\U0000226E',
         UnicodeNameInfo(L"nlt", L"NotLess")
     ),
+    make_pair(L'\U0000226F',
+        UnicodeNameInfo(L"ngt", L"NotGreater")
+    ),
     make_pair(L'\U00002270',
         UnicodeNameInfo(L"nle", L"NotLessEqual")
     ),
@@ -521,11 +548,23 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     make_pair(L'\U00002283',
         UnicodeNameInfo(L"sup", L"supset")
     ),
+    make_pair(L'\U00002284',
+        UnicodeNameInfo(L"nsub")
+    ),
+    make_pair(L'\U00002285',
+        UnicodeNameInfo(L"nsup")
+    ),
     make_pair(L'\U00002286',
         UnicodeNameInfo(L"sube", L"SubsetEqual")
     ),
     make_pair(L'\U00002287',
         UnicodeNameInfo(L"supe", L"SupersetEqual")
+    ),
+    make_pair(L'\U00002288',
+        UnicodeNameInfo(L"nsube", L"NotSubsetEqual")
+    ),
+    make_pair(L'\U00002289',
+        UnicodeNameInfo(L"nsupe", L"NotSupersetEqual")
     ),
     make_pair(L'\U00002288',
         UnicodeNameInfo(L"nsube", L"NotSubsetEqual")
@@ -581,6 +620,12 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     make_pair(L'\U000022A9',
         UnicodeNameInfo(L"Vdash")
     ),
+    make_pair(L'\U000022AC',
+        UnicodeNameInfo(L"nvdash")
+    ),
+    make_pair(L'\U000022AD',
+        UnicodeNameInfo(L"nvDash")
+    ),
     make_pair(L'\U000022AE',
         UnicodeNameInfo(L"nVdash")
     ),
@@ -616,6 +661,24 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     ),
     make_pair(L'\U000022C6',
         UnicodeNameInfo(L"Star")
+    ),
+    make_pair(L'\U000022E2',
+        UnicodeNameInfo(L"nsqsube", L"NotSquareSubsetEqual")
+    ),
+    make_pair(L'\U000022E3',
+        UnicodeNameInfo(L"nsqsupe", L"NotSquareSupersetEqual")
+    ),
+    make_pair(L'\U000022EA',
+        UnicodeNameInfo(L"nltri", L"NotLeftTriangle")
+    ),
+    make_pair(L'\U000022EB',
+        UnicodeNameInfo(L"nrtri", L"NotRightTriangle")
+    ),
+    make_pair(L'\U000022EC',
+        UnicodeNameInfo(L"nltrie", L"NotLeftTriangleEqual")
+    ),
+    make_pair(L'\U000022ED',
+        UnicodeNameInfo(L"nrtrie", L"NotRightTriangleEqual")
     ),
     make_pair(L'\U000022EE',
         UnicodeNameInfo(L"vellip")
@@ -710,6 +773,223 @@ pair<wchar_t, UnicodeNameInfo> gUnicodeNameArray[] =
     make_pair(L'\U0000FE38',
         UnicodeNameInfo(L"UnderBrace")
     ),
+
+    // FIX: haven't written in names for these ones yet:
+    // FIX: and it would be nice to merge with the above table...!
+    // FIX: and I really should check for duplicates at some stage
+    make_pair(L'\U000000AE', UnicodeNameInfo()),
+    make_pair(L'\U000000A5', UnicodeNameInfo()),
+    make_pair(L'\U00002720', UnicodeNameInfo()),
+    make_pair(L'\U000024C8', UnicodeNameInfo()),
+    make_pair(L'\U0001D55C', UnicodeNameInfo()),
+    make_pair(L'\x6A',       UnicodeNameInfo()),
+    make_pair(L'\U0000231C', UnicodeNameInfo()),
+    make_pair(L'\U0000231D', UnicodeNameInfo()),
+    make_pair(L'\U0000231E', UnicodeNameInfo()),
+    make_pair(L'\U0000231F', UnicodeNameInfo()),
+    make_pair(L'\U0000290F', UnicodeNameInfo()),
+    make_pair(L'\U0000290E', UnicodeNameInfo()),
+    make_pair(L'\U00002035', UnicodeNameInfo()),
+    make_pair(L'\U000025B5', UnicodeNameInfo()),
+    make_pair(L'\U000025B4', UnicodeNameInfo()),
+    make_pair(L'\U000025BF', UnicodeNameInfo()),
+    make_pair(L'\U000025BE', UnicodeNameInfo()),
+    make_pair(L'\U000025FC', UnicodeNameInfo()),
+    make_pair(L'\U000025CA', UnicodeNameInfo()),
+    make_pair(L'\U000029EB', UnicodeNameInfo()),
+    make_pair(L'\U00002605', UnicodeNameInfo()),
+    make_pair(L'\U00002222', UnicodeNameInfo()),
+    make_pair(L'\U00002221', UnicodeNameInfo()),
+    make_pair(L'\U00002214', UnicodeNameInfo()),
+    make_pair(L'\U000022C9', UnicodeNameInfo()),
+    make_pair(L'\U000022CA', UnicodeNameInfo()),
+    make_pair(L'\U000022D2', UnicodeNameInfo()),
+    make_pair(L'\U000022CB', UnicodeNameInfo()),
+    make_pair(L'\U000022CC', UnicodeNameInfo()),
+    make_pair(L'\U000022D3', UnicodeNameInfo()),
+    make_pair(L'\U00002305', UnicodeNameInfo()),
+    make_pair(L'\U000022CF', UnicodeNameInfo()),
+    make_pair(L'\U000022BB', UnicodeNameInfo()),
+    make_pair(L'\U000022CE', UnicodeNameInfo()),
+    make_pair(L'\U00002306', UnicodeNameInfo()),
+    make_pair(L'\U0000229F', UnicodeNameInfo()),
+    make_pair(L'\U0000229D', UnicodeNameInfo()),
+    make_pair(L'\U000022A0', UnicodeNameInfo()),
+    make_pair(L'\U0000229B', UnicodeNameInfo()),
+    make_pair(L'\U000022A1', UnicodeNameInfo()),
+    make_pair(L'\U0000229A', UnicodeNameInfo()),
+    make_pair(L'\U0000229E', UnicodeNameInfo()),
+    make_pair(L'\U000022C5', UnicodeNameInfo()),
+    make_pair(L'\U000022C7', UnicodeNameInfo()),
+    make_pair(L'\U000022BA', UnicodeNameInfo()),
+    make_pair(L'\U00002266', UnicodeNameInfo()),
+    make_pair(L'\U00002267', UnicodeNameInfo()),
+    make_pair(L'\U00002A7D', UnicodeNameInfo()),
+    make_pair(L'\U00002A7E', UnicodeNameInfo()),
+    make_pair(L'\U00002A95', UnicodeNameInfo()),
+    make_pair(L'\U00002A96', UnicodeNameInfo()),
+    make_pair(L'\U00002273', UnicodeNameInfo()),
+    make_pair(L'\U00002A85', UnicodeNameInfo()),
+    make_pair(L'\U00002A86', UnicodeNameInfo()),
+    make_pair(L'\U0000224A', UnicodeNameInfo()),
+    make_pair(L'\U00002242', UnicodeNameInfo()),
+    make_pair(L'\U000022D6', UnicodeNameInfo()),
+    make_pair(L'\U000022D7', UnicodeNameInfo()),
+    make_pair(L'\U000022D8', UnicodeNameInfo()),
+    make_pair(L'\U000022D9', UnicodeNameInfo()),
+    make_pair(L'\U00002276', UnicodeNameInfo()),
+    make_pair(L'\U00002277', UnicodeNameInfo()),
+    make_pair(L'\U000022DA', UnicodeNameInfo()),
+    make_pair(L'\U000022DB', UnicodeNameInfo()),
+    make_pair(L'\U00002A8B', UnicodeNameInfo()),
+    make_pair(L'\U00002A8C', UnicodeNameInfo()),
+    make_pair(L'\U00002251', UnicodeNameInfo()),
+    make_pair(L'\U00002256', UnicodeNameInfo()),
+    make_pair(L'\U00002253', UnicodeNameInfo()),
+    make_pair(L'\U00002257', UnicodeNameInfo()),
+    make_pair(L'\U00002252', UnicodeNameInfo()),
+    make_pair(L'\U0000225C', UnicodeNameInfo()),
+    make_pair(L'\U0000223D', UnicodeNameInfo()),
+    make_pair(L'\U0000223C', UnicodeNameInfo()),
+    make_pair(L'\U000022CD', UnicodeNameInfo()),
+    make_pair(L'\U00002248', UnicodeNameInfo()),
+    make_pair(L'\U00002AC5', UnicodeNameInfo()),
+    make_pair(L'\U00002AC6', UnicodeNameInfo()),
+    make_pair(L'\U000022D0', UnicodeNameInfo()),
+    make_pair(L'\U000022D1', UnicodeNameInfo()),
+    make_pair(L'\U0000227C', UnicodeNameInfo()),
+    make_pair(L'\U0000227D', UnicodeNameInfo()),
+    make_pair(L'\U000022DE', UnicodeNameInfo()),
+    make_pair(L'\U000022DF', UnicodeNameInfo()),
+    make_pair(L'\U0000227E', UnicodeNameInfo()),
+    make_pair(L'\U0000227F', UnicodeNameInfo()),
+    make_pair(L'\U00002AB7', UnicodeNameInfo()),
+    make_pair(L'\U00002AB8', UnicodeNameInfo()),
+    make_pair(L'\U000022AA', UnicodeNameInfo()),
+    make_pair(L'\U00002223', UnicodeNameInfo()),
+    make_pair(L'\U00002225', UnicodeNameInfo()),
+    make_pair(L'\U0000224F', UnicodeNameInfo()),
+    make_pair(L'\U0000226C', UnicodeNameInfo()),
+    make_pair(L'\U0000224E', UnicodeNameInfo()),
+    make_pair(L'\U0000221D', UnicodeNameInfo()),
+    make_pair(L'\U000003F6', UnicodeNameInfo()),
+    make_pair(L'\U000025C0', UnicodeNameInfo()),
+    make_pair(L'\U000025B6', UnicodeNameInfo()),
+    make_pair(L'\U00002234', UnicodeNameInfo()),
+    make_pair(L'\U00002235', UnicodeNameInfo()),
+    make_pair(L'\U0000226F', UnicodeNameInfo()),
+    make_pair(L'\U00002A7D', UnicodeNameInfo()),
+    make_pair(L'\U00002A7E', UnicodeNameInfo()),
+    make_pair(L'\U00002266', UnicodeNameInfo()),
+    make_pair(L'\U00002267', UnicodeNameInfo()),
+    make_pair(L'\U00002268', UnicodeNameInfo()),
+    make_pair(L'\U00002269', UnicodeNameInfo()),
+    make_pair(L'\U00002268', UnicodeNameInfo()),
+    make_pair(L'\U00002269', UnicodeNameInfo()),
+    make_pair(L'\U000022E6', UnicodeNameInfo()),
+    make_pair(L'\U000022E7', UnicodeNameInfo()),
+    make_pair(L'\U00002A89', UnicodeNameInfo()),
+    make_pair(L'\U00002A8A', UnicodeNameInfo()),
+    make_pair(L'\U00002280', UnicodeNameInfo()),
+    make_pair(L'\U00002281', UnicodeNameInfo()),
+    make_pair(L'\U00002AAF', UnicodeNameInfo()),
+    make_pair(L'\U00002AB0', UnicodeNameInfo()),
+    make_pair(L'\U00002AB5', UnicodeNameInfo()),
+    make_pair(L'\U00002AB6', UnicodeNameInfo()),
+    make_pair(L'\U000022E8', UnicodeNameInfo()),
+    make_pair(L'\U000022E9', UnicodeNameInfo()),
+    make_pair(L'\U00002AB9', UnicodeNameInfo()),
+    make_pair(L'\U00002ABA', UnicodeNameInfo()),
+    make_pair(L'\U00002241', UnicodeNameInfo()),
+    make_pair(L'\U00002247', UnicodeNameInfo()),
+    make_pair(L'\U00002224', UnicodeNameInfo()),
+    make_pair(L'\U00002226', UnicodeNameInfo()),
+    make_pair(L'\U00002224', UnicodeNameInfo()),
+    make_pair(L'\U00002226', UnicodeNameInfo()),
+    make_pair(L'\U000022AC', UnicodeNameInfo()),
+    make_pair(L'\U000022AD', UnicodeNameInfo()),
+    make_pair(L'\U000022AE', UnicodeNameInfo()),
+    make_pair(L'\U000022AF', UnicodeNameInfo()),
+    make_pair(L'\U000022EA', UnicodeNameInfo()),
+    make_pair(L'\U000022EB', UnicodeNameInfo()),
+    make_pair(L'\U000022EC', UnicodeNameInfo()),
+    make_pair(L'\U000022ED', UnicodeNameInfo()),
+    make_pair(L'\U00002288', UnicodeNameInfo()),
+    make_pair(L'\U00002289', UnicodeNameInfo()),
+    make_pair(L'\U00002AC5', UnicodeNameInfo()),
+    make_pair(L'\U00002AC6', UnicodeNameInfo()),
+    make_pair(L'\U0000228A', UnicodeNameInfo()),
+    make_pair(L'\U0000228B', UnicodeNameInfo()),
+    make_pair(L'\U0000228A', UnicodeNameInfo()),
+    make_pair(L'\U0000228B', UnicodeNameInfo()),
+    make_pair(L'\U00002ACB', UnicodeNameInfo()),
+    make_pair(L'\U00002ACC', UnicodeNameInfo()),
+    make_pair(L'\U00002ACB', UnicodeNameInfo()),
+    make_pair(L'\U00002ACC', UnicodeNameInfo()),
+    make_pair(L'\U000021C7', UnicodeNameInfo()),
+    make_pair(L'\U000021C9', UnicodeNameInfo()),
+    make_pair(L'\U000021C6', UnicodeNameInfo()),
+    make_pair(L'\U000021C4', UnicodeNameInfo()),
+    make_pair(L'\U000021DA', UnicodeNameInfo()),
+    make_pair(L'\U000021DB', UnicodeNameInfo()),
+    make_pair(L'\U0000219E', UnicodeNameInfo()),
+    make_pair(L'\U000021A0', UnicodeNameInfo()),
+    make_pair(L'\U000021A2', UnicodeNameInfo()),
+    make_pair(L'\U000021A3', UnicodeNameInfo()),
+    make_pair(L'\U000021AB', UnicodeNameInfo()),
+    make_pair(L'\U000021AC', UnicodeNameInfo()),
+    make_pair(L'\U000021CB', UnicodeNameInfo()),
+    make_pair(L'\U000021CC', UnicodeNameInfo()),
+    make_pair(L'\U000021B6', UnicodeNameInfo()),
+    make_pair(L'\U000021B7', UnicodeNameInfo()),
+    make_pair(L'\U000021BA', UnicodeNameInfo()),
+    make_pair(L'\U000021BB', UnicodeNameInfo()),
+    make_pair(L'\U000021B0', UnicodeNameInfo()),
+    make_pair(L'\U000021B1', UnicodeNameInfo()),
+    make_pair(L'\U000021C8', UnicodeNameInfo()),
+    make_pair(L'\U000021CA', UnicodeNameInfo()),
+    make_pair(L'\U000022B8', UnicodeNameInfo()),
+    make_pair(L'\U0000219D', UnicodeNameInfo()),
+    make_pair(L'\U000021AD', UnicodeNameInfo()),
+    make_pair(L'\U000021CD', UnicodeNameInfo()),
+    make_pair(L'\U000021CF', UnicodeNameInfo()),
+    make_pair(L'\U000021AE', UnicodeNameInfo()),
+    make_pair(L'\U000021CE', UnicodeNameInfo()),
+    make_pair(L'\U000022D4', UnicodeNameInfo()),
+    make_pair(L'\U00002204', UnicodeNameInfo()),
+    make_pair(L'\U000022B2', UnicodeNameInfo()),
+    make_pair(L'\U000022B3', UnicodeNameInfo()),
+    make_pair(L'\U000022B4', UnicodeNameInfo()),
+    make_pair(L'\U000022B5', UnicodeNameInfo()),
+    make_pair(L'\U000021DD', UnicodeNameInfo()),
+    make_pair(L'\U0000228E', UnicodeNameInfo()),
+    make_pair(L'\U000022C4', UnicodeNameInfo()),
+    make_pair(L'\U000025B3', UnicodeNameInfo()),
+    make_pair(L'\U000025BD', UnicodeNameInfo()),
+    make_pair(L'\U00002296', UnicodeNameInfo()),
+    make_pair(L'\U00002298', UnicodeNameInfo()),
+    make_pair(L'\U00002299', UnicodeNameInfo()),
+    make_pair(L'\U000025EF', UnicodeNameInfo()),
+    make_pair(L'\U00002A3F', UnicodeNameInfo()),
+    make_pair(L'\U0000227A', UnicodeNameInfo()),
+    make_pair(L'\U0000227B', UnicodeNameInfo()),
+    make_pair(L'\U0000227C', UnicodeNameInfo()),
+    make_pair(L'\U0000227D', UnicodeNameInfo()),
+    make_pair(L'\U000022A3', UnicodeNameInfo()),
+    make_pair(L'\U00002248', UnicodeNameInfo()),
+    make_pair(L'\U00002250', UnicodeNameInfo()),
+    make_pair(L'\U00002225', UnicodeNameInfo()),
+    make_pair(L'\U000022C8', UnicodeNameInfo()),
+    make_pair(L'\U0000221A', UnicodeNameInfo()),
+    make_pair(L'\U000025C3', UnicodeNameInfo()),
+    make_pair(L'\U000025B9', UnicodeNameInfo()),
+
+    make_pair(L'\U0001D6A5', UnicodeNameInfo()),
+
+    // FIX: here are the two combining characters currently in use
+    // to think about
+    make_pair(L'\U00000338', UnicodeNameInfo()),
+    make_pair(L'\U0000FE00', UnicodeNameInfo()),
 
     // Mathematical bold script capital letters:
     make_pair(L'\U0001D4D0',
@@ -1134,6 +1414,11 @@ void WriteIndent(
     for (int i = 0; i < depth; i++)
         os << L"  ";
 }
+
+// FIX:
+// Need to read about and think about combining characters.
+// In particular, does the current strategy work for *named* entities
+// and combining characters? I'm not sure.
 
 // XmlEncode() handles conversion of non-ASCII characters to entities.
 // It uses the "options" parameter and gUnicodeNameTable to decide how to

@@ -1,6 +1,6 @@
 // File "main.cpp"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -20,18 +20,14 @@
 
 #include "BlahtexCore/Interface.h"
 #include "UnicodeConverter.h"
-#include "md5Wrapper.h"
 #include <iostream>
 #include <sstream>
-#include <fstream>
-#include <sys/stat.h>
 #include <stdexcept>
-#include <cerrno>
 
 using namespace std;
 using namespace blahtex;
 
-string gBlahtexVersion = "0.4";
+string gBlahtexVersion = "0.4.2";
 
 // A single global instance of UnicodeConverter.
 UnicodeConverter gUnicodeConverter;
@@ -39,6 +35,20 @@ UnicodeConverter gUnicodeConverter;
 // Imported from Messages.cpp:
 extern wstring GetErrorMessage(const blahtex::Exception& e);
 extern wstring GetErrorMessages();
+
+// Imported from mainPng.cpp:
+extern pair<string, int> MakePngFile(
+    const wstring& purifiedTex,
+    bool computeVerticalShift,
+    const string& tempDirectory,
+    const string& pngDirectory,
+    const string& shellLatex,
+    const string& shellDvips,
+    const string& shellConvert,
+    const string& imageMagickOptions,
+    bool deleteTempFiles
+);
+
 
 // FormatError() converts a blahtex Exception object into a string like
 // "<error><id>...</id><arg>...</arg><arg>...</arg> ...
@@ -65,7 +75,7 @@ wstring FormatError(
 // ShowUsage() prints a help screen.
 void ShowUsage()
 {
-    cout <<
+    cout << "\n"
 "Blahtex version " << gBlahtexVersion << "\n"
 "Copyright (C) 2006, David Harvey\n"
 "\n"
@@ -129,6 +139,12 @@ void ShowUsage()
 "\n"
 " --use-ucs-package\n"
 "     use the LaTeX ucs package to handle some non-ASCII characters\n"
+#ifdef BLAHTEX_USING_MAGICK
+"\n"
+" --compute-vertical-shift\n"
+"     determine the location of the baseline of the equation, and output\n"
+"     the number of pixels to shift (SOMEWHAT EXPERIMENTAL)\n"
+#endif
 "\n"
 " --shell-latex  command\n"
 " --shell-dvips  command\n"
@@ -157,6 +173,9 @@ void ShowUsage()
 " --debug purified\n"
 "     display purified TeX (output is NOT XML)\n"
 "\n"
+" --keep-temp-files\n"
+"     don't delete temporary files used during PNG generation\n"
+"\n"
 " --throw-logic-error\n"
 "     simulate a debug assertion occurring\n"
 "\n"
@@ -166,45 +185,6 @@ void ShowUsage()
 "More information available at www.blahtex.org\n"
 "\n";
     exit(0);
-}
-
-// Tests whether a file exists
-bool FileExists(const string& filename)
-{
-    struct stat temp;
-    return (stat(filename.c_str(), &temp) == 0);
-}
-
-// Attempts to run given command from the given directory.
-// Returns true if the system() call was successful, otherwise false.
-// Can throw a "CannotChangeDirectory" exception if problems occur.
-bool Execute(
-    const string& command,
-    const string& directory = "./"
-)
-{
-    char buffer[5000];
-
-    bool NeedToChange = (directory != "" && directory != "./");
-
-    if (NeedToChange)
-    {
-        if (getcwd(buffer, 5000) == NULL)
-            throw blahtex::Exception(L"CannotChangeDirectory");
-
-        if (chdir(directory.c_str()) != 0)
-            throw blahtex::Exception(L"CannotChangeDirectory");
-    }
-
-    bool result = (system(command.c_str()) == 0);
-
-    if (NeedToChange)
-    {
-        if (chdir(buffer) != 0)
-            throw blahtex::Exception(L"CannotChangeDirectory");
-    }
-
-    return result;
 }
 
 // CommandLineException is used for reporting incorrect command line
@@ -218,25 +198,6 @@ struct CommandLineException
     ) :
         mMessage(message)
     { }
-};
-
-// TemporaryFile manages a temporary file; it deletes the named file when
-// the object goes out of scope.
-class TemporaryFile
-{
-    string mFilename;
-
-public:
-    TemporaryFile(
-        const string& filename
-    ) :
-        mFilename(filename)
-    { }
-
-    ~TemporaryFile()
-    {
-        unlink(mFilename.c_str());
-    }
 };
 
 // Adds a trailing slash to the string, if it's not already there.
@@ -261,6 +222,7 @@ int main (int argc, char* const argv[]) {
         bool debugLayoutTree  = false;
         bool debugParseTree   = false;
         bool debugPurifiedTex = false;
+        bool deleteTempFiles = true;
 
         string shellLatex   = "latex";
         string shellDvips   = "dvips";
@@ -385,6 +347,11 @@ int main (int argc, char* const argv[]) {
             else if (arg == "--png")
                 doPng = true;
 
+#ifdef BLAHTEX_USING_MAGICK
+            else if (arg == "--compute-vertical-shift")
+                interface.mPurifiedTexOptions.mComputeVerticalShift = true;
+#endif
+
             else if (arg == "--mathml")
                 doMathml = true;
 
@@ -459,6 +426,9 @@ int main (int argc, char* const argv[]) {
                         "Illegal string after \"--debug\""
                     );
             }
+            
+            else if (arg == "--keep-temp-files")
+                deleteTempFiles = false;
 
             else
                 throw CommandLineException(
@@ -537,72 +507,25 @@ int main (int argc, char* const argv[]) {
                     // if requested.
                     if (doPng)
                     {
-                        string purifiedTexUtf8
-                            = gUnicodeConverter.ConvertOut(purifiedTex);
+                        pair<string, int> pngData = MakePngFile(
+                            purifiedTex,
+                            interface.mPurifiedTexOptions.
+                                mComputeVerticalShift,
+                            tempDirectory,
+                            pngDirectory,
+                            shellLatex,
+                            shellDvips,
+                            shellConvert,
+                            imageMagickOptions,
+                            deleteTempFiles
+                        );
 
-                        string md5 = ComputeMd5(purifiedTexUtf8);
-
-                        {
-                            ofstream texFile(
-                                (tempDirectory + md5 + ".tex").c_str(),
-                                ios::out | ios::binary
-                            );
-                            if (!texFile)
-                                throw blahtex::Exception(
-                                    L"CannotCreateTexFile"
-                                );
-                            texFile << purifiedTexUtf8;
-                            if (!texFile)
-                                throw blahtex::Exception(
-                                    L"CannotWriteTexFile"
-                                );
-                        }
-
-                        // These are temporary files we want deleted
-                        // when we're done.
-                        TemporaryFile texTemp(tempDirectory + md5 + ".tex");
-                        TemporaryFile auxTemp(tempDirectory + md5 + ".aux");
-                        TemporaryFile logTemp(tempDirectory + md5 + ".log");
-                        TemporaryFile dviTemp(tempDirectory + md5 + ".dvi");
-                        TemporaryFile  psTemp(tempDirectory + md5 + ".ps");
-
-                        // FIX: is the md5 hash enough here for the
-                        // temporary file name? Should we also throw in a
-                        // process ID, timestamp, or something?
-
-                        if (!Execute(
-                                shellLatex + " " + md5
-                                    + ".tex >/dev/null 2>/dev/null",
-                                tempDirectory
-                            )
-                            ||
-                            !FileExists(tempDirectory + md5 + ".dvi")
-                        )
-                            throw blahtex::Exception(L"CannotRunLatex");
-
-                        if (!Execute(
-                            shellDvips + " -R -E " + tempDirectory + md5
-                                + ".dvi -f -o " + tempDirectory + md5
-                                + ".ps 2>/dev/null"
-                            )
-                            ||
-                            !FileExists(tempDirectory + md5 + ".ps")
-                        )
-                            throw blahtex::Exception(L"CannotRunDvips");
-
-                        if (!Execute(
-                            shellConvert + " " + imageMagickOptions
-                                + " -trim " + tempDirectory + md5 + ".ps "
-                                + pngDirectory + md5 + ".png "
-                                + " >/dev/null 2>/dev/null"
-                            )
-                            ||
-                            !FileExists(pngDirectory + md5 + ".png")
-                        )
-                            throw blahtex::Exception(L"CannotRunConvert");
+                        if (pngData.second != 1)
+                            pngOutput << L"<vshift>"
+                                << pngData.second << L"</vshift>\n";
 
                         pngOutput << L"<md5>"
-                            << gUnicodeConverter.ConvertIn(md5)
+                            << gUnicodeConverter.ConvertIn(pngData.first)
                             << L"</md5>\n";
                     }
                 }

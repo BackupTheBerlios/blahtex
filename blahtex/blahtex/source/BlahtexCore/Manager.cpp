@@ -1,6 +1,6 @@
 // File "Manager.cpp"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -247,8 +247,6 @@ wstring gAmssymbCommandsArray[] =
     L"\\sqsubset",
     L"\\supsetneq",
     L"\\subsetneq",
-    L"\\trianglelefteq",
-    L"\\trianglerighteq",
     L"\\Vdash",
     L"\\vDash",
     L"\\lesssim",
@@ -259,7 +257,6 @@ wstring gAmssymbCommandsArray[] =
     L"\\smallfrown",
     L"\\smallsetminus",
     L"\\varnothing",
-    L"\\Diamond",
     L"\\nmid",
     L"\\square",
     L"\\Box",
@@ -267,7 +264,197 @@ wstring gAmssymbCommandsArray[] =
     L"\\complement",
     L"\\eth",
     L"\\hslash",
-    L"\\mho"
+    L"\\mho",
+    L"\\circledR",
+    L"\\yen",
+    L"\\maltese",
+    L"\\ulcorner",
+    L"\\urcorner",
+    L"\\llcorner",
+    L"\\lrcorner",
+    L"\\dashrightarrow",
+    L"\\dasharrow",
+    L"\\dashleftarrow",
+    L"\\backprime",
+    L"\\vartriangle",
+    L"\\blacktriangle",
+    L"\\triangledown",
+    L"\\blacktriangledown",
+    L"\\blacksquare",
+    L"\\lozenge",
+    L"\\blacklozenge",
+    L"\\circledS",
+    L"\\bigstar",
+    L"\\sphericalangle",
+    L"\\measuredangle",
+    L"\\diagup",
+    L"\\diagdown",
+    L"\\Bbbk",
+    L"\\dotplus",
+    L"\\ltimes",
+    L"\\rtimes",
+    L"\\Cap",
+    L"\\leftthreetimes",
+    L"\\rightthreetimes",
+    L"\\Cup",
+    L"\\barwedge",
+    L"\\curlywedge",
+    L"\\veebar",
+    L"\\curlyvee",
+    L"\\doublebarwedge",
+    L"\\boxminus",
+    L"\\circleddash",
+    L"\\boxtimes",
+    L"\\circledast",
+    L"\\boxdot",
+    L"\\circledcirc",
+    L"\\boxplus",
+    L"\\centerdot",
+    L"\\divideontimes",
+    L"\\intercal",
+    L"\\leqq",
+    L"\\geqq",
+    L"\\leqslant",
+    L"\\geqslant",
+    L"\\eqslantless",
+    L"\\eqslantgtr",
+    L"\\gtrsim",
+    L"\\lessapprox",
+    L"\\gtrapprox",
+    L"\\approxeq",
+    L"\\eqsim",
+    L"\\lessdot",
+    L"\\gtrdot",
+    L"\\lll",
+    L"\\ggg",
+    L"\\lessgtr",
+    L"\\gtrless",
+    L"\\lesseqgtr",
+    L"\\gtreqless",
+    L"\\lesseqqgtr",
+    L"\\gtreqqless",
+    L"\\doteqdot",
+    L"\\eqcirc",
+    L"\\risingdotseq",
+    L"\\circeq",
+    L"\\fallingdotseq",
+    L"\\triangleq",
+    L"\\backsim",
+    L"\\thicksim",
+    L"\\backsimeq",
+    L"\\thickapprox",
+    L"\\subseteqq",
+    L"\\supseteqq",
+    L"\\Subset",
+    L"\\Supset",
+    L"\\preccurlyeq",
+    L"\\succcurlyeq",
+    L"\\curlyeqprec",
+    L"\\curlyeqsucc",
+    L"\\precsim",
+    L"\\succsim",
+    L"\\precapprox",
+    L"\\succapprox",
+    L"\\vartriangleleft",
+    L"\\vartriangleright",
+    L"\\Vvdash",
+    L"\\shortmid",
+    L"\\shortparallel",
+    L"\\bumpeq",
+    L"\\between",
+    L"\\Bumpeq",
+    L"\\varpropto",
+    L"\\backepsilon",
+    L"\\blacktriangleleft",
+    L"\\blacktriangleright",
+    L"\\therefore",
+    L"\\because",
+    L"\\ngtr",
+    L"\\nleqslant",
+    L"\\ngeqslant",
+    L"\\nleqq",
+    L"\\ngeqq",
+    L"\\lneqq",
+    L"\\gneqq",
+    L"\\lvertneqq",
+    L"\\gvertneqq",
+    L"\\lnsim",
+    L"\\gnsim",
+    L"\\lnapprox",
+    L"\\gnapprox",
+    L"\\nprec",
+    L"\\nsucc",
+    L"\\npreceq",
+    L"\\nsucceq",
+    L"\\precneqq",
+    L"\\succneqq",
+    L"\\precnsim",
+    L"\\succnsim",
+    L"\\precnapprox",
+    L"\\succnapprox",
+    L"\\nsim",
+    L"\\ncong",
+    L"\\nshortmid",
+    L"\\nshortparallel",
+    L"\\nmid",
+    L"\\nparallel",
+    L"\\nvdash",
+    L"\\nvDash",
+    L"\\nVdash",
+    L"\\nVDash",
+    L"\\ntriangleleft",
+    L"\\ntriangleright",
+    L"\\ntrianglelefteq",
+    L"\\ntrianglerighteq",
+    L"\\nsubseteq",
+    L"\\nsupseteq",
+    L"\\nsubseteqq",
+    L"\\nsupseteqq",
+    L"\\subsetneq",
+    L"\\supsetneq",
+    L"\\varsubsetneq",
+    L"\\varsupsetneq",
+    L"\\subsetneqq",
+    L"\\supsetneqq",
+    L"\\varsubsetneqq",
+    L"\\varsupsetneqq",
+    L"\\leftleftarrows",
+    L"\\rightrightarrows",
+    L"\\leftrightarrows",
+    L"\\rightleftarrows",
+    L"\\Lleftarrow",
+    L"\\Rrightarrow",
+    L"\\twoheadleftarrow",
+    L"\\twoheadrightarrow",
+    L"\\leftarrowtail",
+    L"\\rightarrowtail",
+    L"\\looparrowleft",
+    L"\\looparrowright",
+    L"\\leftrightharpoons",
+    L"\\rightleftharpoons",
+    L"\\curvearrowleft",
+    L"\\curvearrowright",
+    L"\\circlearrowleft",
+    L"\\circlearrowright",
+    L"\\Lsh",
+    L"\\Rsh",
+    L"\\upuparrows",
+    L"\\downdownarrows",
+    L"\\multimap",
+    L"\\rightsquigarrow",
+    L"\\leftrightsquigarrow",
+    L"\\nLeftarrow",
+    L"\\nRightarrow",
+    L"\\nleftrightarrow",
+    L"\\nLeftrightarrow",
+    L"\\pitchfork",
+    L"\\nexists",
+    L"\\lhd",
+    L"\\rhd",
+    L"\\unlhd",
+    L"\\unrhd",
+    L"\\Join",
+    L"\\leadsto"    
 };
 
 set<wstring> gAmsmathCommands(
@@ -375,7 +562,7 @@ wstring Manager::gTexvcCompatibilityMacros =
 
 wstring Manager::gStandardMacros =
 
-    // The next group are standard TeX synonyms.
+    // The next group are standard TeX/LaTeX/AMS-LaTeX synonyms.
     L"\\newcommand{\\|}{\\Vert}"
     L"\\newcommand{\\implies}{\\;\\Longrightarrow\\;}"
     L"\\newcommand{\\neg}{\\lnot}"
@@ -386,6 +573,19 @@ wstring Manager::gStandardMacros =
     L"\\newcommand{\\lor}{\\vee}"
     L"\\newcommand{\\gets}{\\leftarrow}"
     L"\\newcommand{\\to}{\\rightarrow}"
+    L"\\newcommand{\\doublecap}{\\Cap}"
+    L"\\newcommand{\\restriction}{\\upharpoonright}"
+    L"\\newcommand{\\llless}{\\lll}"
+    L"\\newcommand{\\gggtr}{\\ggg}"
+    L"\\newcommand{\\Doteq}{\\doteqdot}"
+    L"\\newcommand{\\doublecup}{\\Cup}"
+    L"\\newcommand{\\dasharrow}{\\dashleftarrow}"
+    L"\\newcommand{\\vartriangleleft}{\\lhd}"
+    L"\\newcommand{\\vartriangleright}{\\rhd}"
+    L"\\newcommand{\\trianglelefteq}{\\unlhd}"
+    L"\\newcommand{\\trianglerighteq}{\\unrhd}"
+    L"\\newcommand{\\Join}{\\bowtie}"
+    L"\\newcommand{\\Diamond}{\\lozenge}"
 
     // The amsfonts package accepts the following two commands, but warns
     // that they are obsolete, so let's just quietly replace them.
@@ -541,10 +741,31 @@ void Manager::ProcessInput(const wstring& input, bool texvcCompatibility)
     // Generate the parse tree and the layout tree.
     Parser P;
     mParseTree = P.DoParse(tokens);
-    mLayoutTree = mParseTree->BuildLayoutTree(
-        TexMathFont(),
-        LayoutTree::Node::cStyleText
-    );
+    mHasDelayedMathmlError = false;
+    
+    try
+    {
+        mLayoutTree = mParseTree->BuildLayoutTree(
+            TexMathFont(),
+            LayoutTree::Node::cStyleText
+        );
+    }
+    catch (Exception& e)
+    {
+        // Some types of error need to returned as MathML errors, not
+        // parsing errors.
+        if (
+            e.GetCode() == L"InvalidNegation" ||
+            e.GetCode() == L"UnavailableSymbolFontCombination"
+        )
+        {
+            mHasDelayedMathmlError = true;
+            mDelayedMathmlError = e;
+            mLayoutTree.reset(NULL);
+        }
+        else
+            throw e;
+    }
 }
 
 // This is a helper struct used in CleanupFontAttributes (see below).
@@ -704,6 +925,9 @@ auto_ptr<XmlNode> Manager::GenerateMathml(
     const MathmlOptions& options
 ) const
 {
+    if (mHasDelayedMathmlError)
+        throw mDelayedMathmlError;
+    
     if (!mLayoutTree.get())
         throw logic_error(
             "Layout tree not yet built in Manager::GenerateMathml"
@@ -770,16 +994,37 @@ wstring Manager::GeneratePurifiedTex(
     if (commands.count(L"\\unichar"))
         output += L"\\usepackage{ucs}\n";
 
-    output +=
-        L"\\pagestyle{empty}\n"
-        L"\\begin{document}\n"
-        L"$\n";
+    if (options.mComputeVerticalShift)
+    {
+        output +=
+            L"\\pagestyle{empty}\n"
+            L"\\begin{document}\n"
+            // The idea here is to add a single dark pixel to the left of
+            // the output PNG, which is located on the baseline. Then we
+            // can scan for that pixel to determine the vertical alignment
+            // (<png><vshift> output field).
+            L"\\hbox{\\vrule height 0.4pt depth 0pt width 0.5pt"
+            L"\\hbox to 0.7pt{}$";
+        
+        output += latex;
+        
+        output +=
+            L"\n$}\n"
+            L"\\end{document}\n";
+    }
+    else
+    {
+        output +=
+            L"\\pagestyle{empty}\n"
+            L"\\begin{document}\n"
+            L"$\n";
 
-    output += latex;
+        output += latex;
 
-    output +=
-        L"\n$\n"
-        L"\\end{document}\n";
+        output +=
+            L"\n$\n"
+            L"\\end{document}\n";
+    }
 
     return output;
 }

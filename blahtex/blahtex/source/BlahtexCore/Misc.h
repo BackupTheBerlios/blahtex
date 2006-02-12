@@ -1,6 +1,6 @@
 // File "Misc.h"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -58,6 +58,10 @@ private:
     std::vector<std::wstring> mArgs;
 
 public:
+    Exception()
+    {
+    }
+
     Exception(
         const std::wstring& code,
         const std::wstring& arg1 = L"",
@@ -70,7 +74,7 @@ public:
         if (!arg2.empty())
             mArgs.push_back(arg2);
     }
-
+    
     const std::wstring& GetCode() const
     {
         return mCode;
@@ -184,9 +188,14 @@ struct PurifiedTexOptions
     // commands when it encounters supported non-ASCII characters in the
     // input.
     bool mUseUcsPackage;
+    
+    // If true, blahtex will make a few changes that allow it to compute
+    // the vertical shift required on the PNG.
+    bool mComputeVerticalShift;
 
     PurifiedTexOptions() :
-        mUseUcsPackage(false)
+        mUseUcsPackage(false),
+        mComputeVerticalShift(false)
     { }
 };
 

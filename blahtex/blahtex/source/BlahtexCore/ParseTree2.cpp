@@ -1,6 +1,6 @@
 // File "ParseTree2.cpp"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -274,6 +274,8 @@ pair<wstring, OperatorInfo> operatorArray[] =
     // FIX: should also make regular \leftarrow and \rightarrow (etc)
     // NON-STRETCHY, because they are default by stretchy in the
     // normative operator dictionary.
+    // Actually, there appear to be MathML characters available:
+    // U+27F5 etc.
 
     make_pair(L"\\longleftarrow",
         OperatorInfo(L"\U00002190", LayoutTree::Node::cFlavourRel)
@@ -453,16 +455,10 @@ pair<wstring, OperatorInfo> operatorArray[] =
         OperatorInfo(L"\U00002264", LayoutTree::Node::cFlavourRel)
     ),
     make_pair(L"\\triangleleft",
-        OperatorInfo(L"\U000022B2", LayoutTree::Node::cFlavourBin)
+        OperatorInfo(L"\U000025C3", LayoutTree::Node::cFlavourBin)
     ),
     make_pair(L"\\triangleright",
-        OperatorInfo(L"\U000022B3", LayoutTree::Node::cFlavourBin)
-    ),
-    make_pair(L"\\trianglelefteq",
-        OperatorInfo(L"\U000022B4", LayoutTree::Node::cFlavourRel)
-    ),
-    make_pair(L"\\trianglerighteq",
-        OperatorInfo(L"\U000022B5", LayoutTree::Node::cFlavourRel)
+        OperatorInfo(L"\U000025B9", LayoutTree::Node::cFlavourBin)
     ),
     make_pair(L"\\models",
         OperatorInfo(L"\U000022A7", LayoutTree::Node::cFlavourRel)
@@ -582,9 +578,6 @@ pair<wstring, OperatorInfo> operatorArray[] =
     ),
     make_pair(L"\\angle",
         OperatorInfo(L"\U00002220", LayoutTree::Node::cFlavourOrd)
-    ),
-    make_pair(L"\\Diamond",
-        OperatorInfo(L"\U000022C4", LayoutTree::Node::cFlavourBin)
     ),
     make_pair(L"\\nmid",
         OperatorInfo(L"\U00002224", LayoutTree::Node::cFlavourRel)
@@ -772,6 +765,603 @@ pair<wstring, OperatorInfo> operatorArray[] =
     ),
     make_pair(L"\\projlim",
         OperatorInfo(L"proj lim", LayoutTree::Node::cFlavourOp)
+    ),
+    
+    make_pair(L"\\ulcorner",
+        OperatorInfo(L"\U0000231C", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\urcorner",
+        OperatorInfo(L"\U0000231D", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\llcorner",
+        OperatorInfo(L"\U0000231E", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\lrcorner",
+        OperatorInfo(L"\U0000231F", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\dashrightarrow",
+        OperatorInfo(L"\U0000290F", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\dashleftarrow",
+        OperatorInfo(L"\U0000290E", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\backprime",
+        OperatorInfo(L"\U00002035", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\vartriangle",
+        OperatorInfo(L"\U000025B5", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\blacktriangle",
+        OperatorInfo(L"\U000025B4", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\triangledown",
+        OperatorInfo(L"\U000025BF", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\blacktriangledown",
+        OperatorInfo(L"\U000025BE", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\blacksquare",
+        OperatorInfo(L"\U000025FC", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\lozenge",
+        OperatorInfo(L"\U000025CA", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\blacklozenge",
+        OperatorInfo(L"\U000029EB", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\bigstar",
+        OperatorInfo(L"\U00002605", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\sphericalangle",
+        OperatorInfo(L"\U00002222", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\measuredangle",
+        OperatorInfo(L"\U00002221", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\dotplus",
+        OperatorInfo(L"\U00002214", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\ltimes",
+        OperatorInfo(L"\U000022C9", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\rtimes",
+        OperatorInfo(L"\U000022CA", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\Cap",
+        OperatorInfo(L"\U000022D2", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\leftthreetimes",
+        OperatorInfo(L"\U000022CB", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\rightthreetimes",
+        OperatorInfo(L"\U000022CC", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\Cup",
+        OperatorInfo(L"\U000022D3", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\barwedge",
+        OperatorInfo(L"\U00002305", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\curlywedge",
+        OperatorInfo(L"\U000022CF", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\veebar",
+        OperatorInfo(L"\U000022BB", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\curlyvee",
+        OperatorInfo(L"\U000022CE", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\doublebarwedge",
+        OperatorInfo(L"\U00002306", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\boxminus",
+        OperatorInfo(L"\U0000229F", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\circleddash",
+        OperatorInfo(L"\U0000229D", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\boxtimes",
+        OperatorInfo(L"\U000022A0", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\circledast",
+        OperatorInfo(L"\U0000229B", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\boxdot",
+        OperatorInfo(L"\U000022A1", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\circledcirc",
+        OperatorInfo(L"\U0000229A", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\boxplus",
+        OperatorInfo(L"\U0000229E", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\centerdot",
+        OperatorInfo(L"\U000022C5", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\divideontimes",
+        OperatorInfo(L"\U000022C7", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\intercal",
+        OperatorInfo(L"\U000022BA", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\leqq",
+        OperatorInfo(L"\U00002266", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\geqq",
+        OperatorInfo(L"\U00002267", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\leqslant",
+        OperatorInfo(L"\U00002A7D", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\geqslant",
+        OperatorInfo(L"\U00002A7E", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\eqslantless",
+        OperatorInfo(L"\U00002A95", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\eqslantgtr",
+        OperatorInfo(L"\U00002A96", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gtrsim",
+        OperatorInfo(L"\U00002273", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lessapprox",
+        OperatorInfo(L"\U00002A85", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gtrapprox",
+        OperatorInfo(L"\U00002A86", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\approxeq",
+        OperatorInfo(L"\U0000224A", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\eqsim",
+        OperatorInfo(L"\U00002242", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lessdot",
+        OperatorInfo(L"\U000022D6", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\gtrdot",
+        OperatorInfo(L"\U000022D7", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\lll",
+        OperatorInfo(L"\U000022D8", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ggg",
+        OperatorInfo(L"\U000022D9", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lessgtr",
+        OperatorInfo(L"\U00002276", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gtrless",
+        OperatorInfo(L"\U00002277", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lesseqgtr",
+        OperatorInfo(L"\U000022DA", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gtreqless",
+        OperatorInfo(L"\U000022DB", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lesseqqgtr",
+        OperatorInfo(L"\U00002A8B", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gtreqqless",
+        OperatorInfo(L"\U00002A8C", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\doteqdot",
+        OperatorInfo(L"\U00002251", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\eqcirc",
+        OperatorInfo(L"\U00002256", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\risingdotseq",
+        OperatorInfo(L"\U00002253", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\circeq",
+        OperatorInfo(L"\U00002257", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\fallingdotseq",
+        OperatorInfo(L"\U00002252", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\triangleq",
+        OperatorInfo(L"\U0000225C", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\backsim",
+        OperatorInfo(L"\U0000223D", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\thicksim",
+        OperatorInfo(L"\U0000223C", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\backsimeq",
+        OperatorInfo(L"\U000022CD", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\thickapprox",
+        OperatorInfo(L"\U00002248", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\subseteqq",
+        OperatorInfo(L"\U00002AC5", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\supseteqq",
+        OperatorInfo(L"\U00002AC6", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Subset",
+        OperatorInfo(L"\U000022D0", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Supset",
+        OperatorInfo(L"\U000022D1", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\preccurlyeq",
+        OperatorInfo(L"\U0000227C", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succcurlyeq",
+        OperatorInfo(L"\U0000227D", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\curlyeqprec",
+        OperatorInfo(L"\U000022DE", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\curlyeqsucc",
+        OperatorInfo(L"\U000022DF", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\precsim",
+        OperatorInfo(L"\U0000227E", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succsim",
+        OperatorInfo(L"\U0000227F", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\precapprox",
+        OperatorInfo(L"\U00002AB7", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succapprox",
+        OperatorInfo(L"\U00002AB8", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Vvdash",
+        OperatorInfo(L"\U000022AA", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\shortmid",
+        OperatorInfo(L"\U00002223", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\shortparallel",
+        OperatorInfo(L"\U00002225", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\bumpeq",
+        OperatorInfo(L"\U0000224F", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\between",
+        OperatorInfo(L"\U0000226C", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Bumpeq",
+        OperatorInfo(L"\U0000224E", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\varpropto",
+        OperatorInfo(L"\U0000221D", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\backepsilon",
+        OperatorInfo(L"\U000003F6", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\blacktriangleleft",
+        OperatorInfo(L"\U000025C0", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\blacktriangleright",
+        OperatorInfo(L"\U000025B6", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\therefore",
+        OperatorInfo(L"\U00002234", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\because",
+        OperatorInfo(L"\U00002235", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ngtr",
+        OperatorInfo(L"\U0000226F", LayoutTree::Node::cFlavourRel)
+    ),
+    // FIX: need to test that blahtex is spitting out combining characters
+    // correctly...
+    make_pair(L"\\nleqslant",
+        OperatorInfo(L"\U00002A7D\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ngeqslant",
+        OperatorInfo(L"\U00002A7E\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nleqq",
+        OperatorInfo(L"\U00002266\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ngeqq",
+        OperatorInfo(L"\U00002267\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lneqq",
+        OperatorInfo(L"\U00002268", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gneqq",
+        OperatorInfo(L"\U00002269", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lvertneqq",
+        OperatorInfo(L"\U00002268\U0000FE00", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gvertneqq",
+        OperatorInfo(L"\U00002269\U0000FE00", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lnsim",
+        OperatorInfo(L"\U000022E6", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gnsim",
+        OperatorInfo(L"\U000022E7", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\lnapprox",
+        OperatorInfo(L"\U00002A89", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\gnapprox",
+        OperatorInfo(L"\U00002A8A", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nprec",
+        OperatorInfo(L"\U00002280", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nsucc",
+        OperatorInfo(L"\U00002281", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\npreceq",
+        OperatorInfo(L"\U00002AAF\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nsucceq",
+        OperatorInfo(L"\U00002AB0\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\precneqq",
+        OperatorInfo(L"\U00002AB5", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succneqq",
+        OperatorInfo(L"\U00002AB6", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\precnsim",
+        OperatorInfo(L"\U000022E8", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succnsim",
+        OperatorInfo(L"\U000022E9", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\precnapprox",
+        OperatorInfo(L"\U00002AB9", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succnapprox",
+        OperatorInfo(L"\U00002ABA", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nsim",
+        OperatorInfo(L"\U00002241", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ncong",
+        OperatorInfo(L"\U00002247", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nshortmid",
+        OperatorInfo(L"\U00002224", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nshortparallel",
+        OperatorInfo(L"\U00002226", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nmid",
+        OperatorInfo(L"\U00002224", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nparallel",
+        OperatorInfo(L"\U00002226", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nvdash",
+        OperatorInfo(L"\U000022AC", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nvDash",
+        OperatorInfo(L"\U000022AD", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nVdash",
+        OperatorInfo(L"\U000022AE", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nVDash",
+        OperatorInfo(L"\U000022AF", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ntriangleleft",
+        OperatorInfo(L"\U000022EA", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ntriangleright",
+        OperatorInfo(L"\U000022EB", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ntrianglelefteq",
+        OperatorInfo(L"\U000022EC", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\ntrianglerighteq",
+        OperatorInfo(L"\U000022ED", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nsubseteq",
+        OperatorInfo(L"\U00002288", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nsupseteq",
+        OperatorInfo(L"\U00002289", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nsubseteqq",
+        OperatorInfo(L"\U00002AC5\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nsupseteqq",
+        OperatorInfo(L"\U00002AC6\U00000338", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\subsetneq",
+        OperatorInfo(L"\U0000228A", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\supsetneq",
+        OperatorInfo(L"\U0000228B", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\varsubsetneq",
+        OperatorInfo(L"\U0000228A\U0000FE00", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\varsupsetneq",
+        OperatorInfo(L"\U0000228B\U0000FE00", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\subsetneqq",
+        OperatorInfo(L"\U00002ACB", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\supsetneqq",
+        OperatorInfo(L"\U00002ACC", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\varsubsetneqq",
+        OperatorInfo(L"\U00002ACB\U0000FE00", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\varsupsetneqq",
+        OperatorInfo(L"\U00002ACC\U0000FE00", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\leftleftarrows",
+        OperatorInfo(L"\U000021C7", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\rightrightarrows",
+        OperatorInfo(L"\U000021C9", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\leftrightarrows",
+        OperatorInfo(L"\U000021C6", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\rightleftarrows",
+        OperatorInfo(L"\U000021C4", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Lleftarrow",
+        OperatorInfo(L"\U000021DA", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Rrightarrow",
+        OperatorInfo(L"\U000021DB", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\twoheadleftarrow",
+        OperatorInfo(L"\U0000219E", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\twoheadrightarrow",
+        OperatorInfo(L"\U000021A0", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\leftarrowtail",
+        OperatorInfo(L"\U000021A2", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\rightarrowtail",
+        OperatorInfo(L"\U000021A3", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\looparrowleft",
+        OperatorInfo(L"\U000021AB", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\looparrowright",
+        OperatorInfo(L"\U000021AC", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\leftrightharpoons",
+        OperatorInfo(L"\U000021CB", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\rightleftharpoons",
+        OperatorInfo(L"\U000021CC", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\curvearrowleft",
+        OperatorInfo(L"\U000021B6", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\curvearrowright",
+        OperatorInfo(L"\U000021B7", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\circlearrowleft",
+        OperatorInfo(L"\U000021BA", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\circlearrowright",
+        OperatorInfo(L"\U000021BB", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Lsh",
+        OperatorInfo(L"\U000021B0", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\Rsh",
+        OperatorInfo(L"\U000021B1", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\upuparrows",
+        OperatorInfo(L"\U000021C8", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\downdownarrows",
+        OperatorInfo(L"\U000021CA", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\multimap",
+        OperatorInfo(L"\U000022B8", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\rightsquigarrow",
+        OperatorInfo(L"\U0000219D", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\leftrightsquigarrow",
+        OperatorInfo(L"\U000021AD", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nLeftarrow",
+        OperatorInfo(L"\U000021CD", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nRightarrow",
+        OperatorInfo(L"\U000021CF", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nleftrightarrow",
+        OperatorInfo(L"\U000021AE", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nLeftrightarrow",
+        OperatorInfo(L"\U000021CE", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\pitchfork",
+        OperatorInfo(L"\U000022D4", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\nexists",
+        OperatorInfo(L"\U00002204", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\lhd",
+        OperatorInfo(L"\U000022B2", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\rhd",
+        OperatorInfo(L"\U000022B3", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\unlhd",
+        OperatorInfo(L"\U000022B4", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\unrhd",
+        OperatorInfo(L"\U000022B5", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\leadsto",
+        OperatorInfo(L"\U000021DD", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\uplus",
+        OperatorInfo(L"\U0000228E", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\diamond",
+        OperatorInfo(L"\U000022C4", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\bigtriangleup",
+        OperatorInfo(L"\U000025B3", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\bigtriangledown",
+        OperatorInfo(L"\U000025BD", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\ominus",
+        OperatorInfo(L"\U00002296", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\oslash",
+        OperatorInfo(L"\U00002298", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\odot",
+        OperatorInfo(L"\U00002299", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\bigcirc",
+        OperatorInfo(L"\U000025EF", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\amalg",
+        OperatorInfo(L"\U00002A3F", LayoutTree::Node::cFlavourBin)
+    ),
+    make_pair(L"\\prec",
+        OperatorInfo(L"\U0000227A", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succ",
+        OperatorInfo(L"\U0000227B", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\preceq",
+        OperatorInfo(L"\U00002AAF", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\succeq",
+        OperatorInfo(L"\U00002AB0", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\dashv",
+        OperatorInfo(L"\U000022A3", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\asymp",
+        OperatorInfo(L"\U00002248", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\doteq",
+        OperatorInfo(L"\U00002250", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\parallel",
+        OperatorInfo(L"\U00002225", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\bowtie",
+        OperatorInfo(L"\U000022C8", LayoutTree::Node::cFlavourRel)
+    ),
+    make_pair(L"\\surd",
+        OperatorInfo(L"\U0000221A", LayoutTree::Node::cFlavourOrd)
     )
 };
 wishful_hash_map<wstring, OperatorInfo> operatorTable(
@@ -930,6 +1520,25 @@ pair<wstring, IdentifierInfo> identifierArray[] =
     ),
     make_pair(L"\\mho",
         IdentifierInfo(false, L"\U00002127", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\circledR",
+        IdentifierInfo(false, L"\U000000AE", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\yen",
+        IdentifierInfo(false, L"\U000000A5", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\maltese",
+        IdentifierInfo(false, L"\U00002720", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\circledS",
+        IdentifierInfo(false, L"\U000024C8", LayoutTree::Node::cFlavourOrd)
+    ),
+    // FIX: these two needs special testing since they're plane-1:
+    make_pair(L"\\Bbbk",
+        IdentifierInfo(false, L"\U0001D55C", LayoutTree::Node::cFlavourOrd)
+    ),
+    make_pair(L"\\jmath",
+        IdentifierInfo(true,  L"\U0001D6A5", LayoutTree::Node::cFlavourOrd)
     )
 };
 wishful_hash_map<wstring, IdentifierInfo> identifierTable(

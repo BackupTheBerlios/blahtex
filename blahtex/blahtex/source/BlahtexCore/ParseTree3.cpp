@@ -1,6 +1,6 @@
 // File "ParseTree3.cpp"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -146,9 +146,19 @@ void MathCommand1Arg::GetPurifiedTex(
     const PurifiedTexOptions& options
 ) const
 {
-    os << mCommand << L"{";
-    mChild->GetPurifiedTex(os, options);
-    os << L"}";
+    if (mCommand == L"\\not")
+    {
+        // FIX: This is a nasty hack to make sure that e.g. "\not <"
+        // gets sent as "\not <" instead of "\not{<}" which is broken.
+        os << mCommand << L" ";
+        mChild->GetPurifiedTex(os, options);
+    }
+    else
+    {
+        os << mCommand << L"{";
+        mChild->GetPurifiedTex(os, options);
+        os << L"}";
+    }
 }
 
 

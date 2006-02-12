@@ -1,6 +1,6 @@
 // File "ParseTree1.cpp"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -397,8 +397,6 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
     // This is a list of all symbols that we know how to negate.
     static pair<wstring, wstring> negationArray[] =
     {
-        // FIX: add more entries to this table
-
         // Element => NotElement
         make_pair(L"\U00002208", L"\U00002209"),
         // Congruent => NotCongruent
@@ -407,16 +405,70 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
         make_pair(L"\U00002203", L"\U00002204"),
         // = => NotEqual
         make_pair(L"=",          L"\U00002260"),
-        // RightArrow => nrightarrow
-        make_pair(L"\U00002192", L"\U0000219B"),
         // SubsetEqual => NotSubsetEqual
         make_pair(L"\U00002286", L"\U00002288"),
         // Tilde => NotTilde
         make_pair(L"\U0000223C", L"\U00002241"),
-        // Vdash => nVdash
-        make_pair(L"\U000022A9", L"\U000022AE"),
+        // LeftArrow => nleftarrow
+        make_pair(L"\U00002190", L"\U0000219A"),
+        // RightArrow => nrightarrow
+        make_pair(L"\U00002192", L"\U0000219B"),
         // LeftRightArrow => nleftrightarrow
         make_pair(L"\U00002194", L"\U000021AE"),
+        // DoubleLeftArrow => nLeftArrow
+        make_pair(L"\U000021D0", L"\U000021CD"),
+        // DoubleRightArrow => nRightArrow
+        make_pair(L"\U000021D2", L"\U000021CF"),
+        // DoubleLeftRightArrow => nLeftrightArrow
+        make_pair(L"\U000021D4", L"\U000021CE"),
+        // ReverseElement => NotReverseElement
+        make_pair(L"\U0000220B", L"\U0000220C"),
+        // FIX: what happens to the pipe character?
+        // VerticalBar => NotVerticalBar
+        make_pair(L"\U00002223", L"\U00002224"),
+        // DoubleVerticalBar => NotDoubleVerticalBar
+        make_pair(L"\U00002225", L"\U00002226"),
+        // TildeEqual => NotTildeEqual
+        make_pair(L"\U00002243", L"\U00002244"),
+        // TildeFullEqual => NotTildeFullEqual
+        make_pair(L"\U00002245", L"\U00002247"),
+        // TildeTilde => NotTildeTilde
+        make_pair(L"\U00002248", L"\U00002249"),
+        // > => NotLess
+        make_pair(L"<", L"\U0000226E"),
+        // < => NotGreater
+        make_pair(L">", L"\U0000226F"),
+        // leq => NotLessEqual
+        make_pair(L"\U00002264", L"\U00002270"),
+        // GreaterEqual => NotGreaterEqual
+        make_pair(L"\U00002265", L"\U00002271"),
+        // FIX: what about "Precedes", "Succeeds"?
+        // subset => nsub
+        make_pair(L"\U00002282", L"\U00002284"),
+        // Superset => nsup
+        make_pair(L"\U00002283", L"\U00002285"),
+        // SubsetEqual => NotSubsetEqual
+        make_pair(L"\U00002286", L"\U00002288"),
+        // SupersetEqual => NotSupersetEqual
+        make_pair(L"\U00002287", L"\U00002289"),
+        // RightTee => nvdash
+        make_pair(L"\U000022A2", L"\U000022AC"),
+        // DoubleRightTee => nvDash
+        make_pair(L"\U000022A8", L"\U000022AD"),
+        // Vdash => nVdash
+        make_pair(L"\U000022A9", L"\U000022AE"),
+        // SquareSubsetEqual => NotSquareSubsetEqual
+        make_pair(L"\U00002291", L"\U000022E2"),
+        // SquareSupersetEqual => NotSquareSupersetEqual
+        make_pair(L"\U00002292", L"\U000022E3"),
+        // LeftTriangle => NotLeftTriangle
+        make_pair(L"\U000022B2", L"\U000022EA"),
+        // RightTriangle => NotRightTriangle
+        make_pair(L"\U000022B3", L"\U000022EB"),
+        // LeftTriangleEqual => NotLeftTriangleEqual
+        make_pair(L"\U000022B4", L"\U000022EC"),
+        // RightTriangleEqual => NotRightTriangleEqual
+        make_pair(L"\U000022B5", L"\U000022ED")
     };
     static wishful_hash_map<wstring, wstring> negationTable(
         negationArray,

@@ -1,6 +1,6 @@
 // File "Manager.h"
 //
-// blahtex (version 0.4)
+// blahtex (version 0.4.2)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -92,6 +92,16 @@ private:
     // This flag is set if the user has requested "strict spacing" rules
     // (see SpacingControl) via the magic "\strictspacing" command.
     bool mStrictSpacingRequested;
+    
+    // There are a handful of errors that get picked up during the layout
+    // tree building phase, but which we want to return as MathML-related
+    // errors; i.e. we can still run PNG generation. If one of these
+    // happens, we cache it in mDelayedMathmlError, and return it when
+    // someone tries to GenerateMathml().
+    // FIX: this is a bit hacky and badly designed.
+    // Come back and fix it up one day.
+    bool mHasDelayedMathmlError;
+    Exception mDelayedMathmlError;
 
     // gStandardMacros is a string which, in effect, gets inserted at the
     // beginning of any input string handled by ProcessInput. It contains
