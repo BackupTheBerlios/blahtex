@@ -277,7 +277,7 @@ class MathRenderer {
 	 * Invoke the blahtex executable.
 	 * If there is an error, the return value is (false, error message).
 	 * If there is no error, the return value is (true, blatex output).
-	 * FIXME: Assumes standard input encoding
+	 * @todo Assumes standard input encoding
 	 */
 	function invokeBlahtex($tex, $makePNG)
 	{
