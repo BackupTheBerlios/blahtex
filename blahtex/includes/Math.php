@@ -116,7 +116,7 @@ class MathRenderer {
 				$parser = new blahtexOutputParser();
 				$res = $parser->parse($res);
 				$blahtexError = $this->processBlahtexOutput($res);
-				if ($blahtexError)
+				if ($blahtexError && $texvcError)
 					return $blahtexError;
 			} else {
 				if ($texvcError)
@@ -285,7 +285,7 @@ class MathRenderer {
 
                 $descriptorspec = array(0 => array("pipe", "r"),
                                         1 => array("pipe", "w"));
-		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package';
+		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package --spacing strict';
 		if ($makePNG)
 			$options = "$options --png --temp-directory $wgTmpDirectory --png-directory $wgMathDirectory";
                 $process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
