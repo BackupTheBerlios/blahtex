@@ -312,6 +312,7 @@ class MathRenderer {
         /**
 	 * Process blahtex output and update the mathml and png fields.
 	 * Returns an error message, or false if no error occurred.
+	 * Bug: assumes that mathml and png errors have no arguments.
 	 */
 	function processBlahtexOutput($results)
 	{
