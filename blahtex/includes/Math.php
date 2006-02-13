@@ -348,7 +348,7 @@ class MathRenderer {
 				return $this->_error('math_' . $results["blahtex:mathml:error:id"]);	
 			if (isset($results["blahtex:png:error:id"]))
 				return $this->_error('math_' . $results["blahtex:png:error:id"]);	
-			return array(false, $this->_error('math_unknown_error', ' #3'));
+			return $this->_error('math_unknown_error', ' #3');
 		}
 	}
 
