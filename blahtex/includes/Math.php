@@ -79,6 +79,7 @@ class MathRenderer {
 	var $html = '';
 	var $mathml = '';
 	var $conservativeness = 0;
+	var $verticalShift = "unknown";
 	
 	function MathRenderer( $tex ) {
 		$this->tex = $tex;
@@ -142,6 +143,27 @@ class MathRenderer {
 					'math_mathml' => $this->mathml,
 				  ), $fname, array( 'IGNORE' ) 
 				);
+				
+				// Write the vertical shift value to the filesystem.
+				// FIXME: this data should really live in the "math" table.
+				// The filesystem approach is is just a temporary measure
+				// until we decide whether we really want to modify the
+				// database schema.
+				global $wgUseBlahtexVerticalShift;
+				if ( $wgUseBlahtexVerticalShift )
+				{
+					if ( $this->verticalShift != "unknown" )
+					{
+						global $wgMathDirectory;
+						$verticalShiftFile = @fopen( "$wgMathDirectory/{$this->hash}.vshift", "wb" );
+						if ( !($verticalShiftFile === false) )
+						{
+							@fwrite( $verticalShiftFile, $this->verticalShift );
+							@fclose( $verticalShiftFile );
+						}
+					}
+				}
+				
 			}
 		}
 		  
@@ -288,6 +310,9 @@ class MathRenderer {
 		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package --spacing strict';
 		if ($makePNG)
 			$options = "$options --png --temp-directory $wgTmpDirectory --png-directory $wgMathDirectory";
+			global $wgUseBlahtexVerticalShift;
+			if ( $wgUseBlahtexVerticalShift )
+				$options .= " --compute-vertical-shift";
                 $process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
                 if (!$process) {
 			return array(false, $this->_error('math_unknown_error', ' #1'));
@@ -341,6 +366,8 @@ class MathRenderer {
 				$this->mathml = $results['mathmlMarkup'];
 			if (isset($results["blahtex:png:md5"])) 
 				$this->hash = $results["blahtex:png:md5"];
+			if (isset($results["blahtex:png:vshift"]))
+				$this->verticalShift = $results["blahtex:png:vshift"];
 			return false;
 
 		} else {
@@ -391,6 +418,18 @@ class MathRenderer {
 			
 			if( $this->hash && !file_exists( "$wgMathDirectory/{$this->hash}.png" ) ) 
 				$this->hash = NULL;
+
+			global $wgUseBlahtexVerticalShift;
+			if ( $wgUseBlahtexVerticalShift && $this->hash )
+			{
+				$verticalShiftFile = @fopen( "$wgMathDirectory/{$this->hash}.vshift", "rb" );
+				if ( !($verticalShiftFile === false) )
+				{
+					$this->verticalShift = @fgets( $verticalShiftFile );
+					@fclose( $verticalShiftFile );
+				}
+				// Silently ignore vertical shift if the file is missing
+			}
 
 			if( $this->html || $this->mathml || $this->hash )
 				return true;
@@ -466,7 +505,11 @@ class MathRenderer {
 		global $wgMathPath;
 		$url = htmlspecialchars( "$wgMathPath/{$this->hash}.png" );
 		$alt = trim(str_replace("\n", ' ', htmlspecialchars( $this->tex )));
-		return "<img class='tex' src=\"$url\" alt=\"$alt\" />";
+		global $wgUseBlahtexVerticalShift;
+		if ( $wgUseBlahtexVerticalShift && $this->verticalShift != "unknown" )
+			return "<img class='tex' src=\"$url\" alt=\"$alt\" style=\"vertical-align: {$this->verticalShift}px\" />";
+		else
+			return "<img class='tex' src=\"$url\" alt=\"$alt\" />";
 	}
 
 }
