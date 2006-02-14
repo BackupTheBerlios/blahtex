@@ -932,6 +932,8 @@ $wgUseTeX = false;
 $wgTexvc = './math/texvc';
 /** Location of the blahtex binary. If empty, texvc is used instead */
 $wgBlahtex = '';
+/** Whether to use blahtex's "--compute-vertical-shift" facility */
+$wgUseBlahtexVerticalShift = false;
 
 #
 # Profiling / debugging
