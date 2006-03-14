@@ -1,6 +1,6 @@
 // File "Interface.cpp"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -20,7 +20,7 @@
 
 #include <sstream>
 #include "Interface.h"
-#include "XmlNode.h"
+#include "MathmlNode.h"
 
 using namespace std;
 
@@ -36,7 +36,7 @@ void Interface::ProcessInput(const wstring& input)
 wstring Interface::GetMathml()
 {
     wostringstream output;
-    auto_ptr<XmlNode> root = mManager->GenerateMathml(mMathmlOptions);
+    auto_ptr<MathmlNode> root = mManager->GenerateMathml(mMathmlOptions);
     root->Print(output, mEncodingOptions, mIndented);
     return output.str();
 }

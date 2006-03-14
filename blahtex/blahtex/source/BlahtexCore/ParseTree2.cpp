@@ -1,6 +1,6 @@
 // File "ParseTree2.cpp"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -204,6 +204,9 @@ pair<wstring, OperatorInfo> operatorArray[] =
     ),
     make_pair(L"\\}",
         OperatorInfo(L"}", LayoutTree::Node::cFlavourClose)
+    ),
+    make_pair(L"\\ast",
+        OperatorInfo(L"*", LayoutTree::Node::cFlavourBin)
     ),
     make_pair(L"\\lbrace",
         OperatorInfo(L"{", LayoutTree::Node::cFlavourOpen)
@@ -487,10 +490,6 @@ pair<wstring, OperatorInfo> operatorArray[] =
 
     // FIX: the fonts shipped with Firefox 1.5 don't know about
     // 0x2a2f (&Cross;). So I'm mapping it to 0xd7 (&times;) for now.
-    // The only downside of this is that the default operator
-    // dictionary in Firefox knows that &Cross; is a binary operator,
-    // but it doesn't know this for &times;, so I need to special-case
-    // the spacing for &times; (see LayoutTree::Row::BuildMathmlTree).
 
     make_pair(L"\\times",
 #if 0
@@ -1362,6 +1361,12 @@ pair<wstring, OperatorInfo> operatorArray[] =
     ),
     make_pair(L"\\surd",
         OperatorInfo(L"\U0000221A", LayoutTree::Node::cFlavourOrd)
+    ),
+    
+    // The translation of \not is special: we record it as a SymbolOperator
+    // in the layout tree, but it gets special handling later.
+    make_pair(L"\\not",
+        OperatorInfo(L"NOT", LayoutTree::Node::cFlavourRel)
     )
 };
 wishful_hash_map<wstring, OperatorInfo> operatorTable(
@@ -1534,6 +1539,7 @@ pair<wstring, IdentifierInfo> identifierArray[] =
         IdentifierInfo(false, L"\U000024C8", LayoutTree::Node::cFlavourOrd)
     ),
     // FIX: these two needs special testing since they're plane-1:
+    // FIX: need to update mediawiki to recognise these entities
     make_pair(L"\\Bbbk",
         IdentifierInfo(false, L"\U0001D55C", LayoutTree::Node::cFlavourOrd)
     ),
@@ -1551,8 +1557,7 @@ namespace ParseTree
 {
 
 auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     // First check for certain easy-to-handle single character commands,
@@ -1560,11 +1565,12 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
     if (mCommand.size() == 1)
     {
         bool good = false;
+        bool isNumber = false;
         // fancyFontsIllegal is set for characters which can't be
         // displayed in frak, cal or bb fonts.
         bool fancyFontsIllegal = false;
         TexMathFont::Family defaultFamily = TexMathFont::cFamilyIt;
-        TexMathFont font = currentFont;
+        TexMathFont font = state.mMathFont;
 
         if (mCommand[0] >= L'A' && mCommand[0] <= L'Z')
             good = true;
@@ -1579,7 +1585,7 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
         {
             fancyFontsIllegal = true;
             defaultFamily = TexMathFont::cFamilyRm;
-            good = true;
+            good = isNumber = true;
         }
 
         if (good)
@@ -1601,14 +1607,28 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                     L"UnavailableSymbolFontCombination", mCommand, L"bb"
                 );
 
-            return auto_ptr<LayoutTree::Node>(
-                new LayoutTree::SymbolPlain(
-                    mCommand,
-                    font.GetMathmlApproximation(),
-                    currentStyle,
-                    LayoutTree::Node::cFlavourOrd
-                )
-            );
+            if (isNumber)
+                return auto_ptr<LayoutTree::Node>(
+                    new LayoutTree::SymbolNumber(
+                        mCommand,
+                        font.GetMathmlApproximation(),
+                        state.mStyle,
+                        LayoutTree::Node::cFlavourOrd,
+                        LayoutTree::Node::cLimitsDisplayLimits,
+                        state.mColour
+                    )
+                );
+            else
+                return auto_ptr<LayoutTree::Node>(
+                    new LayoutTree::SymbolIdentifier(
+                        mCommand,
+                        font.GetMathmlApproximation(),
+                        state.mStyle,
+                        LayoutTree::Node::cFlavourOrd,
+                        LayoutTree::Node::cLimitsDisplayLimits,
+                        state.mColour
+                    )
+                );
         }
 
         // Non-ascii characters
@@ -1625,14 +1645,16 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
     if (lowercaseGreekLookup != lowercaseGreekTable.end())
     {
         return auto_ptr<LayoutTree::Node>(
-            new LayoutTree::SymbolPlain(
+            new LayoutTree::SymbolIdentifier(
                 wstring(1, lowercaseGreekLookup->second),
                 // lowercase greek is only affected by the boldsymbol
                 // status, not the family.
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBoldItalic : cMathmlFontItalic,
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
     }
@@ -1642,7 +1664,7 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
 
     if (uppercaseGreekLookup != uppercaseGreekTable.end())
     {
-        TexMathFont font = currentFont;
+        TexMathFont font = state.mMathFont;
         if (font.mFamily == TexMathFont::cFamilyCal)
             throw Exception(
                 L"UnavailableSymbolFontCombination", mCommand, L"cal"
@@ -1662,11 +1684,13 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
             font.mFamily = TexMathFont::cFamilyRm;
 
         return auto_ptr<LayoutTree::Node>(
-            new LayoutTree::SymbolPlain(
+            new LayoutTree::SymbolIdentifier(
                 wstring(1, uppercaseGreekLookup->second),
                 font.GetMathmlApproximation(),
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
     }
@@ -1696,11 +1720,12 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                 operatorLookup->second.mText,
                 // operators are only affected by the boldsymbol status,
                 // not the family.
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBold : cMathmlFontNormal,
-                currentStyle,
+                state.mStyle,
                 operatorLookup->second.mFlavour,
-                operatorLookup->second.mLimits
+                operatorLookup->second.mLimits,
+                state.mColour
             )
         );
     }
@@ -1710,16 +1735,16 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
 
     if (identifierLookup != identifierTable.end())
     {
-        TexMathFont font = currentFont;
+        TexMathFont font = state.mMathFont;
         font.mFamily =
             identifierLookup->second.mIsItalicDefault
                 ? TexMathFont::cFamilyIt : TexMathFont::cFamilyRm;
 
         return auto_ptr<LayoutTree::Node>(
-            new LayoutTree::SymbolPlain(
+            new LayoutTree::SymbolIdentifier(
                 identifierLookup->second.mText,
                 font.GetMathmlApproximation(),
-                currentStyle,
+                state.mStyle,
                 identifierLookup->second.mFlavour,
                 // For all the "\sin"-like functions:
                 (
@@ -1727,14 +1752,17 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                     LayoutTree::Node::cFlavourOp
                 )
                     ? LayoutTree::Node::cLimitsNoLimits
-                    : LayoutTree::Node::cLimitsDisplayLimits
+                    : LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
     }
 
     if (mCommand == L"\\And")
     {
-        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        auto_ptr<LayoutTree::Row> row(
+            new LayoutTree::Row(state.mStyle, state.mColour)
+        );
         row->mFlavour = LayoutTree::Node::cFlavourRel;
         row->mChildren.push_back(new LayoutTree::Space(5, true));
         row->mChildren.push_back(
@@ -1743,10 +1771,12 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                 L"",
                 false,
                 L"&",
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBold : cMathmlFontNormal,
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
         row->mChildren.push_back(new LayoutTree::Space(5, true));
@@ -1755,7 +1785,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
 
     if (mCommand == L"\\iff")
     {
-        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        auto_ptr<LayoutTree::Row> row(
+            new LayoutTree::Row(state.mStyle, state.mColour)
+        );
         row->mFlavour = LayoutTree::Node::cFlavourRel;
         row->mChildren.push_back(new LayoutTree::Space(5, true));
         // FIX: I would like to make this stretchy and set a particular
@@ -1769,10 +1801,12 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                 L"",
                 false,
                 L"\U000021D4",
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBold : cMathmlFontNormal,
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
         row->mChildren.push_back(new LayoutTree::Space(5, true));
@@ -1784,7 +1818,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
         // FIX: this spacing stuff isn't quite right, but it will hopefully
         // do. The amsmath package does all kinds of interesting things with
         // \colon's spacing.
-        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        auto_ptr<LayoutTree::Row> row(
+            new LayoutTree::Row(state.mStyle, state.mColour)
+        );
         row->mChildren.push_back(new LayoutTree::Space(2, true));
         row->mChildren.push_back(
             new LayoutTree::SymbolOperator(
@@ -1792,10 +1828,12 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                 L"",
                 false,
                 L":",
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBold : cMathmlFontNormal,
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
         row->mChildren.push_back(new LayoutTree::Space(6, true));
@@ -1804,7 +1842,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
 
     if (mCommand == L"\\bmod")
     {
-        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        auto_ptr<LayoutTree::Row> row(
+            new LayoutTree::Row(state.mStyle, state.mColour)
+        );
         row->mFlavour = LayoutTree::Node::cFlavourBin;
         row->mChildren.push_back(new LayoutTree::Space(1, true));
         row->mChildren.push_back(
@@ -1813,10 +1853,12 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                 L"",
                 false,
                 L"mod",
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBold : cMathmlFontNormal,
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
         row->mChildren.push_back(new LayoutTree::Space(1, true));
@@ -1825,7 +1867,9 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
 
     if (mCommand == L"\\mod")
     {
-        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        auto_ptr<LayoutTree::Row> row(
+            new LayoutTree::Row(state.mStyle, state.mColour)
+        );
         row->mChildren.push_back(new LayoutTree::Space(18, true));
         row->mChildren.push_back(
             new LayoutTree::SymbolOperator(
@@ -1833,10 +1877,12 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                 L"",
                 false,
                 L"mod",
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBold : cMathmlFontNormal,
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
         row->mChildren.push_back(new LayoutTree::Space(6, true));
@@ -1847,7 +1893,8 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
         mCommand == L"\\varlimsup" || mCommand == L"\\varliminf")
     {
         MathmlFont font =
-            currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal;
+            state.mMathFont.mIsBoldsymbol
+                ? cMathmlFontBold : cMathmlFontNormal;
 
         auto_ptr<LayoutTree::Node> base(
             new LayoutTree::SymbolOperator(
@@ -1856,17 +1903,19 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                 false,
                 L"lim",
                 font,
-                currentStyle,
+                state.mStyle,
                 LayoutTree::Node::cFlavourOp,
-                LayoutTree::Node::cLimitsLimits
+                LayoutTree::Node::cLimitsLimits,
+                state.mColour
             )
         );
 
         auto_ptr<LayoutTree::Scripts> node(
             new LayoutTree::Scripts(
-                currentStyle,
+                state.mStyle,
                 LayoutTree::Node::cFlavourOp,
                 LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour,
                 false,
                 base,
                 auto_ptr<LayoutTree::Node>(),
@@ -1882,8 +1931,10 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                     true,
                     L"\U00002192",
                     font,
-                    currentStyle,
-                    LayoutTree::Node::cFlavourOrd
+                    state.mStyle,
+                    LayoutTree::Node::cFlavourOrd,
+                    LayoutTree::Node::cLimitsDisplayLimits,
+                    state.mColour
                 )
             );
 
@@ -1895,8 +1946,10 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                     true,
                     L"\U00002190",
                     font,
-                    currentStyle,
-                    LayoutTree::Node::cFlavourOrd
+                    state.mStyle,
+                    LayoutTree::Node::cFlavourOrd,
+                    LayoutTree::Node::cLimitsDisplayLimits,
+                    state.mColour
                 )
             );
 
@@ -1908,8 +1961,10 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                     true,
                     L"\U000000AF",
                     font,
-                    currentStyle,
-                    LayoutTree::Node::cFlavourOrd
+                    state.mStyle,
+                    LayoutTree::Node::cFlavourOrd,
+                    LayoutTree::Node::cLimitsDisplayLimits,
+                    state.mColour
                 )
             );
 
@@ -1921,8 +1976,10 @@ auto_ptr<LayoutTree::Node> MathSymbol::BuildLayoutTree(
                     true,
                     L"\U000000AF",
                     font,
-                    currentStyle,
-                    LayoutTree::Node::cFlavourOrd
+                    state.mStyle,
+                    LayoutTree::Node::cFlavourOrd,
+                    LayoutTree::Node::cLimitsDisplayLimits,
+                    state.mColour
                 )
             );
 

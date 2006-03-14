@@ -1,6 +1,6 @@
 // File "Parser.h"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -71,7 +71,8 @@ public:
                             // use "\begin" or "\end".
         cEnterTextMode,     // Command that switch from math mode to text
                             // mode (e.g. "\text").
-        cStyleChange,       // Style changes, e.g. "\rm" and "\scriptstyle"
+        cStateChange,       // State changes, e.g. "\rm", "\scriptstyle",
+                            // "\color".
         cSymbol,            // Pretty much every other command: e.g.
                             // "a", "1", "\alpha", "+", "\rightarrow", etc.
 
@@ -128,6 +129,10 @@ private:
     // gTextTokenTable.
     TokenCode GetMathTokenCode(const std::wstring& token) const;
     TokenCode GetTextTokenCode(const std::wstring& token) const;
+    
+    // Parses stuff that occurs after "\color", e.g. "  {red}", and checks
+    // that the colour is legal. Returns the colour name, e.g. "red".
+    std::wstring ParseColourName();
 };
 
 }

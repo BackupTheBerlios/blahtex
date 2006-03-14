@@ -1,6 +1,6 @@
 // File "Manager.h"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -26,7 +26,7 @@
 #include <memory>
 #include <set>
 #include "Misc.h"
-#include "XmlNode.h"
+#include "MathmlNode.h"
 #include "LayoutTree.h"
 #include "ParseTree.h"
 
@@ -62,7 +62,7 @@ public:
 
     // GenerateMathml generates a XML tree containing MathML markup.
     // Returns the root node.
-    std::auto_ptr<XmlNode> GenerateMathml(
+    std::auto_ptr<MathmlNode> GenerateMathml(
         const MathmlOptions& options
     ) const;
 

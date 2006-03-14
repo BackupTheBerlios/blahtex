@@ -1,6 +1,6 @@
 // File "ParseTree.h"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -102,6 +102,69 @@ struct TexTextFont
 };
 
 
+// This struct represents some state information during the parse tree =>
+// layout tree building phase (i.e. while within BuildLayoutTree).
+struct TexProcessingState
+{
+    TexMathFont mMathFont;
+    TexTextFont mTextFont;
+    LayoutTree::Node::Style mStyle;
+    RGBColour mColour;
+};
+
+
+// This struct keeps track of the packages, encodings etc, that LaTeX will
+// need to be able to handle the given input.
+struct LatexFeatures
+{
+    // Requires amsmath, amsfonts, amssymb packages
+    bool mNeedsAmsmath;
+    bool mNeedsAmsfonts;
+    bool mNeedsAmssymb;
+
+    // Requires "\usepackage[utf8x]{inputenc}".
+    bool mNeedsUcs;
+    
+    // Requires the "color" package.
+    bool mNeedsColor;
+    
+    // Requires "X2" font encoding (for cyrillic).
+    bool mNeedsX2;
+    
+    // Requires the "CJK" package.
+    bool mNeedsCJK;
+    
+    // Needs a japanese font to be installed.
+    bool mNeedsJapaneseFont;
+    
+    LatexFeatures() :
+        mNeedsAmsmath(false),
+        mNeedsAmsfonts(false),
+        mNeedsAmssymb(false),
+        mNeedsUcs(false),
+        mNeedsColor(false),
+        mNeedsX2(false),
+        mNeedsCJK(false),
+        mNeedsJapaneseFont(false)
+    { }
+
+    // Given the LaTeX command "command", checks to see if any of the above
+    // flags need to be switched on for that command to work.
+    void Update(const std::wstring& command);
+};
+
+
+// While preparing the purified TeX, blahtex keeps track of something
+// approximating the current font encoding. E.g. while in X2 encoding, only
+// cyrillic characters and whitespace are allowed.
+enum FontEncoding
+{
+    cFontEncodingDefault,
+    cFontEncodingCyrillic,
+    cFontEncodingJapanese
+};
+
+
 namespace ParseTree
 {
     // Base class for nodes in the parse tree.
@@ -110,15 +173,25 @@ namespace ParseTree
         virtual ~Node()
         { };
 
+        // This function converts the parse tree under this node into a
+        // layout tree. This is where most of blahtex's hard work is done.
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const = 0;
+
         // This function converts the parse tree under this node to
         // "purified TeX"; that is, TeX markup that can get sent to LaTeX
         // for PNG generation. Output gets written to the supplied stream.
         //
         // This (obviously) does not include the file header and footer;
         // see Manager::GeneratePurifiedTex for that.
+        //
+        // The "features" object is used to store a list of e.g. LaTeX
+        // packages that will be required to handle the given output.
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const = 0;
 
         // Print() recursively prints the parse tree under this node.
@@ -129,25 +202,17 @@ namespace ParseTree
         ) const = 0;
     };
 
+
     // MathNode represents any node occurring during math mode.
     struct MathNode : Node
     {
-        // This function converts the parse tree under this node into a
-        // layout tree. This is where most of blahtex's hard work is done.
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const = 0;
     };
 
     // TextNode represents any node occurring during text mode.
     struct TextNode : Node
     {
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexTextFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const = 0;
     };
+
 
     // Represents any command like "a", "1", "\alpha", "\int" which blahtex
     // treats as a single symbol. Also includes spacing commands like "\,".
@@ -160,19 +225,19 @@ namespace ParseTree
             mCommand(command)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
-        ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
         ) const;
     };
 
@@ -193,55 +258,91 @@ namespace ParseTree
             mChild(child)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
 
-    // Represents a TeX style change command like "\rm" or "\scriptstyle".
-    struct MathStyleChange : MathNode
+
+    // Represents a TeX state change command like "\rm", "\scriptstyle",
+    // "\color".
+    struct MathStateChange : MathNode
     {
         // The style change command, e.g. "\scriptstyle".
         std::wstring mCommand;
 
-        // The argument of the command, e.g. in "abc \rm def", the mChild
-        // member of the "\rm" node points to "def".
-        std::auto_ptr<MathNode> mChild;
-
-        MathStyleChange(
-            const std::wstring& command,
-            std::auto_ptr<MathNode> child
+        MathStateChange(
+            const std::wstring& command
         ) :
-            mCommand(command),
-            mChild(child)
+            mCommand(command)
         { }
+        
+        // Modifies "state" according to the state change command.
+        virtual void Apply(
+            TexProcessingState& state
+        ) const;
+
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
 
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
+    };
+
+
+    // Represents a "\color{xyz}" command in math mode.
+    struct MathColour : MathStateChange
+    {
+        // The colour name, e.g. "red".
+        std::wstring mColourName;
+
+        MathColour(
+            const std::wstring& colourName
+        ) :
+            MathStateChange(L"\\color"),
+            mColourName(colourName)
+        { }
+
+        virtual void Apply(
+            TexProcessingState& state
+        ) const;
 
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
+            const TexProcessingState& state
+        ) const;
+
+        virtual void GetPurifiedTex(
+            std::wostream& os,
+            LatexFeatures& features,
+            FontEncoding fontEncoding
+        ) const;
+
+        virtual void Print(
+            std::wostream& os,
+            int depth
         ) const;
     };
+
 
     // Represents a command taking two arguments, including infix commands.
     struct MathCommand2Args : MathNode
@@ -267,21 +368,22 @@ namespace ParseTree
             mIsInfix(isInfix)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents a "big" command like "\big", "\bigg" etc.
     struct MathBig : MathNode
@@ -300,21 +402,22 @@ namespace ParseTree
             mDelimiter(delimiter)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents material surrounded by grouping braces, e.g. "{abc}" gets
     // stored as a MathGroup node whose child contains "abc".
@@ -327,21 +430,22 @@ namespace ParseTree
             mChild(child)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents a sequence of nodes in math mode, concatenated together.
     // e.g. "a\alpha 2" is stored as a MathList containing three MathSymbol
@@ -352,21 +456,22 @@ namespace ParseTree
 
         ~MathList();
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents a base with a superscript and/or subscript.
     // (i.e. an expression like "x^y_z".)
@@ -375,21 +480,22 @@ namespace ParseTree
         // All three fields are optional (NULL indicates an empty field).
         std::auto_ptr<MathNode> mBase, mUpper, mLower;
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents a "limits" command, i.e. one of "\limits", "\nolimits",
     // or "\displaylimits".
@@ -412,21 +518,22 @@ namespace ParseTree
             mChild(child)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents an expression surrounded by "\left( ... \right)".
     struct MathDelimited : MathNode
@@ -447,21 +554,22 @@ namespace ParseTree
             mRightDelimiter(rightDelimiter)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents a row of a table, e.g. might represent the
     // TeX subexpression "a & b & c".
@@ -472,21 +580,22 @@ namespace ParseTree
 
         ~MathTableRow();
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents a table, e.g. might represent the TeX subexpression
     // expression "a & b & c \\ \\ d & e & f \\ g & h".
@@ -497,21 +606,22 @@ namespace ParseTree
 
         ~MathTable();
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents an environment, i.e. "\begin{xxx} ... \end{xxx}".
     // Currently all supported environments are just various forms of table,
@@ -541,22 +651,22 @@ namespace ParseTree
             mIsShort(isShort)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
-
     };
+
 
     // Represents a command that switches from math mode into text mode,
     // e.g. "\text". Note that certain commands (e.g. "\text") will be
@@ -578,21 +688,22 @@ namespace ParseTree
             mChild(child)
         { }
 
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
-
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexMathFont& currentFont,
-            LayoutTree::Node::Style currentStyle
-        ) const;
     };
+
 
     // Represents a sequence of nodes in text mode, concatenated together.
     // e.g. "abc" is stored as a TextList containing three TextSymbol nodes.
@@ -602,21 +713,22 @@ namespace ParseTree
 
         ~TextList();
 
-        virtual void Print(
-            std::wostream& os,
-            int depth
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
         ) const;
 
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexTextFont& currentFont,
-            LayoutTree::Node::Style currentStyle
+        virtual void Print(
+            std::wostream& os,
+            int depth
         ) const;
     };
+
 
     // Represents text mode material surrounded by grouping braces.
     struct TextGroup : TextNode
@@ -628,21 +740,22 @@ namespace ParseTree
             mChild(child)
         { }
 
-        virtual void Print(
-            std::wostream& os,
-            int depth
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
         ) const;
 
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexTextFont& currentFont,
-            LayoutTree::Node::Style currentStyle
+        virtual void Print(
+            std::wostream& os,
+            int depth
         ) const;
     };
+
 
     // Represents any text mode command like "a", "1", "\textbackslash"
     // that is treated as a single symbol (includes spacing commands
@@ -656,55 +769,90 @@ namespace ParseTree
             mCommand(command)
         { }
 
-        virtual void Print(
-            std::wostream& os,
-            int depth
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
         ) const;
 
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexTextFont& currentFont,
-            LayoutTree::Node::Style currentStyle
+        virtual void Print(
+            std::wostream& os,
+            int depth
         ) const;
     };
 
-    // Represents a style change command like "\rm" occurring in text mode.
-    struct TextStyleChange : TextNode
+
+    // Represents a state change command like "\rm" occurring in text mode.
+    struct TextStateChange : TextNode
     {
         // The command, e.g. "\rm".
         std::wstring mCommand;
 
-        // The argument of the command, e.g. in "abc \rm def", the mChild
-        // member of the "\rm" node points to "def".
-        std::auto_ptr<TextNode> mChild;
-
-        TextStyleChange(
-            const std::wstring& command,
-            std::auto_ptr<TextNode> child
+        TextStateChange(
+            const std::wstring& command
         ) :
-            mCommand(command),
-            mChild(child)
+            mCommand(command)
         { }
+
+        // Modifies "state" according to the state change command.
+        virtual void Apply(
+            TexProcessingState& state
+        ) const;
+
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
+        ) const;
+
+        virtual void GetPurifiedTex(
+            std::wostream& os,
+            LatexFeatures& features,
+            FontEncoding fontEncoding
+        ) const;
 
         virtual void Print(
             std::wostream& os,
             int depth
         ) const;
+    };
 
-        virtual void GetPurifiedTex(
-            std::wostream& os,
-            const PurifiedTexOptions& options
+
+    // Represents a "\color{xyz}" command in text mode.
+    struct TextColour : TextStateChange
+    {
+        // The colour name, e.g. "red".
+        std::wstring mColourName;
+
+        TextColour(
+            const std::wstring& colourName
+        ) :
+            TextStateChange(L"\\color"),
+            mColourName(colourName)
+        { }
+
+        virtual void Apply(
+            TexProcessingState& state
         ) const;
 
         virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexTextFont& currentFont,
-            LayoutTree::Node::Style currentStyle
+            const TexProcessingState& state
+        ) const;
+
+        virtual void GetPurifiedTex(
+            std::wostream& os,
+            LatexFeatures& features,
+            FontEncoding fontEncoding
+        ) const;
+
+        virtual void Print(
+            std::wostream& os,
+            int depth
         ) const;
     };
+
 
     // Represents a command in text mode taking a single argument.
     struct TextCommand1Arg : TextNode
@@ -723,19 +871,19 @@ namespace ParseTree
             mChild(child)
         { }
 
-        virtual void Print(
-            std::wostream& os,
-            int depth
+        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
+            const TexProcessingState& state
         ) const;
 
         virtual void GetPurifiedTex(
             std::wostream& os,
-            const PurifiedTexOptions& options
+            LatexFeatures& features,
+            FontEncoding fontEncoding
         ) const;
 
-        virtual std::auto_ptr<LayoutTree::Node> BuildLayoutTree(
-            const TexTextFont& currentFont,
-            LayoutTree::Node::Style currentStyle
+        virtual void Print(
+            std::wostream& os,
+            int depth
         ) const;
     };
 

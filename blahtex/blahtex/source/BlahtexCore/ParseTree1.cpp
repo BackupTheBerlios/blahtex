@@ -1,6 +1,6 @@
 // File "ParseTree1.cpp"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -72,25 +72,39 @@ wishful_hash_map<wstring, wstring> gDelimiterTable(
     END_ARRAY(gDelimiterArray)
 );
 
+
 namespace ParseTree
 {
 
+
 auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
-    auto_ptr<LayoutTree::Row> output(new LayoutTree::Row(currentStyle));
+    auto_ptr<LayoutTree::Row> output(
+        new LayoutTree::Row(state.mStyle, state.mColour)
+    );
     list<LayoutTree::Node*>& targetList = output->mChildren;
 
+
     // 1st pass: recursively build layout trees for all children in
-    // this row.
+    // this row, and process state changes
+    TexProcessingState currentState = state;
     for (vector<MathNode*>::const_iterator
         node = mChildren.begin(); node != mChildren.end(); node++
     )
-        targetList.push_back(
-            (*node)->BuildLayoutTree(currentFont, currentStyle).release()
-        );
+    {
+        MathStateChange* nodeAsStateChange =
+            dynamic_cast<MathStateChange*>(*node);
+
+        if (nodeAsStateChange)
+            nodeAsStateChange->Apply(currentState);
+        else
+            targetList.push_back(
+                (*node)->BuildLayoutTree(currentState).release()
+            );
+    }
+
 
     // 2nd pass: modify atom flavours according to TeX's rules.
     for (list<LayoutTree::Node*>::iterator
@@ -145,6 +159,7 @@ auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(
         targetList.back()->mFlavour == LayoutTree::Node::cFlavourBin
     )
         targetList.back()->mFlavour = LayoutTree::Node::cFlavourOrd;
+
 
     // 3rd pass: insert inter-atomic spacing according to TeX's rules.
 
@@ -209,8 +224,11 @@ auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(
             (
                 ignoreSpaceTable[leftFlavour][rightFlavour] &&
                     (
-                        currentStyle == LayoutTree::Node::cStyleScript ||
-                        currentStyle == LayoutTree::Node::cStyleScriptScript
+                        state.mStyle ==
+                            LayoutTree::Node::cStyleScript
+                        ||
+                        state.mStyle ==
+                            LayoutTree::Node::cStyleScriptScript
                     )
             )
                 ? 0 : spaceTable[leftFlavour][rightFlavour];
@@ -228,6 +246,7 @@ auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(
         currentAtom++;
     }
 
+
     // 4th pass: splice any children Rows into this Row.
     // The idea is that no Row node should have any Rows as children.
     for (list<LayoutTree::Node*>::iterator
@@ -237,24 +256,12 @@ auto_ptr<LayoutTree::Node> MathList::BuildLayoutTree(
         LayoutTree::Row* childAsRow
             = dynamic_cast<LayoutTree::Row*>(*child);
 
-        if (childAsRow && (childAsRow->mStyle == currentStyle))
+        if (childAsRow)
         {
             targetList.splice(child, childAsRow->mChildren);
             delete childAsRow;
             child = targetList.erase(child);
         }
-    }
-
-    // If there's only one node left, return it by itself (without the
-    // enclosing Row object).
-    // (NOTE: we don't use list::size() since that's O(n))
-    if (!output->mChildren.empty() &&
-        output->mChildren.front() == output->mChildren.back()
-    )
-    {
-        auto_ptr<LayoutTree::Node> singleton(output->mChildren.back());
-        output->mChildren.pop_back();       // relinquish ownership
-        return singleton;
     }
 
     return static_cast< auto_ptr<LayoutTree::Node> >(output);
@@ -275,25 +282,21 @@ struct AccentInfo {
     { }
 };
 
+
 auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     if (mCommand == L"\\sqrt")
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::Sqrt(
-                mChild->BuildLayoutTree(currentFont, currentStyle)
+                mChild->BuildLayoutTree(state),
+                state.mColour
             )
         );
 
     if (mCommand == L"\\overbrace" || mCommand == L"\\underbrace")
     {
-        LayoutTree::Node::Style newStyle =
-            (currentStyle == LayoutTree::Node::cStyleDisplay)
-                ? LayoutTree::Node::cStyleDisplay
-                : LayoutTree::Node::cStyleText;
-
         auto_ptr<LayoutTree::Node> brace(
             new LayoutTree::SymbolOperator(
                 true,
@@ -302,19 +305,28 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
                 mCommand == L"\\overbrace" ? L"\U0000FE37" : L"\U0000FE38",
                 cMathmlFontNormal,
                 LayoutTree::Node::cStyleScript,
-                LayoutTree::Node::cFlavourOrd
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
+
+        TexProcessingState newState = state;
+        newState.mStyle =
+            (state.mStyle == LayoutTree::Node::cStyleDisplay)
+                ? LayoutTree::Node::cStyleDisplay
+                : LayoutTree::Node::cStyleText;
 
         auto_ptr<LayoutTree::Node> empty;
 
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::Scripts(
-                newStyle,
+                newState.mStyle,
                 LayoutTree::Node::cFlavourOp,
                 LayoutTree::Node::cLimitsLimits,
+                state.mColour,
                 false,
-                mChild->BuildLayoutTree(currentFont, newStyle),
+                mChild->BuildLayoutTree(newState),
                 (mCommand == L"\\overbrace")  ? brace : empty,
                 (mCommand == L"\\underbrace") ? brace : empty
             )
@@ -323,10 +335,13 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
 
     if (mCommand == L"\\pmod")
     {
-        auto_ptr<LayoutTree::Row> row(new LayoutTree::Row(currentStyle));
+        auto_ptr<LayoutTree::Row> row(
+            new LayoutTree::Row(state.mStyle, state.mColour)
+        );
 
         MathmlFont font =
-            currentFont.mIsBoldsymbol ? cMathmlFontBold : cMathmlFontNormal;
+            state.mMathFont.mIsBoldsymbol
+                ? cMathmlFontBold : cMathmlFontNormal;
 
         row->mChildren.push_back(new LayoutTree::Space(18, true));
         row->mChildren.push_back(
@@ -336,8 +351,10 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
                 false,
                 L"(",
                 font,
-                currentStyle,
-                LayoutTree::Node::cFlavourOpen
+                state.mStyle,
+                LayoutTree::Node::cFlavourOpen,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
         row->mChildren.push_back(
@@ -347,13 +364,15 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
                 false,
                 L"mod",
                 font,
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
         row->mChildren.push_back(new LayoutTree::Space(6, true));
         row->mChildren.push_back(
-            mChild->BuildLayoutTree(currentFont, currentStyle).release()
+            mChild->BuildLayoutTree(state).release()
         );
         row->mChildren.push_back(
             new LayoutTree::SymbolOperator(
@@ -362,8 +381,10 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
                 false,
                 L")",
                 font,
-                currentStyle,
-                LayoutTree::Node::cFlavourClose
+                state.mStyle,
+                LayoutTree::Node::cFlavourClose,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
 
@@ -382,10 +403,10 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
         // But then these get merged later on, to produce the more
         // reasonable <mi>sin</mi>.
 
-        TexMathFont font = currentFont;
-        font.mFamily = TexMathFont::cFamilyRm;
+        TexProcessingState newState = state;
+        newState.mMathFont.mFamily = TexMathFont::cFamilyRm;
         auto_ptr<LayoutTree::Node> node
-            = mChild->BuildLayoutTree(font, currentStyle);
+            = mChild->BuildLayoutTree(newState);
         node->mFlavour = LayoutTree::Node::cFlavourOp;
         node->mLimits =
             (mCommand == L"\\operatorname")
@@ -394,104 +415,6 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
         return node;
     }
 
-    // This is a list of all symbols that we know how to negate.
-    static pair<wstring, wstring> negationArray[] =
-    {
-        // Element => NotElement
-        make_pair(L"\U00002208", L"\U00002209"),
-        // Congruent => NotCongruent
-        make_pair(L"\U00002261", L"\U00002262"),
-        // Exists => NotExists
-        make_pair(L"\U00002203", L"\U00002204"),
-        // = => NotEqual
-        make_pair(L"=",          L"\U00002260"),
-        // SubsetEqual => NotSubsetEqual
-        make_pair(L"\U00002286", L"\U00002288"),
-        // Tilde => NotTilde
-        make_pair(L"\U0000223C", L"\U00002241"),
-        // LeftArrow => nleftarrow
-        make_pair(L"\U00002190", L"\U0000219A"),
-        // RightArrow => nrightarrow
-        make_pair(L"\U00002192", L"\U0000219B"),
-        // LeftRightArrow => nleftrightarrow
-        make_pair(L"\U00002194", L"\U000021AE"),
-        // DoubleLeftArrow => nLeftArrow
-        make_pair(L"\U000021D0", L"\U000021CD"),
-        // DoubleRightArrow => nRightArrow
-        make_pair(L"\U000021D2", L"\U000021CF"),
-        // DoubleLeftRightArrow => nLeftrightArrow
-        make_pair(L"\U000021D4", L"\U000021CE"),
-        // ReverseElement => NotReverseElement
-        make_pair(L"\U0000220B", L"\U0000220C"),
-        // FIX: what happens to the pipe character?
-        // VerticalBar => NotVerticalBar
-        make_pair(L"\U00002223", L"\U00002224"),
-        // DoubleVerticalBar => NotDoubleVerticalBar
-        make_pair(L"\U00002225", L"\U00002226"),
-        // TildeEqual => NotTildeEqual
-        make_pair(L"\U00002243", L"\U00002244"),
-        // TildeFullEqual => NotTildeFullEqual
-        make_pair(L"\U00002245", L"\U00002247"),
-        // TildeTilde => NotTildeTilde
-        make_pair(L"\U00002248", L"\U00002249"),
-        // > => NotLess
-        make_pair(L"<", L"\U0000226E"),
-        // < => NotGreater
-        make_pair(L">", L"\U0000226F"),
-        // leq => NotLessEqual
-        make_pair(L"\U00002264", L"\U00002270"),
-        // GreaterEqual => NotGreaterEqual
-        make_pair(L"\U00002265", L"\U00002271"),
-        // FIX: what about "Precedes", "Succeeds"?
-        // subset => nsub
-        make_pair(L"\U00002282", L"\U00002284"),
-        // Superset => nsup
-        make_pair(L"\U00002283", L"\U00002285"),
-        // SubsetEqual => NotSubsetEqual
-        make_pair(L"\U00002286", L"\U00002288"),
-        // SupersetEqual => NotSupersetEqual
-        make_pair(L"\U00002287", L"\U00002289"),
-        // RightTee => nvdash
-        make_pair(L"\U000022A2", L"\U000022AC"),
-        // DoubleRightTee => nvDash
-        make_pair(L"\U000022A8", L"\U000022AD"),
-        // Vdash => nVdash
-        make_pair(L"\U000022A9", L"\U000022AE"),
-        // SquareSubsetEqual => NotSquareSubsetEqual
-        make_pair(L"\U00002291", L"\U000022E2"),
-        // SquareSupersetEqual => NotSquareSupersetEqual
-        make_pair(L"\U00002292", L"\U000022E3"),
-        // LeftTriangle => NotLeftTriangle
-        make_pair(L"\U000022B2", L"\U000022EA"),
-        // RightTriangle => NotRightTriangle
-        make_pair(L"\U000022B3", L"\U000022EB"),
-        // LeftTriangleEqual => NotLeftTriangleEqual
-        make_pair(L"\U000022B4", L"\U000022EC"),
-        // RightTriangleEqual => NotRightTriangleEqual
-        make_pair(L"\U000022B5", L"\U000022ED")
-    };
-    static wishful_hash_map<wstring, wstring> negationTable(
-        negationArray,
-        END_ARRAY(negationArray)
-    );
-
-    if (mCommand == L"\\not")
-    {
-        auto_ptr<LayoutTree::Node> child =
-            mChild->BuildLayoutTree(currentFont, currentStyle);
-        LayoutTree::SymbolOperator* childAsOperator
-            = dynamic_cast<LayoutTree::SymbolOperator*>(child.get());
-        if (!childAsOperator)
-            throw Exception(L"InvalidNegation");
-
-        wishful_hash_map<wstring, wstring>::const_iterator
-            negationLookup = negationTable.find(childAsOperator->mText);
-        if (negationLookup == negationTable.end())
-            throw Exception(L"InvalidNegation");
-
-        childAsOperator->mText = negationLookup->second;
-        return child;
-    }
 
     static pair<wstring, LayoutTree::Node::Flavour> flavourCommandArray[] =
     {
@@ -515,7 +438,7 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
     if (flavourCommand != flavourCommandTable.end())
     {
         auto_ptr<LayoutTree::Node> node
-            = mChild->BuildLayoutTree(currentFont, currentStyle);
+            = mChild->BuildLayoutTree(state);
         node->mFlavour = flavourCommand->second;
         if (node->mFlavour == LayoutTree::Node::cFlavourOp)
             node->mLimits = LayoutTree::Node::cLimitsDisplayLimits;
@@ -542,16 +465,17 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
         fontCommand = fontCommandTable.find(mCommand);
     if (fontCommand != fontCommandTable.end())
     {
-        TexMathFont font = currentFont;
-        font.mFamily = fontCommand->second;
-        return mChild->BuildLayoutTree(font, currentStyle);
+        TexProcessingState newState = state;
+        newState.mMathFont.mFamily = fontCommand->second;
+        return mChild->BuildLayoutTree(newState);
     }
 
     if (mCommand == L"\\boldsymbol")
     {
-        TexMathFont font = currentFont;
-        font.mIsBoldsymbol = true;
-        return mChild->BuildLayoutTree(font, currentStyle);
+        TexProcessingState newState = state;
+        newState.mMathFont.mIsBoldsymbol = true;
+        newState.mMathFont.mFamily = TexMathFont::cFamilyDefault;
+        return mChild->BuildLayoutTree(newState);
     }
 
     // Here is a list of all the accent commands we know about.
@@ -560,56 +484,23 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
         // FIX: there's some funny inconsistency between the definition of
         // &Hat; among MathML versions. I was originally using plain "^" for
         // these accents, but Roger recommended using 0x302 instead.
-        make_pair(L"\\hat",
-            AccentInfo(L"\U00000302", false)
-        ),
-        make_pair(L"\\widehat",
-            AccentInfo(L"\U00000302", true)
-        ),
-        make_pair(L"\\bar",
-            AccentInfo(L"\U000000AF", false)
-        ),
-        make_pair(L"\\overline",
-            AccentInfo(L"\U000000AF", true)
-        ),
-        make_pair(L"\\underline",
-            AccentInfo(L"\U000000AF", true)
-        ),
-        make_pair(L"\\tilde",
-            AccentInfo(L"\U000002DC", false)
-        ),
-        make_pair(L"\\widetilde",
-            AccentInfo(L"\U000002DC", true)
-        ),
-        make_pair(L"\\overleftarrow",
-            AccentInfo(L"\U00002190", true)
-        ),
-        make_pair(L"\\vec",
-            AccentInfo(L"\U000020D7", true)
-        ),
-        make_pair(L"\\overrightarrow",
-            AccentInfo(L"\U00002192", true)
-        ),
-        make_pair(L"\\overleftrightarrow",
-            AccentInfo(L"\U00002194", true)
-        ),
-        make_pair(L"\\dot",
-            AccentInfo(L"\U000000B7", false)
-        ),
-        make_pair(L"\\ddot",
-            AccentInfo(L"\U000000B7\U000000B7", false)
-        ),
-        make_pair(L"\\check",
-            AccentInfo(L"\U000002C7", false)
-        ),
-        make_pair(L"\\acute",
-            AccentInfo(L"\U000000B4", false)
-        ),
-        make_pair(L"\\grave",
-            AccentInfo(L"\U00000060", false)
-        ),
-        make_pair(L"\\breve",
-            AccentInfo(L"\U000002D8", false)
+        make_pair(L"\\hat",                  AccentInfo(L"\U00000302", false)),
+        make_pair(L"\\widehat",              AccentInfo(L"\U00000302", true)),
+        make_pair(L"\\bar",                  AccentInfo(L"\U000000AF", false)),
+        make_pair(L"\\overline",             AccentInfo(L"\U000000AF", true)),
+        make_pair(L"\\underline",            AccentInfo(L"\U000000AF", true)),
+        make_pair(L"\\tilde",                AccentInfo(L"\U000002DC", false)),
+        make_pair(L"\\widetilde",            AccentInfo(L"\U000002DC", true)),
+        make_pair(L"\\overleftarrow",        AccentInfo(L"\U00002190", true)),
+        make_pair(L"\\vec",                  AccentInfo(L"\U000020D7", true)),
+        make_pair(L"\\overrightarrow",       AccentInfo(L"\U00002192", true)),
+        make_pair(L"\\overleftrightarrow",   AccentInfo(L"\U00002194", true)),
+        make_pair(L"\\dot",                  AccentInfo(L"\U000000B7", false)),
+        make_pair(L"\\ddot",                 AccentInfo(L"\U000000B7\U000000B7", false)),
+        make_pair(L"\\check",                AccentInfo(L"\U000002C7", false)),
+        make_pair(L"\\acute",                AccentInfo(L"\U000000B4", false)),
+        make_pair(L"\\grave",                AccentInfo(L"\U00000060", false)),
+        make_pair(L"\\breve",                AccentInfo(L"\U000002D8", false)
         )
     };
     static wishful_hash_map<wstring, AccentInfo> accentCommandTable(
@@ -622,7 +513,7 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
     if (accentCommand != accentCommandTable.end())
     {
         auto_ptr<LayoutTree::Node> base
-            = mChild->BuildLayoutTree(currentFont, currentStyle);
+            = mChild->BuildLayoutTree(state);
         auto_ptr<LayoutTree::Node> lower, upper;
 
         auto_ptr<LayoutTree::Node> accent(
@@ -631,13 +522,15 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
                 L"",
                 true,       // is an accent
                 accentCommand->second.mText,
-                currentFont.mIsBoldsymbol
+                state.mMathFont.mIsBoldsymbol
                     ? cMathmlFontBold : cMathmlFontNormal,
                 // We don't need to decrement the style here, because
                 // LayoutTree::SymbolOperator knows not to insert style
                 // changes for accent operators
-                currentStyle,
-                LayoutTree::Node::cFlavourOrd
+                state.mStyle,
+                LayoutTree::Node::cFlavourOrd,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
 
@@ -648,9 +541,10 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
 
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::Scripts(
-                currentStyle,
+                state.mStyle,
                 LayoutTree::Node::cFlavourOrd,
                 LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour,
                 false,      // not sideset
                 base,
                 upper,
@@ -664,70 +558,52 @@ auto_ptr<LayoutTree::Node> MathCommand1Arg::BuildLayoutTree(
     );
 }
 
-auto_ptr<LayoutTree::Node> MathStyleChange::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+
+auto_ptr<LayoutTree::Node> MathStateChange::BuildLayoutTree(
+    const TexProcessingState& state
 ) const
 {
-    static pair<wstring, LayoutTree::Node::Style> styleCommandArray[] =
-    {
-        make_pair(L"\\displaystyle",
-            LayoutTree::Node::cStyleDisplay
-        ),
-        make_pair(L"\\textstyle",
-            LayoutTree::Node::cStyleText
-        ),
-        make_pair(L"\\scriptstyle",
-            LayoutTree::Node::cStyleScript
-        ),
-        make_pair(L"\\scriptscriptstyle",
-            LayoutTree::Node::cStyleScriptScript
-        )
-    };
-    static wishful_hash_map<wstring, LayoutTree::Node::Style>
-        styleCommandTable(
-            styleCommandArray,
-            END_ARRAY(styleCommandArray)
-        );
-
-    wishful_hash_map<wstring, LayoutTree::Node::Style>::const_iterator
-        styleCommand = styleCommandTable.find(mCommand);
-
-    if (styleCommand != styleCommandTable.end())
-        return mChild->BuildLayoutTree(currentFont, styleCommand->second);
-
-    static pair<wstring, TexMathFont::Family> fontCommandArray[] =
-    {
-        make_pair(L"\\rm",     TexMathFont::cFamilyRm),
-        make_pair(L"\\bf",     TexMathFont::cFamilyBf),
-        make_pair(L"\\it",     TexMathFont::cFamilyIt),
-        make_pair(L"\\cal",    TexMathFont::cFamilyCal),
-        make_pair(L"\\tt",     TexMathFont::cFamilyTt),
-        make_pair(L"\\sf",     TexMathFont::cFamilySf)
-    };
-    static wishful_hash_map<wstring, TexMathFont::Family> fontCommandTable(
-        fontCommandArray,
-        END_ARRAY(fontCommandArray)
-    );
-
-    wishful_hash_map<wstring, TexMathFont::Family>::const_iterator
-        fontCommand = fontCommandTable.find(mCommand);
-
-    if (fontCommand != fontCommandTable.end())
-    {
-        TexMathFont font = currentFont;
-        font.mFamily = fontCommand->second;
-        return mChild->BuildLayoutTree(font, currentStyle);
-    }
-
-    throw logic_error(
-        "Unexpected command in MathStyleChange::BuildLayoutTree"
+    // We should only arrive here if there was a state change command all
+    // by its lonesome self in its own math list, so we can safely ignore
+    // it.
+    return auto_ptr<LayoutTree::Node>(
+        new LayoutTree::Row(state.mStyle, state.mColour)
     );
 }
 
+auto_ptr<LayoutTree::Node> MathColour::BuildLayoutTree(
+    const TexProcessingState& state
+) const
+{
+    // See above in MathStateChange::BuildLayoutTree
+    return auto_ptr<LayoutTree::Node>(
+        new LayoutTree::Row(state.mStyle, state.mColour)
+    );
+}
+
+auto_ptr<LayoutTree::Node> TextStateChange::BuildLayoutTree(
+    const TexProcessingState& state
+) const
+{
+    // See above in MathStateChange::BuildLayoutTree
+    return auto_ptr<LayoutTree::Node>(
+        new LayoutTree::Row(state.mStyle, state.mColour)
+    );
+}
+
+auto_ptr<LayoutTree::Node> TextColour::BuildLayoutTree(
+    const TexProcessingState& state
+) const
+{
+    // See above in MathStateChange::BuildLayoutTree
+    return auto_ptr<LayoutTree::Node>(
+        new LayoutTree::Row(state.mStyle, state.mColour)
+    );
+}
+
+
 auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     bool isFractionCommand = false;
@@ -756,34 +632,39 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(
     if (isFractionCommand)
     {
         // Work out what style the numerator/denominator should be.
-        LayoutTree::Node::Style smallerStyle = currentStyle;
-        switch (currentStyle)
+        TexProcessingState newState = state;
+        switch (state.mStyle)
         {
             case LayoutTree::Node::cStyleDisplay:
-                smallerStyle = LayoutTree::Node::cStyleText;
+                newState.mStyle = LayoutTree::Node::cStyleText;
                 break;
 
             case LayoutTree::Node::cStyleText:
-                smallerStyle = LayoutTree::Node::cStyleScript;
+                newState.mStyle = LayoutTree::Node::cStyleScript;
                 break;
 
             case LayoutTree::Node::cStyleScript:
-                smallerStyle = LayoutTree::Node::cStyleScriptScript;
+                newState.mStyle = LayoutTree::Node::cStyleScriptScript;
                 break;
         }
 
         auto_ptr<LayoutTree::Node> inside(
             new LayoutTree::Fraction(
-                currentStyle,
-                mChild1->BuildLayoutTree(currentFont, smallerStyle),
-                mChild2->BuildLayoutTree(currentFont, smallerStyle),
+                state.mStyle,
+                state.mColour,
+                mChild1->BuildLayoutTree(newState),
+                mChild2->BuildLayoutTree(newState),
                 isLineVisible
             )
         );
 
         if (hasParentheses)
             return auto_ptr<LayoutTree::Node>(
-                new LayoutTree::Fenced(currentStyle, L"(", L")", inside)
+                new LayoutTree::Fenced(
+                    state.mStyle,
+                    state.mColour,
+                    L"(", L")", inside
+                )
             );
         else
             return inside;
@@ -791,33 +672,29 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(
 
     if (mCommand == L"\\rootReserved")
     {
+        TexProcessingState newState = state;
+        newState.mStyle = LayoutTree::Node::cStyleScriptScript;
+        
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::Root(
-                mChild2->BuildLayoutTree(
-                    currentFont,
-                    currentStyle
-                ),
-                mChild1->BuildLayoutTree(
-                    currentFont,
-                    LayoutTree::Node::cStyleScriptScript
-                )
+                mChild2->BuildLayoutTree(state),
+                mChild1->BuildLayoutTree(newState),
+                state.mColour
             )
         );
     }
 
     if (mCommand == L"\\cfrac")
     {
+        TexProcessingState newState = state;
+        newState.mStyle = LayoutTree::Node::cStyleText;
+
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::Fraction(
                 LayoutTree::Node::cStyleDisplay,
-                mChild1->BuildLayoutTree(
-                    currentFont,
-                    LayoutTree::Node::cStyleText
-                ),
-                mChild2->BuildLayoutTree(
-                    currentFont,
-                    LayoutTree::Node::cStyleText
-                ),
+                state.mColour,
+                mChild1->BuildLayoutTree(newState),
+                mChild2->BuildLayoutTree(newState),
                 true        // true = should be a visible fraction line
             )
         );
@@ -826,34 +703,35 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(
     if (mCommand == L"\\overset" || mCommand == L"\\underset")
     {
         // Work out what style the under/overset node should be.
-        LayoutTree::Node::Style smallerStyle = currentStyle;
-        switch (smallerStyle)
+        TexProcessingState newState = state;
+        switch (state.mStyle)
         {
             case LayoutTree::Node::cStyleDisplay:
             case LayoutTree::Node::cStyleText:
-                smallerStyle = LayoutTree::Node::cStyleScript;
+                newState.mStyle = LayoutTree::Node::cStyleScript;
                 break;
 
             case LayoutTree::Node::cStyleScript:
             case LayoutTree::Node::cStyleScriptScript:
-                smallerStyle = LayoutTree::Node::cStyleScriptScript;
+                newState.mStyle = LayoutTree::Node::cStyleScriptScript;
                 break;
         }
 
         auto_ptr<LayoutTree::Node> upper, lower;
         if (mCommand == L"\\overset")
-            upper = mChild1->BuildLayoutTree(currentFont, smallerStyle);
+            upper = mChild1->BuildLayoutTree(newState);
         else        // else underset
-            lower = mChild1->BuildLayoutTree(currentFont, smallerStyle);
+            lower = mChild1->BuildLayoutTree(newState);
 
         auto_ptr<LayoutTree::Node> base =
-            mChild2->BuildLayoutTree(currentFont, currentStyle);
+            mChild2->BuildLayoutTree(state);
 
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::Scripts(
-                currentStyle,
+                state.mStyle,
                 base->mFlavour,
                 LayoutTree::Node::cLimitsNoLimits,
+                state.mColour,
                 false,      // false = NOT sideset
                 base,
                 upper,
@@ -867,9 +745,9 @@ auto_ptr<LayoutTree::Node> MathCommand2Args::BuildLayoutTree(
     );
 }
 
+
 auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     auto_ptr<LayoutTree::Node> base, upper, lower;
@@ -882,30 +760,30 @@ auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(
     {
         // If the base is nonempty, we inherit its flavour and limits
         // settings
-        base = mBase->BuildLayoutTree(currentFont, currentStyle);
+        base = mBase->BuildLayoutTree(state);
         flavour = base->mFlavour;
         limits = base->mLimits;
     }
 
     // Work out the style for the super/subscripts
-    LayoutTree::Node::Style smallerStyle = currentStyle;
-    switch (smallerStyle)
+    TexProcessingState newState = state;
+    switch (state.mStyle)
     {
         case LayoutTree::Node::cStyleDisplay:
         case LayoutTree::Node::cStyleText:
-            smallerStyle = LayoutTree::Node::cStyleScript;
+            newState.mStyle = LayoutTree::Node::cStyleScript;
             break;
 
         case LayoutTree::Node::cStyleScript:
         case LayoutTree::Node::cStyleScriptScript:
-            smallerStyle = LayoutTree::Node::cStyleScriptScript;
+            newState.mStyle = LayoutTree::Node::cStyleScriptScript;
             break;
     }
 
     if (mUpper.get())
-        upper = mUpper->BuildLayoutTree(currentFont, smallerStyle);
+        upper = mUpper->BuildLayoutTree(newState);
     if (mLower.get())
-        lower = mLower->BuildLayoutTree(currentFont, smallerStyle);
+        lower = mLower->BuildLayoutTree(newState);
 
     // Determine from the flavour and limits settings whether we should
     // be putting limits above/below or to the side.
@@ -915,15 +793,16 @@ auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(
             limits != LayoutTree::Node::cLimitsLimits &&
             (
                 limits != LayoutTree::Node::cLimitsDisplayLimits ||
-                currentStyle != LayoutTree::Node::cStyleDisplay
+                state.mStyle != LayoutTree::Node::cStyleDisplay
             )
         );
 
     return auto_ptr<LayoutTree::Node>(
         new LayoutTree::Scripts(
-            currentStyle,
+            state.mStyle,
             flavour,
             LayoutTree::Node::cLimitsDisplayLimits,
+            state.mColour,
             isSideset,
             base,
             upper,
@@ -932,13 +811,13 @@ auto_ptr<LayoutTree::Node> MathScripts::BuildLayoutTree(
     );
 }
 
+
 auto_ptr<LayoutTree::Node> MathLimits::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     auto_ptr<LayoutTree::Node> node =
-        mChild->BuildLayoutTree(currentFont, currentStyle);
+        mChild->BuildLayoutTree(state);
 
     if (node->mFlavour != LayoutTree::Node::cFlavourOp)
         throw Exception(L"MisplacedLimits", mCommand);
@@ -958,32 +837,33 @@ auto_ptr<LayoutTree::Node> MathLimits::BuildLayoutTree(
 }
 
 auto_ptr<LayoutTree::Node> MathGroup::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     // TeX treates any group enclosed by curly braces as an "ordinary" atom.
     // This is why e.g. "123{,}456" looks different to "123,456"
     auto_ptr<LayoutTree::Node> node
-        = mChild->BuildLayoutTree(currentFont, currentStyle);
+        = mChild->BuildLayoutTree(state);
     node->mFlavour = LayoutTree::Node::cFlavourOrd;
     return node;
 }
 
+
 auto_ptr<LayoutTree::Node> MathDelimited::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     return auto_ptr<LayoutTree::Node>(
         new LayoutTree::Fenced(
-            currentStyle,
+            state.mStyle,
+            state.mColour,
             gDelimiterTable[mLeftDelimiter],
             gDelimiterTable[mRightDelimiter],
-            mChild->BuildLayoutTree(currentFont, currentStyle)
+            mChild->BuildLayoutTree(state)
         )
     );
 }
+
 
 // Stores information about the various "\big..." commands.
 struct BigInfo
@@ -1000,54 +880,30 @@ struct BigInfo
     { }
 };
 
+
 auto_ptr<LayoutTree::Node> MathBig::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     // Here's a list of all the "\big..." commands, how big the delimiter
     // should become, and what flavour it should be, for each one.
     static pair<wstring, BigInfo> bigCommandArray[] =
     {
-        make_pair(L"\\big",
-            BigInfo(LayoutTree::Node::cFlavourOrd,   L"1.2em")
-        ),
-        make_pair(L"\\bigl",
-            BigInfo(LayoutTree::Node::cFlavourOpen,  L"1.2em")
-        ),
-        make_pair(L"\\bigr",
-            BigInfo(LayoutTree::Node::cFlavourClose, L"1.2em")
-        ),
+        make_pair(L"\\big",   BigInfo(LayoutTree::Node::cFlavourOrd,   L"1.2em")),
+        make_pair(L"\\bigl",  BigInfo(LayoutTree::Node::cFlavourOpen,  L"1.2em")),
+        make_pair(L"\\bigr",  BigInfo(LayoutTree::Node::cFlavourClose, L"1.2em")),
 
-        make_pair(L"\\Big",
-            BigInfo(LayoutTree::Node::cFlavourOrd,   L"1.8em")
-        ),
-        make_pair(L"\\Bigl",
-            BigInfo(LayoutTree::Node::cFlavourOpen,  L"1.8em")
-        ),
-        make_pair(L"\\Bigr",
-            BigInfo(LayoutTree::Node::cFlavourClose, L"1.8em")
-        ),
+        make_pair(L"\\Big",   BigInfo(LayoutTree::Node::cFlavourOrd,   L"1.8em")),
+        make_pair(L"\\Bigl",  BigInfo(LayoutTree::Node::cFlavourOpen,  L"1.8em")),
+        make_pair(L"\\Bigr",  BigInfo(LayoutTree::Node::cFlavourClose, L"1.8em")),
 
-        make_pair(L"\\bigg",
-            BigInfo(LayoutTree::Node::cFlavourOrd,   L"2.4em")
-        ),
-        make_pair(L"\\biggl",
-            BigInfo(LayoutTree::Node::cFlavourOpen,  L"2.4em")
-        ),
-        make_pair(L"\\biggr",
-            BigInfo(LayoutTree::Node::cFlavourClose, L"2.4em")
-        ),
+        make_pair(L"\\bigg",  BigInfo(LayoutTree::Node::cFlavourOrd,   L"2.4em")),
+        make_pair(L"\\biggl", BigInfo(LayoutTree::Node::cFlavourOpen,  L"2.4em")),
+        make_pair(L"\\biggr", BigInfo(LayoutTree::Node::cFlavourClose, L"2.4em")),
 
-        make_pair(L"\\Bigg",
-            BigInfo(LayoutTree::Node::cFlavourOrd,   L"3em")
-        ),
-        make_pair(L"\\Biggl",
-            BigInfo(LayoutTree::Node::cFlavourOpen,  L"3em")
-        ),
-        make_pair(L"\\Biggr",
-            BigInfo(LayoutTree::Node::cFlavourClose, L"3em")
-        )
+        make_pair(L"\\Bigg",  BigInfo(LayoutTree::Node::cFlavourOrd,   L"3em")),
+        make_pair(L"\\Biggl", BigInfo(LayoutTree::Node::cFlavourOpen,  L"3em")),
+        make_pair(L"\\Biggr", BigInfo(LayoutTree::Node::cFlavourClose, L"3em"))
     };
     static wishful_hash_map<wstring, BigInfo> bigCommandTable(
         bigCommandArray,
@@ -1059,9 +915,9 @@ auto_ptr<LayoutTree::Node> MathBig::BuildLayoutTree(
 
     if (bigCommand != bigCommandTable.end())
     {
-        LayoutTree::Node::Style newStyle = currentStyle;
-        if (currentStyle != LayoutTree::Node::cStyleDisplay &&
-            currentStyle != LayoutTree::Node::cStyleText
+        LayoutTree::Node::Style newStyle = state.mStyle;
+        if (state.mStyle != LayoutTree::Node::cStyleDisplay &&
+            state.mStyle != LayoutTree::Node::cStyleText
         )
             newStyle = LayoutTree::Node::cStyleText;
 
@@ -1074,7 +930,9 @@ auto_ptr<LayoutTree::Node> MathBig::BuildLayoutTree(
                 gDelimiterTable[mDelimiter],
                 cMathmlFontNormal,
                 newStyle,
-                bigCommand->second.mFlavour
+                bigCommand->second.mFlavour,
+                LayoutTree::Node::cLimitsDisplayLimits,
+                state.mColour
             )
         );
     }
@@ -1082,9 +940,9 @@ auto_ptr<LayoutTree::Node> MathBig::BuildLayoutTree(
     throw logic_error("Unknown command in MathBig::BuildLayoutTree");
 }
 
+
 auto_ptr<LayoutTree::Node> MathTableRow::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     // We should never get here, because MathTable::BuildLayoutTree
@@ -1094,12 +952,14 @@ auto_ptr<LayoutTree::Node> MathTableRow::BuildLayoutTree(
     );
 }
 
+
 auto_ptr<LayoutTree::Node> MathTable::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
-    auto_ptr<LayoutTree::Table> table(new LayoutTree::Table(currentStyle));
+    auto_ptr<LayoutTree::Table> table(
+        new LayoutTree::Table(state.mStyle, state.mColour)
+    );
     table->mRows.reserve(mRows.size());
 
     // Walk the table, building the layout tree as we go.
@@ -1118,12 +978,13 @@ auto_ptr<LayoutTree::Node> MathTable::BuildLayoutTree(
         )
             outRow.push_back(
                 (*entry)->
-                    BuildLayoutTree(currentFont, currentStyle).release()
+                    BuildLayoutTree(state).release()
             );
     }
 
     return static_cast<auto_ptr<LayoutTree::Node> >(table);
 }
+
 
 // Stores information about an environment.
 struct EnvironmentInfo
@@ -1139,9 +1000,9 @@ struct EnvironmentInfo
     { }
 };
 
+
 auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     // A list of all environments, and which delimiters appear on each
@@ -1180,29 +1041,29 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(
 
     // For reasons I haven't investigated, the "boldsymbol" flag persists
     // into environments, but the math font doesn't.
-    TexMathFont font;
-    font.mIsBoldsymbol = currentFont.mIsBoldsymbol;
+    TexProcessingState newState = state;
+    newState.mMathFont = TexMathFont();
+    newState.mMathFont.mIsBoldsymbol = state.mMathFont.mIsBoldsymbol;
 
     // FIX: I think probably the substack rows need to be closer together,
     // but Firefox doesn't respect the "rowspacing" attribute on <mtable>.
     // Need to report that and write some code here too.
 
-    LayoutTree::Node::Style tableStyle, fencedStyle;
+    LayoutTree::Node::Style fencedStyle;
     if (mName == L"smallmatrix" || mName == L"substack")
-        tableStyle = LayoutTree::Node::cStyleScript;
+        newState.mStyle = LayoutTree::Node::cStyleScript;
     else if (mName == L"aligned")
-        tableStyle = LayoutTree::Node::cStyleDisplay;
+        newState.mStyle = LayoutTree::Node::cStyleDisplay;
     else
     {
-        tableStyle = LayoutTree::Node::cStyleText;
+        newState.mStyle = LayoutTree::Node::cStyleText;
         fencedStyle =
-            (currentStyle == LayoutTree::Node::cStyleDisplay)
+            (state.mStyle == LayoutTree::Node::cStyleDisplay)
                 ? LayoutTree::Node::cStyleDisplay
                 : LayoutTree::Node::cStyleText;
     }
 
-    auto_ptr<LayoutTree::Node> table
-        = mTable->BuildLayoutTree(font, tableStyle);
+    auto_ptr<LayoutTree::Node> table = mTable->BuildLayoutTree(newState);
 
     if (mName == L"aligned")
         dynamic_cast<LayoutTree::Table*>(table.get())->mAlign
@@ -1220,6 +1081,7 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(
     return auto_ptr<LayoutTree::Node>(
         new LayoutTree::Fenced(
             fencedStyle,
+            state.mColour,
             environmentLookup->second.mLeftDelimiter,
             environmentLookup->second.mRightDelimiter,
             table
@@ -1227,9 +1089,9 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(
     );
 }
 
+
 auto_ptr<LayoutTree::Node> EnterTextMode::BuildLayoutTree(
-    const TexMathFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     // List of all commands that launch into text mode, and some information
@@ -1262,6 +1124,12 @@ auto_ptr<LayoutTree::Node> EnterTextMode::BuildLayoutTree(
         ),
         make_pair(L"\\texttt",
             TexTextFont(TexTextFont::cFamilyTt, false, false)
+        ),
+        make_pair(L"\\cyr",
+            TexTextFont(TexTextFont::cFamilyRm, false, false)
+        ),
+        make_pair(L"\\jap",
+            TexTextFont(TexTextFont::cFamilyRm, false, false)
         )
     };
     static wishful_hash_map<wstring, TexTextFont> textCommandTable(
@@ -1277,46 +1145,62 @@ auto_ptr<LayoutTree::Node> EnterTextMode::BuildLayoutTree(
             "Unexpected command in EnterTextMode::BuildLayoutTree"
         );
 
-    LayoutTree::Node::Style style =
-        (mCommand == L"\\hbox" || mCommand == L"\\mbox")
-            ? LayoutTree::Node::cStyleText : currentStyle;
+    TexProcessingState newState = state;
+    newState.mTextFont = textCommand->second;
+    
+    if (mCommand == L"\\hbox" || mCommand == L"\\mbox")
+        newState.mStyle = LayoutTree::Node::cStyleText;
 
-    return mChild->BuildLayoutTree(textCommand->second, style);
+    return mChild->BuildLayoutTree(newState);
 }
 
+
 auto_ptr<LayoutTree::Node> TextList::BuildLayoutTree(
-    const TexTextFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
-    auto_ptr<LayoutTree::Row> node(new LayoutTree::Row(currentStyle));
+    auto_ptr<LayoutTree::Row> node(
+        new LayoutTree::Row(state.mStyle, state.mColour)
+    );
 
     // Recursively build layout trees for children, and merge Rows to obtain
-    // a single Row.
+    // a single Row, and apply state changes as appropriate.
+    TexProcessingState currentState = state;
     for (vector<TextNode*>::const_iterator
         child = mChildren.begin();
         child != mChildren.end();
         child++
     )
     {
-        auto_ptr<LayoutTree::Node>
-            newNode = (*child)->BuildLayoutTree(currentFont, currentStyle);
+        TextStateChange* childAsStateChange =
+            dynamic_cast<TextStateChange*>(*child);
 
-        LayoutTree::Row* isRow =
-            dynamic_cast<LayoutTree::Row*>(newNode.get());
-
-        if (isRow)
-            node->mChildren.splice(node->mChildren.end(), isRow->mChildren);
+        if (childAsStateChange)
+            childAsStateChange->Apply(currentState);
         else
-            node->mChildren.push_back(newNode.release());
+        {
+            auto_ptr<LayoutTree::Node>
+                newNode = (*child)->BuildLayoutTree(currentState);
+
+            LayoutTree::Row* isRow =
+                dynamic_cast<LayoutTree::Row*>(newNode.get());
+
+            if (isRow)
+                node->mChildren.splice(
+                    node->mChildren.end(),
+                    isRow->mChildren
+                );
+            else
+                node->mChildren.push_back(newNode.release());
+        }
     }
 
     return static_cast<auto_ptr<LayoutTree::Node> >(node);
 }
 
+
 auto_ptr<LayoutTree::Node> TextSymbol::BuildLayoutTree(
-    const TexTextFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
     static pair<wstring, wstring> textCommandArray[] =
@@ -1331,6 +1215,7 @@ auto_ptr<LayoutTree::Node> TextSymbol::BuildLayoutTree(
         make_pair(L"\\qquad",  L"\U000000A0\U000000A0\U000000A0\U000000A0"),
 
         make_pair(L"\\&",                 L"&"),
+        // FIX: why did I put in these next two lines again?
         make_pair(L"<",                   L"<"),
         make_pair(L">",                   L">"),
         make_pair(L"\\_",                 L"_"),
@@ -1360,94 +1245,55 @@ auto_ptr<LayoutTree::Node> TextSymbol::BuildLayoutTree(
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::SymbolText(
                 textCommand->second,
-                currentFont.GetMathmlApproximation(),
-                currentStyle
+                state.mTextFont.GetMathmlApproximation(),
+                state.mStyle,
+                state.mColour
             )
         );
 
     return auto_ptr<LayoutTree::Node>(
         new LayoutTree::SymbolText(
             mCommand,
-            currentFont.GetMathmlApproximation(),
-            currentStyle
+            state.mTextFont.GetMathmlApproximation(),
+            state.mStyle,
+            state.mColour
         )
     );
 }
 
+
 auto_ptr<LayoutTree::Node> TextGroup::BuildLayoutTree(
-    const TexTextFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
-    return mChild->BuildLayoutTree(currentFont, currentStyle);
+    return mChild->BuildLayoutTree(state);
 }
 
-auto_ptr<LayoutTree::Node> TextStyleChange::BuildLayoutTree(
-    const TexTextFont& currentFont,
-    LayoutTree::Node::Style currentStyle
-) const
-{
-    static pair<wstring, TexTextFont> textCommandArray[] =
-    {                                       //  bold?  italic?
-        make_pair(L"\\rm",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        ),
-
-        make_pair(L"\\it",
-            TexTextFont(TexTextFont::cFamilyRm, false, true)
-        ),
-
-        make_pair(L"\\bf",
-            TexTextFont(TexTextFont::cFamilyRm, true, false)
-        ),
-
-        make_pair(L"\\sf",
-            TexTextFont(TexTextFont::cFamilySf, false, false)
-        ),
-
-        make_pair(L"\\tt",
-            TexTextFont(TexTextFont::cFamilyTt, false, false)
-        ),
-    };
-    static wishful_hash_map<wstring, TexTextFont> textCommandTable(
-        textCommandArray,
-        END_ARRAY(textCommandArray)
-    );
-
-    wishful_hash_map<wstring, TexTextFont>::iterator
-        textCommand = textCommandTable.find(mCommand);
-
-    if (textCommand == textCommandTable.end())
-        throw logic_error(
-            "Unexpected command in TextStyleChange::BuildLayoutTree"
-        );
-
-    return mChild->BuildLayoutTree(textCommand->second, currentStyle);
-}
 
 auto_ptr<LayoutTree::Node> TextCommand1Arg::BuildLayoutTree(
-    const TexTextFont& currentFont,
-    LayoutTree::Node::Style currentStyle
+    const TexProcessingState& state
 ) const
 {
-    TexTextFont font = currentFont;
+    TexProcessingState newState = state;
 
     if (mCommand == L"\\textrm")
-        font.mFamily = TexTextFont::cFamilyRm;
+        newState.mTextFont.mFamily = TexTextFont::cFamilyRm;
     else if (mCommand == L"\\texttt")
-        font.mFamily = TexTextFont::cFamilyTt;
+        newState.mTextFont.mFamily = TexTextFont::cFamilyTt;
     else if (mCommand == L"\\textsf")
-        font.mFamily = TexTextFont::cFamilySf;
+        newState.mTextFont.mFamily = TexTextFont::cFamilySf;
     else if (mCommand == L"\\textit")
-        font.mIsItalic = true;
+        newState.mTextFont.mIsItalic = true;
     else if (mCommand == L"\\emph")
-        font.mIsItalic = !font.mIsItalic;
+        newState.mTextFont.mIsItalic = !newState.mTextFont.mIsItalic;
     else if (mCommand == L"\\textbf")
-        font.mIsBold = true;
+        newState.mTextFont.mIsBold = true;
     else if (
         mCommand == L"\\text" ||
         mCommand == L"\\hbox" ||
-        mCommand == L"\\mbox"
+        mCommand == L"\\mbox" ||
+        mCommand == L"\\cyr" ||
+        mCommand == L"\\jap"
     )
         // do nothing!
         { }
@@ -1456,7 +1302,7 @@ auto_ptr<LayoutTree::Node> TextCommand1Arg::BuildLayoutTree(
             "Unexpected command in TextCommand1Arg::BuildLayoutTree"
         );
 
-    return mChild->BuildLayoutTree(font, currentStyle);
+    return mChild->BuildLayoutTree(newState);
 }
 
 }

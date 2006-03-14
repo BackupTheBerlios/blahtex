@@ -1,6 +1,6 @@
 // File "Parser.cpp"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -26,8 +26,8 @@ using namespace std;
 namespace blahtex {
 
 // Imported from ParseTree1.cpp:
-extern wishful_hash_map<std::wstring, std::wstring> gDelimiterTable;
-
+extern wishful_hash_map<wstring, wstring> gDelimiterTable;
+extern wishful_hash_map<wstring, RGBColour> gColourTable;
 
 // These tables contain all the commands that blahtex recognises in math
 // mode (respectively text mode). They provide the token codes for the
@@ -64,6 +64,9 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\textrm",                 Parser::cEnterTextMode),
     make_pair(L"\\texttt",                 Parser::cEnterTextMode),
     make_pair(L"\\textsf",                 Parser::cEnterTextMode),
+    
+    make_pair(L"\\cyr",                    Parser::cEnterTextMode),
+    make_pair(L"\\jap",                    Parser::cEnterTextMode),
 
     make_pair(L"\\sqrt",                   Parser::cCommand1Arg),
     make_pair(L"\\pmod",                   Parser::cCommand1Arg),
@@ -108,14 +111,6 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\mathclose",              Parser::cCommand1Arg),
     make_pair(L"\\mathpunct",              Parser::cCommand1Arg),
     make_pair(L"\\mathinner",              Parser::cCommand1Arg),
-
-    // In TeX, "\not" is NOT a 1-argument command; it's just a single
-    // symbol with weird spacing properties. It ends up being a slash over
-    // the previous character. We implement it instead as a 1-argument
-    // command which replaces its argument by an appropriate character.
-    // (e.g. changes "&equiv;" to "&nequiv;".)
-    // This will break some TeX markup.
-    make_pair(L"\\not",                    Parser::cCommand1Arg),
 
     make_pair(L"\\limits",                 Parser::cLimits),
     make_pair(L"\\nolimits",               Parser::cLimits),
@@ -162,6 +157,8 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\>",                      Parser::cSymbolUnsafe),
     make_pair(L"\\quad",                   Parser::cSymbolUnsafe),
     make_pair(L"\\qquad",                  Parser::cSymbolUnsafe),
+
+    make_pair(L"\\not",                    Parser::cSymbol),
 
     make_pair(L"(",                        Parser::cSymbol),
     make_pair(L")",                        Parser::cSymbol),
@@ -230,17 +227,19 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\mathtt",                 Parser::cCommand1Arg),
     make_pair(L"\\boldsymbol",             Parser::cCommand1Arg),
 
-    make_pair(L"\\rm",                     Parser::cStyleChange),
-    make_pair(L"\\bf",                     Parser::cStyleChange),
-    make_pair(L"\\it",                     Parser::cStyleChange),
-    make_pair(L"\\cal",                    Parser::cStyleChange),
-    make_pair(L"\\tt",                     Parser::cStyleChange),
-    make_pair(L"\\sf",                     Parser::cStyleChange),
+    make_pair(L"\\rm",                     Parser::cStateChange),
+    make_pair(L"\\bf",                     Parser::cStateChange),
+    make_pair(L"\\it",                     Parser::cStateChange),
+    make_pair(L"\\cal",                    Parser::cStateChange),
+    make_pair(L"\\tt",                     Parser::cStateChange),
+    make_pair(L"\\sf",                     Parser::cStateChange),
 
-    make_pair(L"\\displaystyle",           Parser::cStyleChange),
-    make_pair(L"\\textstyle",              Parser::cStyleChange),
-    make_pair(L"\\scriptstyle",            Parser::cStyleChange),
-    make_pair(L"\\scriptscriptstyle",      Parser::cStyleChange),
+    make_pair(L"\\displaystyle",           Parser::cStateChange),
+    make_pair(L"\\textstyle",              Parser::cStateChange),
+    make_pair(L"\\scriptstyle",            Parser::cStateChange),
+    make_pair(L"\\scriptscriptstyle",      Parser::cStateChange),
+
+    make_pair(L"\\color",                  Parser::cStateChange),
 
     make_pair(L"\\varlimsup",              Parser::cSymbolUnsafe),
     make_pair(L"\\varliminf",              Parser::cSymbolUnsafe),
@@ -425,6 +424,7 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     make_pair(L"\\ngeq",                   Parser::cSymbol),
     make_pair(L"\\nleq",                   Parser::cSymbol),
 
+    make_pair(L"\\ast",                    Parser::cSymbol),
     make_pair(L"\\times",                  Parser::cSymbol),
     make_pair(L"\\div",                    Parser::cSymbol),
     make_pair(L"\\wedge",                  Parser::cSymbol),
@@ -810,11 +810,16 @@ pair<wstring, Parser::TokenCode> gTextTokenArray[] =
     make_pair(L"\\texttt",                 Parser::cCommand1Arg),
     make_pair(L"\\textsf",                 Parser::cCommand1Arg),
 
-    make_pair(L"\\rm",                     Parser::cStyleChange),
-    make_pair(L"\\it",                     Parser::cStyleChange),
-    make_pair(L"\\bf",                     Parser::cStyleChange),
-    make_pair(L"\\tt",                     Parser::cStyleChange),
-    make_pair(L"\\sf",                     Parser::cStyleChange),
+    make_pair(L"\\cyr",                    Parser::cCommand1Arg),
+    make_pair(L"\\jap",                    Parser::cCommand1Arg),
+
+    make_pair(L"\\rm",                     Parser::cStateChange),
+    make_pair(L"\\it",                     Parser::cStateChange),
+    make_pair(L"\\bf",                     Parser::cStateChange),
+    make_pair(L"\\tt",                     Parser::cStateChange),
+    make_pair(L"\\sf",                     Parser::cStateChange),
+
+    make_pair(L"\\color",                  Parser::cStateChange)
 };
 
 wishful_hash_map<wstring, Parser::TokenCode> gTextTokenTable(
@@ -1076,6 +1081,41 @@ ParseTree::MathScripts* Parser::PrepareScripts(ParseTree::MathList* output)
 
     return target;
 }
+
+
+wstring Parser::ParseColourName()
+{
+    mTokenSource->SkipWhitespace();
+    if (mTokenSource->Get() != L"{")
+        throw Exception(L"MissingOpenBraceAfter", L"\\color");
+    
+    wstring colourName;
+    while (true)
+    {
+        wstring c = mTokenSource->Get();
+        if (c == L"}")
+        {
+            // check colour name is valid
+            if (gColourTable.find(colourName) == gColourTable.end())
+                throw Exception(L"InvalidColour", colourName);
+            return colourName;
+        }
+        if (c == L"")
+            throw Exception(L"UnmatchedOpenBrace");
+        colourName += c;
+        if (c.size() != 1 ||
+            !(
+                (c[0] >= 'A' && c[0] <= 'Z') ||
+                (c[0] >= 'a' && c[0] <= 'z')
+             )
+        )
+            throw Exception(
+                L"InvalidColour",
+                colourName + L"..."
+            );
+    }
+}
+
 
 auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
 {
@@ -1406,23 +1446,26 @@ auto_ptr<ParseTree::MathNode> Parser::ParseMathList()
                 break;
             }
 
+            case cStateChange:
+            {
+                wstring command = mTokenSource->Get();
+                if (command == L"\\color")
+                    output->mChildren.push_back(
+                        new ParseTree::MathColour(ParseColourName())
+                    );
+                else
+                    output->mChildren.push_back(
+                        new ParseTree::MathStateChange(command)
+                    );
+                break;
+            }
+
             case cCommand1Arg:
             {
                 wstring command = mTokenSource->Get();
                 output->mChildren.push_back(
                     new ParseTree::MathCommand1Arg(
                         command, ParseMathField()
-                    )
-                );
-                break;
-            }
-
-            case cStyleChange:
-            {
-                wstring command = mTokenSource->Get();
-                output->mChildren.push_back(
-                    new ParseTree::MathStyleChange(
-                        command, ParseMathList()
                     )
                 );
                 break;
@@ -1564,12 +1607,17 @@ auto_ptr<ParseTree::TextNode> Parser::ParseTextList()
                 break;
             }
 
-            case cStyleChange:
+            case cStateChange:
             {
                 wstring command = mTokenSource->Get();
-                output->mChildren.push_back(
-                    new ParseTree::TextStyleChange(command, ParseTextList())
-                );
+                if (command == L"\\color")
+                    output->mChildren.push_back(
+                        new ParseTree::TextColour(ParseColourName())
+                    );
+                else
+                    output->mChildren.push_back(
+                        new ParseTree::TextStateChange(command)
+                    );
                 break;
             }
 

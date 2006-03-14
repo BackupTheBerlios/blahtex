@@ -1,7 +1,7 @@
 #
 # makefile
 #
-# blahtex (version 0.4.2)
+# blahtex (version 0.4.4)
 # a TeX to MathML converter designed with MediaWiki in mind
 # Copyright (C) 2006, David Harvey
 #
@@ -21,24 +21,6 @@
 #
 
 
-# If you are building with imagemagick support (to enable the
-# "--compute-vertical-shift" option), you will need to set the
-# following directories to point to where your ImageMagick header/
-# library files are stored:
-
-MAGICK_INCLUDE_DIR = /usr/include/
-MAGICK_LIB_DIR = /usr/lib/
-
-# e.g. if you are using fink (Mac OS X), then probably you want
-
-# MAGICK_INCLUDE_DIR = /sw/include/
-# MAGICK_LIB_DIR = /sw/lib/
-
-# and if you are using DarwinPorts (Mac OS X), then probably you want
-
-# MAGICK_INCLUDE_DIR = /opt/local/include/
-# MAGICK_LIB_DIR = /opt/local/lib/
-
 SOURCES = \
 	source/main.cpp \
 	source/mainPng.cpp \
@@ -54,9 +36,11 @@ SOURCES = \
 	source/BlahtexCore/ParseTree1.cpp \
 	source/BlahtexCore/ParseTree2.cpp \
 	source/BlahtexCore/ParseTree3.cpp \
-	source/BlahtexCore/XmlNode.cpp
+	source/BlahtexCore/MathmlNode.cpp \
+	source/BlahtexCore/XmlEncode.cpp
 	
 HEADERS = \
+	source/mainPng.h \
 	source/md5.h \
 	source/md5Wrapper.h \
 	source/UnicodeConverter.h \
@@ -67,27 +51,20 @@ HEADERS = \
 	source/BlahtexCore/Misc.h \
 	source/BlahtexCore/Parser.h \
 	source/BlahtexCore/ParseTree.h \
-	source/BlahtexCore/XmlNode.h
+	source/BlahtexCore/MathmlNode.h \
+	source/BlahtexCore/XmlEncode.h
 
 OBJECTS = $(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SOURCES)))
 
-linux : CFLAGS = -O3 -DBLAHTEX_USING_MAGICK -I$(MAGICK_INCLUDE_DIR)
-mac : CFLAGS = -O3 -DBLAHTEX_ICONV_CONST -DBLAHTEX_USING_MAGICK -I$(MAGICK_INCLUDE_DIR)
-linux-without-imagemagick : CFLAGS = -O3
-mac-without-imagemagick : CFLAGS = -O3 -DBLAHTEX_ICONV_CONST
+linux : CFLAGS = -O3
+mac : CFLAGS = -O3 -DBLAHTEX_ICONV_CONST
 
 CXXFLAGS = $(CFLAGS)
 
 linux:  $(OBJECTS)  $(HEADERS)
-	$(CXX) $(CFLAGS) -o blahtex -lMagick++ -L$(MAGICK_LIB_DIR) $(OBJECTS)
-
-mac: $(OBJECTS)  $(HEADERS)
-	$(CXX) $(CFLAGS) -o blahtex -liconv -lMagick++ -L$(MAGICK_LIB_DIR) $(OBJECTS)
-
-linux-without-imagemagick:  $(OBJECTS)  $(HEADERS)
 	$(CXX) $(CFLAGS) -o blahtex $(OBJECTS)
 
-mac-without-imagemagick: $(OBJECTS)  $(HEADERS)
+mac: $(OBJECTS)  $(HEADERS)
 	$(CXX) $(CFLAGS) -o blahtex -liconv $(OBJECTS)
 
 clean:

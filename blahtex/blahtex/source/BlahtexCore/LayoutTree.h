@@ -1,6 +1,6 @@
 // File "LayoutTree.h"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -21,7 +21,7 @@
 #ifndef BLAHTEX_LAYOUTTREE_H
 #define BLAHTEX_LAYOUTTREE_H
 
-#include "XmlNode.h"
+#include "MathmlNode.h"
 
 namespace blahtex
 {
@@ -31,29 +31,6 @@ namespace blahtex
 // inputting arrays with lots of empty entries.)
 const unsigned cMaxMathmlNodeCount = 2500;
 
-
-// MathmlFont lists all possible MathML "mathvariant" values.
-//
-// (Note that mathvariant appeared in MathML 2.0. Blahtex first does
-// everything in terms of mathvariant, and then changes everything
-// afterwards to MathML 1.x font attributes if that was requested.)
-enum MathmlFont
-{
-    cMathmlFontNormal,
-    cMathmlFontBold,
-    cMathmlFontItalic,
-    cMathmlFontBoldItalic,
-    cMathmlFontDoubleStruck,
-    cMathmlFontBoldFraktur,
-    cMathmlFontScript,
-    cMathmlFontBoldScript,
-    cMathmlFontFraktur,
-    cMathmlFontSansSerif,
-    cMathmlFontBoldSansSerif,
-    cMathmlFontSansSerifItalic,
-    cMathmlFontSansSerifBoldItalic,
-    cMathmlFontMonospace
-};
 
 struct MathmlEnvironment;
 
@@ -114,16 +91,39 @@ namespace LayoutTree
             cStyleScriptScript          // like \scriptscriptstyle
         }
         mStyle;
+        
+        // Colour of the node. For symbols this is the colour of the symbol;
+        // for fractions it's the colour of the horizontal bar; for radicals
+        // it's the colour of the radical symbol.
+        //
+        // This field is ignored for LayoutTree::Space nodes.
+        RGBColour mColour;
+
 
         Node(
             Style style,
             Flavour flavour,
-            Limits limits
+            Limits limits,
+            RGBColour colour
         ) :
             mStyle(style),
             mFlavour(flavour),
-            mLimits(limits)
+            mLimits(limits),
+            mColour(colour)
         { }
+
+
+        // This function "optimises" the tree beneath the current node:
+        // (1) It merges adjacent Space nodes into single spaces, and
+        // (2) It merges adjacent Symbol nodes in certain situations.
+        //     For exammple, we want <mn>12</mn> instead of
+        //     <mn>1</mn><mn>2</mn>, and <mi>sin</mi> instead of
+        //     <mi mathvariant="normal">s</mi>
+        //     <mi mathvariant="normal">i</mi>
+        //     <mi mathvariant="normal">n</mi>   !!!!
+        virtual void Optimise()
+        { }
+        
 
         // This function converts the layout tree rooted at this node into
         // a MathML tree.
@@ -135,11 +135,12 @@ namespace LayoutTree
         // The nodeCount parameter is used to keep track of the total number
         // of nodes in the MathML tree. For security reasons we put a hard
         // limit on this. (See cMaxMathmlNodeCount.)
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
         ) const = 0;
+
 
         // This function recursively prints the layout tree under this node.
         // Debugging use only.
@@ -160,13 +161,15 @@ namespace LayoutTree
     {
         std::list<Node*> mChildren;
 
-        Row(Style style) :
-            Node(style, cFlavourOrd, cLimitsDisplayLimits)
+        Row(Style style, RGBColour colour) :
+            Node(style, cFlavourOrd, cLimitsDisplayLimits, colour)
         { }
 
         ~Row();
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual void Optimise();
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -179,11 +182,11 @@ namespace LayoutTree
     };
 
 
-    // Symbol is an abstract class; its concrete subclasses are SymbolPlain
-    // SymbolOperator, SymbolText. It represents anything that will get
-    // translated as <mn>, <mi>, <mo> or <mtext>. It describes the text
-    // that goes inside the tags (mText) and what font it should be in
-    // (mFont).
+    // Symbol is an abstract class; its concrete subclasses are
+    // SymbolIdentifier, SymbolNumber, SymbolOperator, SymbolText. It
+    // represents anything that will get translated as <mn>, <mi>, <mo>
+    // or <mtext>. It describes the text that goes inside the tags (mText)
+    // and what font it should be in (mFont).
     struct Symbol : Node
     {
         std::wstring mText;
@@ -194,14 +197,15 @@ namespace LayoutTree
             MathmlFont font,
             Style style,
             Flavour flavour,
-            Limits limits
+            Limits limits,
+            RGBColour colour
         ) :
-            Node(style, flavour, limits),
+            Node(style, flavour, limits, colour),
             mText(text),
             mFont(font)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -214,20 +218,48 @@ namespace LayoutTree
     };
 
 
-    // SymbolPlain represents things translated as <mi> or <mn>.
-    struct SymbolPlain : Symbol
+    // SymbolIdentifier represents things translated as <mi>.
+    struct SymbolIdentifier : Symbol
     {
-        SymbolPlain(
+        SymbolIdentifier(
             const std::wstring& text,
             MathmlFont font,
             Style style,
             Flavour flavour,
-            Limits limits = cLimitsDisplayLimits
+            Limits limits,
+            RGBColour colour
         ) :
-            Symbol(text, font, style, flavour, limits)
+            Symbol(text, font, style, flavour, limits, colour)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
+            const MathmlOptions& options,
+            const MathmlEnvironment& inheritedEnvironment,
+            unsigned& nodeCount
+        ) const;
+
+        virtual void Print(
+            std::wostream& os,
+            int depth = 0
+        ) const;
+    };
+
+
+    // SymbolNumber represents things translated as <mn>.
+    struct SymbolNumber : Symbol
+    {
+        SymbolNumber(
+            const std::wstring& text,
+            MathmlFont font,
+            Style style,
+            Flavour flavour,
+            Limits limits,
+            RGBColour colour
+        ) :
+            Symbol(text, font, style, flavour, limits, colour)
+        { }
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -249,12 +281,15 @@ namespace LayoutTree
         SymbolText(
             const std::wstring& text,
             MathmlFont font,
-            Style style
+            Style style,
+            RGBColour colour
         ) :
-            Symbol(text, font, style, cFlavourOrd, cLimitsDisplayLimits)
+            Symbol(
+                text, font, style, cFlavourOrd, cLimitsDisplayLimits, colour
+            )
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -295,15 +330,16 @@ namespace LayoutTree
             MathmlFont font,
             Style style,
             Flavour flavour,
-            Limits limits = cLimitsDisplayLimits
+            Limits limits,
+            RGBColour colour
         ) :
-            Symbol(text, font, style, flavour, limits),
+            Symbol(text, font, style, flavour, limits, colour),
             mIsStretchy(isStretchy),
             mSize(size),
             mIsAccent(isAccent)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -334,12 +370,12 @@ namespace LayoutTree
             int width,
             bool isUserRequested
         ) :
-            Node(cStyleDisplay, cFlavourOrd, cLimitsDisplayLimits),
+            Node(cStyleDisplay, cFlavourOrd, cLimitsDisplayLimits, 0),
             mWidth(width),
             mIsUserRequested(isUserRequested)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -369,19 +405,22 @@ namespace LayoutTree
             Style style,
             Flavour flavour,
             Limits limits,
+            RGBColour colour,
             bool isSideset,
             std::auto_ptr<Node> base,
             std::auto_ptr<Node> upper,
             std::auto_ptr<Node> lower
         ) :
-            Node(style, flavour, limits),
+            Node(style, flavour, limits, colour),
             mIsSideset(isSideset),
             mBase(base),
             mUpper(upper),
             mLower(lower)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual void Optimise();
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -406,17 +445,20 @@ namespace LayoutTree
 
         Fraction(
             Style style,
+            RGBColour colour,
             std::auto_ptr<Node> numerator,
             std::auto_ptr<Node> denominator,
             bool isLineVisible
         ) :
-            Node(style, cFlavourOrd, cLimitsDisplayLimits),
+            Node(style, cFlavourOrd, cLimitsDisplayLimits, colour),
             mNumerator(numerator),
             mDenominator(denominator),
             mIsLineVisible(isLineVisible)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual void Optimise();
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -445,17 +487,20 @@ namespace LayoutTree
 
         Fenced(
             Style style,
+            RGBColour colour,
             const std::wstring& leftDelimiter,
             const std::wstring& rightDelimiter,
             std::auto_ptr<Node> child
         ) :
-            Node(style, cFlavourInner, cLimitsDisplayLimits),
+            Node(style, cFlavourInner, cLimitsDisplayLimits, colour),
             mLeftDelimiter(leftDelimiter),
             mRightDelimiter(rightDelimiter),
             mChild(child)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual void Optimise();
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -475,12 +520,17 @@ namespace LayoutTree
         // The expression under the radical.
         std::auto_ptr<Node> mChild;
 
-        Sqrt(std::auto_ptr<Node> child) :
-            Node(child->mStyle, cFlavourOrd, cLimitsDisplayLimits),
+        Sqrt(
+            std::auto_ptr<Node> child,
+            RGBColour colour
+        ) :
+            Node(child->mStyle, cFlavourOrd, cLimitsDisplayLimits, colour),
             mChild(child)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual void Optimise();
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -502,14 +552,17 @@ namespace LayoutTree
 
         Root(
             std::auto_ptr<Node> inside,
-            std::auto_ptr<Node> outside
+            std::auto_ptr<Node> outside,
+            RGBColour colour
         ) :
-            Node(inside->mStyle, cFlavourOrd, cLimitsDisplayLimits),
+            Node(inside->mStyle, cFlavourOrd, cLimitsDisplayLimits, colour),
             mInside(inside),
             mOutside(outside)
         { }
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual void Optimise();
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -541,14 +594,19 @@ namespace LayoutTree
         }
         mAlign;
 
-        Table(Style style) :
-            Node(style, cFlavourOrd, cLimitsDisplayLimits),
+        Table(
+            Style style,
+            RGBColour colour
+        ) :
+            Node(style, cFlavourOrd, cLimitsDisplayLimits, colour),
             mAlign(cAlignCentre)
         { }
 
         ~Table();
 
-        virtual std::auto_ptr<XmlNode> BuildMathmlTree(
+        virtual void Optimise();
+
+        virtual std::auto_ptr<MathmlNode> BuildMathmlTree(
             const MathmlOptions& options,
             const MathmlEnvironment& inheritedEnvironment,
             unsigned& nodeCount
@@ -571,18 +629,26 @@ struct MathmlEnvironment
     // The "displaystyle" and "scriptlevel" attributes.
     bool mDisplayStyle;
     int mScriptLevel;
+    
+    // The "mathcolor" attribute.
+    RGBColour mColour;
 
     MathmlEnvironment(
         bool displayStyle = false,
-        int scriptLevel = 0
+        int scriptLevel = 0,
+        RGBColour colour = 0
     ) :
         mDisplayStyle(displayStyle),
-        mScriptLevel(scriptLevel)
+        mScriptLevel(scriptLevel),
+        mColour(colour)
     { }
 
     // This constructor determines the displayStyle and scriptLevel settings
     // corresponding to the given TeX style.
-    MathmlEnvironment(LayoutTree::Node::Style style);
+    MathmlEnvironment(
+        LayoutTree::Node::Style style,
+        RGBColour colour
+    );
 };
 
 }

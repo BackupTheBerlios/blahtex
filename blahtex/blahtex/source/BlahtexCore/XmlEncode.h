@@ -1,4 +1,4 @@
-// File "md5Wrapper.cpp"
+// File "XmlEncode.h"
 //
 // blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
@@ -18,36 +18,25 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-#include "md5.h"
-#include <sstream>
-#include <iomanip>
+#ifndef BLAHTEX_XMLENCODE_H
+#define BLAHTEX_XMLENCODE_H
 
-using namespace std;
+#include <string>
+#include "Misc.h"
 
-string ComputeMd5(const string& input)
+namespace blahtex
 {
-    md5_state_s state;
-    unsigned char buf[16];
 
-    md5_init(&state);
+// Encodes the given string as XML using the supplied options.
+// (See Misc.h for explanation of EncodingOptions.)
+extern std::wstring XmlEncode(
+    const std::wstring& input,
+    const EncodingOptions& options
+);
 
-    md5_append(
-        &state,
-        reinterpret_cast<const md5_byte_t*>(input.c_str()),
-        input.size()
-    );
 
-    md5_finish(
-        &state,
-        reinterpret_cast<md5_byte_t*>(buf)
-    );
-
-    ostringstream result;
-    result << hex << setfill('0');
-    for (int i = 0; i < 16; i++)
-        result << setw(2) << static_cast<unsigned int>(buf[i]);
-
-    return result.str();
 }
+
+#endif
 
 // end of file @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

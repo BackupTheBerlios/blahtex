@@ -1,6 +1,6 @@
 // File "Manager.cpp"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -28,37 +28,6 @@ using namespace std;
 namespace blahtex
 {
 
-// String versions of the MathML mathvariant fonts.
-// (See enum MathmlFont in LayoutTree.h.)
-extern std::wstring gMathmlFontStrings[];
-
-// This function tests whether two STL sets are disjoint, assuming T has a
-// total ordering.
-// (You'd think the STL would have this, but I couldn't find it.)
-template<typename T> bool disjoint(
-    const std::set<T>& x,
-    const std::set<T>& y
-) {
-    if (x.empty() || y.empty())
-        return true;
-
-    typename std::set<T>::const_iterator p = x.begin(), q = y.begin();
-    while (true)
-    {
-        if (*p < *q)
-        {
-            if (++p == x.end())
-                return true;
-        }
-        else if (*q < *p)
-        {
-            if (++q == y.end())
-                return true;
-        }
-        else
-            return false;
-    }
-}
 
 // I don't entirely trust the wide versions of isalpha etc, so this
 // function does the job instead.
@@ -154,323 +123,6 @@ void Tokenise(const wstring& input, vector<wstring>& output)
     }
 }
 
-
-// The arrays gAmsmathCommands, gAmsfontsCommands and gAmssymbCommands list
-// all the commands which require additional latex packages to be loaded.
-// This information is used by Manager::GeneratePurifiedTex.
-
-wstring gAmsmathCommandsArray[] =
-{
-    L"\\text",
-    L"\\binom",
-    L"\\cfrac",
-    L"\\begin{matrix}",
-    L"\\begin{pmatrix}",
-    L"\\begin{bmatrix}",
-    L"\\begin{Bmatrix}",
-    L"\\begin{vmatrix}",
-    L"\\begin{Vmatrix}",
-    L"\\begin{cases}",
-    L"\\begin{aligned}",
-    L"\\begin{smallmatrix}",
-    L"\\overleftrightarrow",
-    L"\\boldsymbol",
-    L"\\And",
-    L"\\iint",
-    L"\\iiint",
-    L"\\iiiint",
-    L"\\varlimsup",
-    L"\\varliminf",
-    L"\\varinjlim",
-    L"\\varprojlim",
-    L"\\injlim",
-    L"\\projlim",
-    L"\\dotsb",
-    L"\\operatorname",
-    L"\\operatornamewithlimits",
-    L"\\lvert",
-    L"\\rvert",
-    L"\\lVert",
-    L"\\rVert",
-    L"\\substack",
-    L"\\overset",
-    L"\\underset",
-    L"\\mod",
-
-    // The following commands are all defined in regular latex, but amsmath
-    // redefines them to have slightly different properties:
-    //
-    //  * The text commands are modified so that the font size does not
-    //    change if they are used inside a formula.
-    //  * The "\dots" command adjusts the height of the dots depending on
-    //    the surrounding symbols.
-    //  * The "\colon" command gets some spacing adjustments.
-    //
-    // Therefore for consistency we include amsmath when these commands
-    // appear.
-    //
-    // (FIX: there are probably others that need to be here that I haven't
-    // put here yet.)
-    L"\\emph",
-    L"\\textit",
-    L"\\textbf",
-    L"\\textrm",
-    L"\\texttt",
-    L"\\textsf",
-    L"\\dots",
-    L"\\dotsb",
-    L"\\colon"
-};
-
-wstring gAmsfontsCommandsArray[] =
-{
-    L"\\mathbb",
-    L"\\mathfrak"
-};
-
-wstring gAmssymbCommandsArray[] =
-{
-    L"\\varkappa",
-    L"\\digamma",
-    L"\\beth",
-    L"\\gimel",
-    L"\\daleth",
-    L"\\Finv",
-    L"\\Game",
-    L"\\upharpoonright",
-    L"\\upharpoonleft",
-    L"\\downharpoonright",
-    L"\\downharpoonleft",
-    L"\\nleftarrow",
-    L"\\nrightarrow",
-    L"\\sqsupset",
-    L"\\sqsubset",
-    L"\\supsetneq",
-    L"\\subsetneq",
-    L"\\Vdash",
-    L"\\vDash",
-    L"\\lesssim",
-    L"\\nless",
-    L"\\ngeq",
-    L"\\nleq",
-    L"\\smallsmile",
-    L"\\smallfrown",
-    L"\\smallsetminus",
-    L"\\varnothing",
-    L"\\nmid",
-    L"\\square",
-    L"\\Box",
-    L"\\checkmark",
-    L"\\complement",
-    L"\\eth",
-    L"\\hslash",
-    L"\\mho",
-    L"\\circledR",
-    L"\\yen",
-    L"\\maltese",
-    L"\\ulcorner",
-    L"\\urcorner",
-    L"\\llcorner",
-    L"\\lrcorner",
-    L"\\dashrightarrow",
-    L"\\dasharrow",
-    L"\\dashleftarrow",
-    L"\\backprime",
-    L"\\vartriangle",
-    L"\\blacktriangle",
-    L"\\triangledown",
-    L"\\blacktriangledown",
-    L"\\blacksquare",
-    L"\\lozenge",
-    L"\\blacklozenge",
-    L"\\circledS",
-    L"\\bigstar",
-    L"\\sphericalangle",
-    L"\\measuredangle",
-    L"\\diagup",
-    L"\\diagdown",
-    L"\\Bbbk",
-    L"\\dotplus",
-    L"\\ltimes",
-    L"\\rtimes",
-    L"\\Cap",
-    L"\\leftthreetimes",
-    L"\\rightthreetimes",
-    L"\\Cup",
-    L"\\barwedge",
-    L"\\curlywedge",
-    L"\\veebar",
-    L"\\curlyvee",
-    L"\\doublebarwedge",
-    L"\\boxminus",
-    L"\\circleddash",
-    L"\\boxtimes",
-    L"\\circledast",
-    L"\\boxdot",
-    L"\\circledcirc",
-    L"\\boxplus",
-    L"\\centerdot",
-    L"\\divideontimes",
-    L"\\intercal",
-    L"\\leqq",
-    L"\\geqq",
-    L"\\leqslant",
-    L"\\geqslant",
-    L"\\eqslantless",
-    L"\\eqslantgtr",
-    L"\\gtrsim",
-    L"\\lessapprox",
-    L"\\gtrapprox",
-    L"\\approxeq",
-    L"\\eqsim",
-    L"\\lessdot",
-    L"\\gtrdot",
-    L"\\lll",
-    L"\\ggg",
-    L"\\lessgtr",
-    L"\\gtrless",
-    L"\\lesseqgtr",
-    L"\\gtreqless",
-    L"\\lesseqqgtr",
-    L"\\gtreqqless",
-    L"\\doteqdot",
-    L"\\eqcirc",
-    L"\\risingdotseq",
-    L"\\circeq",
-    L"\\fallingdotseq",
-    L"\\triangleq",
-    L"\\backsim",
-    L"\\thicksim",
-    L"\\backsimeq",
-    L"\\thickapprox",
-    L"\\subseteqq",
-    L"\\supseteqq",
-    L"\\Subset",
-    L"\\Supset",
-    L"\\preccurlyeq",
-    L"\\succcurlyeq",
-    L"\\curlyeqprec",
-    L"\\curlyeqsucc",
-    L"\\precsim",
-    L"\\succsim",
-    L"\\precapprox",
-    L"\\succapprox",
-    L"\\vartriangleleft",
-    L"\\vartriangleright",
-    L"\\Vvdash",
-    L"\\shortmid",
-    L"\\shortparallel",
-    L"\\bumpeq",
-    L"\\between",
-    L"\\Bumpeq",
-    L"\\varpropto",
-    L"\\backepsilon",
-    L"\\blacktriangleleft",
-    L"\\blacktriangleright",
-    L"\\therefore",
-    L"\\because",
-    L"\\ngtr",
-    L"\\nleqslant",
-    L"\\ngeqslant",
-    L"\\nleqq",
-    L"\\ngeqq",
-    L"\\lneqq",
-    L"\\gneqq",
-    L"\\lvertneqq",
-    L"\\gvertneqq",
-    L"\\lnsim",
-    L"\\gnsim",
-    L"\\lnapprox",
-    L"\\gnapprox",
-    L"\\nprec",
-    L"\\nsucc",
-    L"\\npreceq",
-    L"\\nsucceq",
-    L"\\precneqq",
-    L"\\succneqq",
-    L"\\precnsim",
-    L"\\succnsim",
-    L"\\precnapprox",
-    L"\\succnapprox",
-    L"\\nsim",
-    L"\\ncong",
-    L"\\nshortmid",
-    L"\\nshortparallel",
-    L"\\nmid",
-    L"\\nparallel",
-    L"\\nvdash",
-    L"\\nvDash",
-    L"\\nVdash",
-    L"\\nVDash",
-    L"\\ntriangleleft",
-    L"\\ntriangleright",
-    L"\\ntrianglelefteq",
-    L"\\ntrianglerighteq",
-    L"\\nsubseteq",
-    L"\\nsupseteq",
-    L"\\nsubseteqq",
-    L"\\nsupseteqq",
-    L"\\subsetneq",
-    L"\\supsetneq",
-    L"\\varsubsetneq",
-    L"\\varsupsetneq",
-    L"\\subsetneqq",
-    L"\\supsetneqq",
-    L"\\varsubsetneqq",
-    L"\\varsupsetneqq",
-    L"\\leftleftarrows",
-    L"\\rightrightarrows",
-    L"\\leftrightarrows",
-    L"\\rightleftarrows",
-    L"\\Lleftarrow",
-    L"\\Rrightarrow",
-    L"\\twoheadleftarrow",
-    L"\\twoheadrightarrow",
-    L"\\leftarrowtail",
-    L"\\rightarrowtail",
-    L"\\looparrowleft",
-    L"\\looparrowright",
-    L"\\leftrightharpoons",
-    L"\\rightleftharpoons",
-    L"\\curvearrowleft",
-    L"\\curvearrowright",
-    L"\\circlearrowleft",
-    L"\\circlearrowright",
-    L"\\Lsh",
-    L"\\Rsh",
-    L"\\upuparrows",
-    L"\\downdownarrows",
-    L"\\multimap",
-    L"\\rightsquigarrow",
-    L"\\leftrightsquigarrow",
-    L"\\nLeftarrow",
-    L"\\nRightarrow",
-    L"\\nleftrightarrow",
-    L"\\nLeftrightarrow",
-    L"\\pitchfork",
-    L"\\nexists",
-    L"\\lhd",
-    L"\\rhd",
-    L"\\unlhd",
-    L"\\unrhd",
-    L"\\Join",
-    L"\\leadsto"    
-};
-
-set<wstring> gAmsmathCommands(
-    gAmsmathCommandsArray,
-    END_ARRAY(gAmsmathCommandsArray)
-);
-
-set<wstring> gAmsfontsCommands(
-    gAmsfontsCommandsArray,
-    END_ARRAY(gAmsfontsCommandsArray)
-);
-
-set<wstring> gAmssymbCommands(
-    gAmssymbCommandsArray,
-    END_ARRAY(gAmssymbCommandsArray)
-);
 
 wstring Manager::gTexvcCompatibilityMacros =
 
@@ -633,6 +285,9 @@ wstring Manager::gStandardMacros =
     L"\\newcommand{\\biggReserved}     [1]{{\\bigg#1}}"
     L"\\newcommand{\\BigReserved}      [1]{{\\Big#1}}"
     L"\\newcommand{\\BiggReserved}     [1]{{\\Bigg#1}}"
+
+    L"\\newcommand{\\japReserved}     [1]{{\\jap{#1}}}"
+    L"\\newcommand{\\cyrReserved}     [1]{{\\cyr{#1}}}"
 ;
 
 vector<wstring> Manager::gStandardMacrosTokenised;
@@ -640,6 +295,9 @@ vector<wstring> Manager::gTexvcCompatibilityMacrosTokenised;
 
 Manager::Manager()
 {
+    if (sizeof(RGBColour) != 4)
+        throw runtime_error("The \"unsigned\" type is not 4 bytes wide!");
+
     // Tokenise the standard macros if it hasn't been done already.
 
     if (gTexvcCompatibilityMacrosTokenised.empty())
@@ -669,6 +327,8 @@ void Manager::ProcessInput(const wstring& input, bool texvcCompatibility)
         L"\\textbf",
         L"\\textsf",
         L"\\texttt",
+        L"\\jap",
+        L"\\cyr",
         L"\\emph",
         L"\\frac",
         L"\\mathrm",
@@ -684,7 +344,7 @@ void Manager::ProcessInput(const wstring& input, bool texvcCompatibility)
         L"\\Big",
         L"\\Bigg",
         L"\\overset",
-        L"\\underset"
+        L"\\underset",
         L"\\substack"
     };
     static wishful_hash_set<wstring> reservedCommandTable(
@@ -745,19 +405,17 @@ void Manager::ProcessInput(const wstring& input, bool texvcCompatibility)
     
     try
     {
-        mLayoutTree = mParseTree->BuildLayoutTree(
-            TexMathFont(),
-            LayoutTree::Node::cStyleText
-        );
+        TexProcessingState topState;
+        topState.mStyle = LayoutTree::Node::cStyleText;
+        topState.mColour = 0;
+        mLayoutTree = mParseTree->BuildLayoutTree(topState);
+        mLayoutTree->Optimise();
     }
     catch (Exception& e)
     {
         // Some types of error need to returned as MathML errors, not
         // parsing errors.
-        if (
-            e.GetCode() == L"InvalidNegation" ||
-            e.GetCode() == L"UnavailableSymbolFontCombination"
-        )
+        if (e.GetCode() == L"UnavailableSymbolFontCombination")
         {
             mHasDelayedMathmlError = true;
             mDelayedMathmlError = e;
@@ -768,160 +426,8 @@ void Manager::ProcessInput(const wstring& input, bool texvcCompatibility)
     }
 }
 
-// This is a helper struct used in CleanupFontAttributes (see below).
-struct Version1FontInfo
-{
-    wstring mFamily;
-    bool mIsItalic;
-    bool mIsBold;
 
-    Version1FontInfo(
-        const wstring& family,
-        bool isItalic,
-        bool isBold
-    ) :
-        mFamily(family),
-        mIsItalic(isItalic),
-        mIsBold(isBold)
-    { }
-};
-
-// This function walks an XML (MathML) tree, doing two things:
-//
-// (1) Removes extraneous font attributes. For example, if it sees something
-//     like
-//           <mi mathvariant="italic">X</mi>
-//     then the mathvariant="italic" is redundant, so it gets removed.
-//
-// (2) Converts MathML version 2 font attributes to version 1 attributes
-//     (if the mathmlVersion1FontAttributes flag is set).
-//
-//     Rationale: it's much easier to just insert all the mathvariant
-//     attributes without thinking about MathML defaults or about MathML
-//     versions while we're actually building the MathML tree, and then
-//     coming back to fix it all up later. It's a bit inefficient, but hey.
-
-void CleanupFontAttributes(XmlNode* node, bool mathmlVersion1FontAttributes)
-{
-    // This array describes how to translate each mathvariant setting
-    // into MathML version 1 attributes.
-
-    static pair<wstring, Version1FontInfo> version1Array[] =
-    {
-        make_pair(L"normal",
-            Version1FontInfo(L"", false, false)),
-
-        make_pair(L"bold",
-            Version1FontInfo(L"", false, true)),
-
-        make_pair(L"italic",
-            Version1FontInfo(L"", true,  false)),
-
-        make_pair(L"bold-italic",
-            Version1FontInfo(L"", true,  true)),
-
-        make_pair(L"sans-serif",
-            Version1FontInfo(L"sans-serif", false, false)),
-
-        make_pair(L"bold-sans-serif",
-            Version1FontInfo(L"sans-serif", false, true)),
-
-        make_pair(L"sans-serif-italic",
-            Version1FontInfo(L"sans-serif", true,  false)),
-
-        make_pair(L"sans-serif-bold-italic",
-            Version1FontInfo(L"sans-serif", true,  true)),
-
-        make_pair(L"monospace",
-            Version1FontInfo(L"monospace", false, false))
-    };
-
-    static wishful_hash_map<wstring, Version1FontInfo> version1Table(
-        version1Array,
-        END_ARRAY(version1Array)
-    );
-
-    if (node->mType == XmlNode::cTag)
-    {
-        map<wstring, wstring>::iterator
-            search = node->mAttributes.find(L"mathvariant");
-        if (search != node->mAttributes.end())
-        {
-            if (search->second == L"")
-                node->mAttributes.erase(search);
-            else
-            {
-                MathmlFont defaultMathmlFont;
-                bool defaultItalic;
-
-                // Work out what the default mathvariant and fontstyle
-                // settings would be for this node.
-                if (node->mText == L"mi"
-                    && node->mChildren.front()->mText.size() == 1
-                )
-                {
-                    defaultMathmlFont = cMathmlFontItalic;
-                    defaultItalic = true;
-                }
-                else
-                {
-                    defaultMathmlFont = cMathmlFontNormal;
-                    defaultItalic = false;
-                }
-
-                if (mathmlVersion1FontAttributes)
-                {
-                    wishful_hash_map
-                        <wstring, Version1FontInfo>::const_iterator
-                        lookup = version1Table.find(search->second);
-
-                    if (lookup == version1Table.end())
-                    {
-                        // FIX: the only time we might end up here is when
-                        // we have a fraktur digit. TeX has decent fraktur
-                        // digits, but unicode doesn't seem to list them.
-                        // Therefore we can't access them with version 1
-                        // font attributes, so let's just map it to bold
-                        // instead.
-                        lookup = version1Table.find(L"bold");
-                    }
-
-                    node->mAttributes.erase(search);
-
-                    if (!lookup->second.mFamily.empty())
-                        node->mAttributes[L"fontfamily"]
-                            = lookup->second.mFamily;
-
-                    if (lookup->second.mIsItalic != defaultItalic)
-                        node->mAttributes[L"fontstyle"]
-                            = lookup->second.mIsItalic
-                            ? L"italic" : L"normal";
-
-                    if (lookup->second.mIsBold)
-                        node->mAttributes[L"fontweight"] = L"bold";
-                }
-                else
-                {
-                    if (gMathmlFontStrings[defaultMathmlFont]
-                        == search->second
-                    )
-                        // Erase "mathvariant" if its redundant.
-                        node->mAttributes.erase(search);
-                }
-            }
-        }
-
-        // Recursively traverse the tree.
-        for (list<XmlNode*>::iterator
-            child = node->mChildren.begin();
-            child != node->mChildren.end();
-            child++
-        )
-            CleanupFontAttributes(*child, mathmlVersion1FontAttributes);
-    }
-}
-
-auto_ptr<XmlNode> Manager::GenerateMathml(
+auto_ptr<MathmlNode> Manager::GenerateMathml(
     const MathmlOptions& options
 ) const
 {
@@ -942,16 +448,15 @@ auto_ptr<XmlNode> Manager::GenerateMathml(
     // Build the MathML tree. The nodeCount variables counts the number
     // of nodes being generated; if too many appear, an exception is thrown.
     unsigned nodeCount = 0;
-    auto_ptr<XmlNode> root = mLayoutTree->BuildMathmlTree(
+    auto_ptr<MathmlNode> root = mLayoutTree->BuildMathmlTree(
         optionsCopy,
-        LayoutTree::Node::cStyleText,
+        MathmlEnvironment(LayoutTree::Node::cStyleText, RGBColour(0)),
         nodeCount
     );
 
-    CleanupFontAttributes(root.get(), options.mUseVersion1FontAttributes);
-
     return root;
 }
+
 
 wstring Manager::GeneratePurifiedTex(
     const PurifiedTexOptions& options
@@ -963,70 +468,74 @@ wstring Manager::GeneratePurifiedTex(
         );
 
     wostringstream os;
-    mParseTree->GetPurifiedTex(os, options);
+    LatexFeatures features;
+    mParseTree->GetPurifiedTex(os, features, cFontEncodingDefault);
     wstring latex = os.str();
+    
+    if (features.mNeedsX2 || features.mNeedsCJK)
+    {
+        features.mNeedsUcs = true;
+        features.mNeedsAmsmath = true;      // for the "\text" command
+    }
+    
+    // Generate purified tex output
 
-    // Work out which commands appeared in the purified TeX output, so we
-    // can work out which LaTeX packages need to be included.
-
-    vector<wstring> tokens;
-    Tokenise(latex, tokens);
-
-    set<wstring> commands;
-    for (vector<wstring>::iterator
-        p = tokens.begin();
-        p != tokens.end();
-        p++
-    )
-        if (!p->empty() && (*p)[0] == L'\\')
-            commands.insert(*p);
-
-    wstring output =
+    wostringstream output;
+    
+    output << 
         L"\\nonstopmode\n"
         L"\\documentclass[12pt]{article}\n";
+    
+    if (features.mNeedsAmsmath)
+        output << L"\\usepackage{amsmath}\n";
+    if (features.mNeedsAmsfonts)
+        output << L"\\usepackage{amsfonts}\n";
+    if (features.mNeedsAmssymb)
+        output << L"\\usepackage{amssymb}\n";
+    if (features.mNeedsColor)
+        output << L"\\usepackage[dvips,usenames]{color}\n";
 
-    if (!disjoint(commands, gAmsmathCommands))
-        output += L"\\usepackage{amsmath}\n";
-    if (!disjoint(commands, gAmsfontsCommands))
-        output += L"\\usepackage{amsfonts}\n";
-    if (!disjoint(commands, gAmssymbCommands))
-        output += L"\\usepackage{amssymb}\n";
-    if (commands.count(L"\\unichar"))
-        output += L"\\usepackage{ucs}\n";
-
-    if (options.mComputeVerticalShift)
+    if (features.mNeedsUcs)
     {
-        output +=
-            L"\\pagestyle{empty}\n"
-            L"\\begin{document}\n"
-            // The idea here is to add a single dark pixel to the left of
-            // the output PNG, which is located on the baseline. Then we
-            // can scan for that pixel to determine the vertical alignment
-            // (<png><vshift> output field).
-            L"\\hbox{\\vrule height 0.4pt depth 0pt width 0.5pt"
-            L"\\hbox to 0.7pt{}$";
-        
-        output += latex;
-        
-        output +=
-            L"\n$}\n"
-            L"\\end{document}\n";
-    }
-    else
-    {
-        output +=
-            L"\\pagestyle{empty}\n"
-            L"\\begin{document}\n"
-            L"$\n";
-
-        output += latex;
-
-        output +=
-            L"\n$\n"
-            L"\\end{document}\n";
+        if (!options.mAllowUcs)
+            throw Exception(L"LatexPackageUnavailable", L"ucs");
+            
+        output << L"\\usepackage[utf8x]{inputenc}\n";
     }
 
-    return output;
+    if (features.mNeedsX2)
+        output <<
+            L"\\usepackage[X2,T1]{fontenc}\n"
+            L"\\newcommand{\\cyr}[1]{\\text{"
+            L"\\bgroup\\fontencoding{X2}\\selectfont #1\\egroup}}\n";
+
+    if (features.mNeedsCJK)
+    {
+        if (!options.mAllowCJK)
+            throw Exception(L"LatexPackageUnavailable", L"CJK");
+            
+        output << L"\\usepackage{CJK}\n";
+
+        if (features.mNeedsJapaneseFont)
+        {
+            if (options.mJapaneseFont.empty())
+                throw Exception(L"LatexFontNotSpecified", L"japanese");
+            
+            output
+                << L"\\newcommand{\\jap}[1]{\\text{\\begin{CJK}{UTF8}{"
+                << options.mJapaneseFont
+                << L"}#1\\end{CJK}}}\n";
+        }
+    }
+
+    output << L"\\usepackage[active]{preview}\n";
+    output << L"\\begin{document}\n";
+    output << L"\\begin{preview}\n";
+    output << L"$\n" << latex << L"\n$\n";
+    output << L"\\end{preview}\n";
+    output << L"\\end{document}\n";
+    
+    return output.str();
 }
 
 }

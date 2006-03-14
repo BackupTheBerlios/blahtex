@@ -1,6 +1,6 @@
 // File "LayoutTree.cpp"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -24,7 +24,7 @@
 #include <list>
 #include <set>
 #include <map>
-#include "XmlNode.h"
+#include "MathmlNode.h"
 #include "LayoutTree.h"
 
 using namespace std;
@@ -32,27 +32,12 @@ using namespace std;
 namespace blahtex
 {
 
-// Strings for each MathML "mathvariant" value.
-wstring gMathmlFontStrings[] =
+MathmlEnvironment::MathmlEnvironment(
+    LayoutTree::Node::Style style,
+    RGBColour colour
+)
 {
-    L"normal",
-    L"bold",
-    L"italic",
-    L"bold-italic",
-    L"double-struck",
-    L"bold-fraktur",
-    L"script",
-    L"bold-script",
-    L"fraktur",
-    L"sans-serif",
-    L"bold-sans-serif",
-    L"sans-serif-italic",
-    L"sans-serif-bold-italic",
-    L"monospace"
-};
-
-MathmlEnvironment::MathmlEnvironment(LayoutTree::Node::Style style)
-{
+    mColour = colour;
     mDisplayStyle = (style == LayoutTree::Node::cStyleDisplay);
 
     switch (style)
@@ -78,6 +63,16 @@ MathmlEnvironment::MathmlEnvironment(LayoutTree::Node::Style style)
     }
 }
 
+
+bool operator== (const MathmlEnvironment& x, const MathmlEnvironment& y)
+{
+    return 
+        (x.mDisplayStyle == y.mDisplayStyle) &&
+        (x.mScriptLevel == y.mScriptLevel) &&
+        (x.mColour == y.mColour);
+}
+
+
 namespace LayoutTree
 {
 
@@ -102,23 +97,6 @@ Table::~Table()
             delete *q;
 }
 
-// This function is applied to nodes like "<msqrt>" and "<mstyle>" which
-// have a variable number of children. If the given node has a single
-// <mrow> as a child, then we can simplify the tree by removing the <mrow>.
-//
-// For example, it converts <msqrt><mrow><mi>x</mi></mrow></msqrt> into
-// the simpler <msqrt><mi>x</mi></msqrt>.
-void CollapseMrow(XmlNode& node)
-{
-    if (!node.mChildren.empty() && node.mChildren.front()->mText == L"mrow")
-    {
-        list<XmlNode*> temp;
-        temp.swap(node.mChildren.front()->mChildren);
-        delete node.mChildren.front();
-        node.mChildren.clear();
-        node.mChildren.swap(temp);
-    }
-}
 
 void IncrementNodeCount(unsigned& nodeCount)
 {
@@ -126,409 +104,463 @@ void IncrementNodeCount(unsigned& nodeCount)
         throw Exception(L"TooManyMathmlNodes");
 }
 
-// This function inserts <mstyle> nodes where appropriate. It compares
-// sourceEnvironment to targetEnvironment; if the scriptlevel or
-// displaystyle attributes in targetEnvironment are different to those in
-// sourceEnvironment, it inserts an appropriate <mstyle> node whose child is
-// the given node; the <mstyle> node is the one returned.
-auto_ptr<XmlNode> InsertMstyle(
-    auto_ptr<XmlNode> node,
-    MathmlEnvironment sourceEnvironment,
-    MathmlEnvironment targetEnvironment
-)
-{
-    if (sourceEnvironment.mDisplayStyle == targetEnvironment.mDisplayStyle
-        && sourceEnvironment.mScriptLevel == targetEnvironment.mScriptLevel)
-        return node;
-
-    auto_ptr<XmlNode> newNode(new XmlNode(XmlNode::cTag, L"mstyle"));
-    newNode->mChildren.push_back(node.release());
-
-    if (sourceEnvironment.mDisplayStyle != targetEnvironment.mDisplayStyle)
-        newNode->mAttributes[L"displaystyle"] =
-            (targetEnvironment.mDisplayStyle) ? L"true" : L"false";
-
-    if (sourceEnvironment.mScriptLevel != targetEnvironment.mScriptLevel)
-    {
-        wostringstream os;
-        os << targetEnvironment.mScriptLevel;
-        newNode->mAttributes[L"scriptlevel"] = os.str();
-    }
-
-    CollapseMrow(*newNode);
-    return newNode;
-}
 
 // This function obtains the core of a MathML expression. (See
 // "embellished operators" in the MathML spec.) This is used to find any
 // <mo> node which should have its "lspace" and/or "rspace" attributes set.
-XmlNode* GetCore(XmlNode* node)
+MathmlNode* GetCore(MathmlNode* node)
 {
     // FIX: this code is not quite right. It doesn't handle situations where
     // <mrow> or <mstyle> or something similar contain a single node which
-    // is an embellished operator.
+    // is an embellished operator. I don't think this really matters
+    // because I don't think these situations can actually arise, but
+    // maybe should be fixed just in case.
 
-    if (!node || node->mType == XmlNode::cString)
-        return node;
-
-    return (
-        node->mText == L"msup" ||
-        node->mText == L"msub" ||
-        node->mText == L"msubsup" ||
-        node->mText == L"mover" ||
-        node->mText == L"munder" ||
-        node->mText == L"munderover" ||
-        node->mText == L"mfrac"
-    )
-        ? GetCore(node->mChildren.front()) : node;
+    if (!node)
+        return NULL;
+    
+    switch (node->mType)
+    {
+        case MathmlNode::cTypeMsub:
+        case MathmlNode::cTypeMsup:
+        case MathmlNode::cTypeMsubsup:
+        case MathmlNode::cTypeMunder:
+        case MathmlNode::cTypeMover:
+        case MathmlNode::cTypeMunderover:
+            return GetCore(node->mChildren.front());
+        
+        default:
+            return node;
+    }
 }
 
-auto_ptr<XmlNode> Row::BuildMathmlTree(
+
+// Converts an RGBColour to "#rrggbb" format.
+wstring FormatColour(RGBColour colour)
+{
+    wostringstream os;
+    os << L"#" << hex << setfill(L'0') << setw(6) << colour;
+    return os.str();
+}
+
+
+// This function compares sourceEnvironment to targetEnvironment. It then
+// modifies "node" by inserting appropriate attributes or possibly an
+// <mstyle> node, so that the node receives the desired "target
+// environment", assuming that it inherited the indicated "source
+// environment".
+
+// FIX: sometimes firefox doesn't get the scriptlevel correct for
+// tables. (see mozilla bug 328141). So for the moment, we force an
+// extra <mstyle> node around every table to handle the scriptlevel.
+#define MOZILLA_BUG_328141_WORKAROUND 1
+
+auto_ptr<MathmlNode> AdjustMathmlEnvironment(
+    auto_ptr<MathmlNode> node,
+    MathmlEnvironment sourceEnvironment,
+    MathmlEnvironment targetEnvironment
+)
+{
+    if (
+        sourceEnvironment.mDisplayStyle == targetEnvironment.mDisplayStyle
+        && sourceEnvironment.mScriptLevel == targetEnvironment.mScriptLevel
+        && sourceEnvironment.mColour == targetEnvironment.mColour
+#if MOZILLA_BUG_328141_WORKAROUND
+        && node->mType != MathmlNode::cTypeMtable
+#endif
+    )
+        return node;
+
+    auto_ptr<MathmlNode> newNode(new MathmlNode(MathmlNode::cTypeMstyle));
+
+    if (sourceEnvironment.mDisplayStyle != targetEnvironment.mDisplayStyle)
+    {
+        if (node->mType == MathmlNode::cTypeMtable)
+        {
+            // Special case if the node in question is <mtable>, because
+            // the MathML spec says that the displaystyle attribute needs
+            // to be set on the <mtable> element itself, since the default
+            // "false" overrides any enclosing <mstyle>.
+            node->mAttributes[MathmlNode::cAttributeDisplaystyle] =
+                (targetEnvironment.mDisplayStyle) ? L"true" : L"false";
+        }
+        else
+        {
+            newNode->mAttributes[MathmlNode::cAttributeDisplaystyle] =
+                (targetEnvironment.mDisplayStyle) ? L"true" : L"false";
+        }
+    }
+
+    if (
+        sourceEnvironment.mScriptLevel != targetEnvironment.mScriptLevel
+#if MOZILLA_BUG_328141_WORKAROUND
+        || node->mType == MathmlNode::cTypeMtable
+#endif
+    )
+    {
+        wostringstream os;
+        os << targetEnvironment.mScriptLevel;
+        newNode->mAttributes
+            [MathmlNode::cAttributeScriptlevel] = os.str();
+    }
+
+    if (sourceEnvironment.mColour != targetEnvironment.mColour)
+    {
+        // If the child is a token element, we can just add mathcolor
+        // directly
+        switch (node->mType)
+        {
+            case MathmlNode::cTypeMi:
+            case MathmlNode::cTypeMo:
+            case MathmlNode::cTypeMn:
+            case MathmlNode::cTypeMtext:
+                node->mAttributes[MathmlNode::cAttributeMathcolor] =
+                    FormatColour(targetEnvironment.mColour);
+                break;
+                
+            default:
+                newNode->mAttributes[MathmlNode::cAttributeMathcolor] =
+                    FormatColour(targetEnvironment.mColour);
+                break;
+        }
+    }
+
+    if (newNode->mAttributes.empty())
+        // In some cases we don't actually need an <mstyle> node, and just
+        // return the original node. (This can happen if either (1) the
+        // child is an <mtable> where only the displaystyle got modified,
+        // or (2) it was a token element and only the colour got modified.)
+        return node;
+
+    if (node->mType == MathmlNode::cTypeMrow)
+        // If the child is an mrow, we can splice it out
+        newNode->mChildren.swap(node->mChildren);
+    else
+        newNode->mChildren.push_back(node.release());
+    
+    return newNode;
+}
+
+
+auto_ptr<MathmlNode> Row::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
 ) const
 {
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mrow"));
+    // The strategy is:
+    // First write each output node to "outputNode", but simultaneously
+    // keep a list of MathmlEnvironments corresponding to the desired
+    // environment for each node. Then, do a second pass inserting <mstyle>
+    // nodes to implement those desired environments.
+    
+    auto_ptr<MathmlNode> outputNode(new MathmlNode(MathmlNode::cTypeMrow));
+    list<MathmlNode*>& outputList = outputNode->mChildren;
+        
     IncrementNodeCount(nodeCount);
-
+    
     if (mChildren.empty())
-        return node;
+        return outputNode;
 
-    // Loop through children:
+    vector<MathmlEnvironment> environments;
+
     for (list<Node*>::const_iterator
-        child = mChildren.begin();
+        source = mChildren.begin();
         true;
-        child++
+        ++source
     )
     {
-        // The idea of this section is to get previousNode pointing to
-        // the most recent non-space node, and currentNode pointing to the
-        // next non-space node, and to collect information (spaceWidth
-        // and isUserRequested) about the amount of intervening space.
-
-        XmlNode* previousNode =
-            node->mChildren.empty() ? NULL : node->mChildren.back();
-
+        MathmlNode* previousTarget =
+            outputList.empty() ? NULL : outputList.back();
+    
         int spaceWidth = 0;
         bool isUserRequested = false;
 
-        for (; child != mChildren.end(); child++)
+        Space* sourceAsSpace =
+            (source == mChildren.end())
+                ? NULL : dynamic_cast<Space*>(*source);
+        if (sourceAsSpace)
         {
-            const Space* spaceNode = dynamic_cast<const Space*>(*child);
-            if (!spaceNode)
-                break;
-            spaceWidth += spaceNode->mWidth;
-            if (spaceNode->mIsUserRequested)
-                isUserRequested = true;
+            spaceWidth = sourceAsSpace->mWidth;
+            isUserRequested = sourceAsSpace->mIsUserRequested;
+            source++;
         }
-
-        auto_ptr<XmlNode> currentNode;
-        if (child != mChildren.end())
-            currentNode = (*child)->BuildMathmlTree(
-                options, MathmlEnvironment(mStyle), nodeCount
+        
+        MathmlNode* currentTarget = NULL;
+        if (source != mChildren.end())
+        {
+            environments.push_back(
+                MathmlEnvironment((*source)->mStyle, (*source)->mColour)
             );
 
-        // merged indicates whether we merged the two nodes together.
-        bool merged = false;
+            outputList.push_back(
+                (*source)->BuildMathmlTree(
+                    options,
+                    environments.back(),
+                    nodeCount
+                ).release()
+            );
+            
+            currentTarget = outputList.back();
+        }
+        
+        // Now decide about whether to insert markup for the
+        // space between currentNode and previousNode.
 
-        // If there is no space, we need to consider all the possible ways
-        // of merging adjacent nodes. For example, two adjacent <mi>
-        // nodes in upright roman font should be merged (to obtain things
-        // like <mi>sin</mi>).
-        //
-        // At this point we're not concerned with MathML default fonts;
-        // this gets fixed by CleanupFontAttributes() later on.
+        MathmlNode*  currentNucleus = GetCore(currentTarget);
+        MathmlNode* previousNucleus = GetCore(previousTarget);
 
-        // FIX: one day, when I could be bothered, need to also consider
-        // merging into bases of sub/superscripts....
-        // that's going to be quite a painful piece of code.
+        bool isPreviousMo =
+            previousNucleus &&
+            (previousNucleus->mType == MathmlNode::cTypeMo);
 
-        if (spaceWidth == 0 && previousNode && currentNode.get())
+        bool isCurrentMo =
+            currentNucleus &&
+            (currentNucleus->mType == MathmlNode::cTypeMo);
+
+        bool doSpace = false;
+
+        if (
+            options.mSpacingControl
+                == MathmlOptions::cSpacingControlStrict
+            || isUserRequested
+        )
+            doSpace = true;
+
+        else if (options.mSpacingControl ==
+            MathmlOptions::cSpacingControlModerate
+        )
         {
-            if (
-                (
-                    previousNode->mText == L"mn" ||
-                    previousNode->mText == L"mtext"
-                ) &&
-                currentNode->mText == previousNode->mText
-                &&
-                previousNode->mAttributes[L"mathvariant"]
-                    == currentNode->mAttributes[L"mathvariant"]
-            )
-            {
-                previousNode->mChildren.front()->mText
-                    += currentNode->mChildren.front()->mText;
-                merged = true;
-            }
-            else if (
-                previousNode->mText == L"mi" && currentNode->mText == L"mi"
-                &&
-                previousNode->mAttributes[L"mathvariant"] == L"normal" &&
-                currentNode ->mAttributes[L"mathvariant"] == L"normal"
-            )
-            {
-                previousNode->mChildren.front()->mText
-                    += currentNode->mChildren.front()->mText;
-                merged = true;
-            }
+            // The user has asked for "moderate" spacing mode, so we
+            // need to give the MathML renderer a helping hand with
+            // spacing decisions, without being *too* pushy.
+
+            // This section of code is likely to change a LOT.
+            
+            // Note: I scratched most of this as of blahtex 0.4.4....
+            // it was getting really ugly and I need to think of another
+            // way to do it
+
+            if (!isPreviousMo && !isCurrentMo)
+                doSpace = (spaceWidth != 0);
         }
 
-        // FIX: what to do about negative spaces?
-
-        if (!merged)
+        if (doSpace)
         {
-            // We didn't merge the nodes, so:
+            // We have established that we want to mark up some space,
+            // now need to decide how to do it.
 
-            // Now decide about whether (and how) to insert markup for the
-            // space between currentNode and previousNode.
+            // We use <mspace>, unless we have an <mo> node on either
+            // side (or both sides), in which case we use "lspace"
+            // and/or "rspace" attributes.
 
-            XmlNode*  currentNucleus = GetCore(currentNode.get());
-            XmlNode* previousNucleus = GetCore(previousNode);
-
-            bool isPreviousMo = false, isCurrentMo = false;
-            bool isPreviousMi = false, isCurrentMi = false;
-
-            if (previousNucleus)
+            wstring widthAsString;
+            if (spaceWidth == 0)
+                widthAsString = L"0";
+            else
             {
-                if (previousNucleus->mText == L"mo")
-                    isPreviousMo = true;
-                else if (previousNucleus->mText == L"mi")
-                    isPreviousMi = true;
+                wostringstream wos;
+                wos << fixed << setprecision(3)
+                    << (spaceWidth / 18.0) << L"em";
+                widthAsString = wos.str();
             }
 
-            if (currentNucleus)
+            if (isPreviousMo)
             {
-                if (currentNucleus->mText == L"mo")
-                    isCurrentMo = true;
-                else if (currentNucleus->mText == L"mi")
-                    isCurrentMi = true;
+                previousNucleus->mAttributes
+                    [MathmlNode::cAttributeRspace] = widthAsString;
+                if (isCurrentMo)
+                    currentNucleus->mAttributes
+                        [MathmlNode::cAttributeLspace] = L"0";
             }
-
-            // doSpace is true if we decide to add markup for the space.
-            // Our first job is to decide whether doSpace should be set.
-            bool doSpace = false;
-
-            if (
-                options.mSpacingControl
-                    == MathmlOptions::cSpacingControlStrict
-                || isUserRequested
-            )
-                doSpace = true;
-
-            else if (options.mSpacingControl ==
-                MathmlOptions::cSpacingControlModerate
-            )
+            else if (isCurrentMo)
+                currentNucleus->mAttributes
+                    [MathmlNode::cAttributeLspace] = widthAsString;
+            else
             {
-                // The user has asked for "moderate" spacing mode, so we
-                // need to give the MathML renderer a helping hand with
-                // spacing decisions, without being *too* pushy.
+                // FIX: this <mi>-specific stuff is a nasty hack because
+                // Firefox likes to mess around with the space between
+                // adjacent <mi> nodes in some situations.
+                // See https://bugzilla.mozilla.org/show_bug.cgi?id=320294
 
-                // This section of code is likely to change a LOT.
+                bool isPreviousMi =
+                    previousNucleus &&
+                    (previousNucleus->mType == MathmlNode::cTypeMi);
 
-                // Special-casing for neighbouring <mi> nodes, since
-                // Firefox sometimes likes to put extra space between them:
-                if (
-                    isPreviousMi && isCurrentMi &&
-                    !(
-                         currentNucleus->mAttributes[L"mathvariant"]
-                            == L"italic"
-                        &&
-                        previousNucleus->mAttributes[L"mathvariant"]
-                            == L"italic"
-                    )
-                )
-                    doSpace = true;
+                bool isCurrentMi =
+                    currentNucleus &&
+                    (currentNucleus->mType == MathmlNode::cTypeMi);
 
-                else if (!isPreviousMo && !isCurrentMo)
-                    doSpace = (spaceWidth != 0);
-
-                // Special-casing for the "&times;" operator (since Firefox
-                // doesn't know that it's a binary operator):
-                else if (
-                    (
-                        isPreviousMo &&
-                        previousNucleus->mChildren.front()->mText
-                            == L"\U000000D7"
-                    ) ||
-                    (
-                        isCurrentMo &&
-                        currentNucleus->mChildren.front()->mText
-                            == L"\U000000D7"
-                    )
-                )
+                if (spaceWidth != 0 || (isPreviousMi && isCurrentMi))
                 {
-                    doSpace = true;
-                }
+                    auto_ptr<MathmlNode> spaceNode(
+                        new MathmlNode(MathmlNode::cTypeMspace)
+                    );
+                    IncrementNodeCount(nodeCount);
+                    spaceNode->mAttributes
+                        [MathmlNode::cAttributeWidth] = widthAsString;
 
-                else if (spaceWidth == 0)
-                {
-                    // Special-casing for zero space after ",", e.g. in a
-                    // situation like "65{,}536"
-                    if (isPreviousMo &&
-                        previousNucleus->mChildren.front()->mText == L","
-                    )
-                        doSpace = true;
-
-                    // Special-casing for neighbouring &prime; operators
-                    else if (
-                        (
-                            isPreviousMo &&
-                            previousNucleus->mChildren.front()->mText
-                                == L"\U00002032"
-                        ) &&
-                        (
-                            isCurrentMo &&
-                            currentNucleus->mChildren.front()->mText
-                                == L"\U00002032"
-                        )
-                    )
+                    if (currentTarget)
                     {
-                        doSpace = false;
+                        outputList.insert(
+                            --outputList.end(),
+                            spaceNode.release()
+                        );
+                        environments.push_back(environments.back());
                     }
                     else
                     {
-                        static wstring fenceArray[] =
-                            {L"(", L")", L"[", L"]", L"{", L"}"};
-                        static wishful_hash_set<wstring> fenceTable(
-                            fenceArray,
-                            END_ARRAY(fenceArray)
+                        outputList.push_back(spaceNode.release());
+                        environments.push_back(
+                            MathmlEnvironment(mStyle, mColour)
                         );
-
-                        if (isPreviousMo && isCurrentMo)
-                        {
-                            if (
-                                !fenceTable.count(
-                                    previousNucleus->
-                                        mChildren.front()->mText
-                                ) &&
-                                !fenceTable.count(
-                                    currentNucleus->
-                                        mChildren.front()->mText
-                                )
-                            )
-                            {
-                                // This handles the situation where there
-                                // are two operators, neither of which are
-                                // fences, which have no space between them,
-                                // e.g. "a := b".
-                                doSpace = true;
-                            }
-                        }
                     }
                 }
             }
-
-            if (doSpace)
-            {
-                // We have established that we want to mark up some space,
-                // now need to decide how to do it.
-
-                // We use <mspace>, unless we have an <mo> node on either
-                // side (or both sides), in which case we use "lspace"
-                // and/or "rspace" attributes.
-
-                wstring widthAsString;
-                if (spaceWidth == 0)
-                    widthAsString = L"0";
-                else
-                {
-                    wostringstream wos;
-                    wos << fixed << setprecision(3)
-                        << (spaceWidth / 18.0) << L"em";
-                    widthAsString = wos.str();
-                }
-
-                if (isPreviousMo)
-                {
-                    previousNucleus->mAttributes[L"rspace"] = widthAsString;
-                    if (isCurrentMo)
-                        currentNucleus->mAttributes[L"lspace"] = L"0";
-                }
-                else if (isCurrentMo)
-                    currentNucleus->mAttributes[L"lspace"] = widthAsString;
-                else
-                {
-                    if (spaceWidth != 0 || (isPreviousMi && isCurrentMi))
-                    {
-                        XmlNode* spaceNode =
-                            new XmlNode(XmlNode::cTag, L"mspace");
-                        IncrementNodeCount(nodeCount);
-                        spaceNode->mAttributes[L"width"] = widthAsString;
-                        node->mChildren.push_back(spaceNode);
-                    }
-                }
-            }
-
-            if (currentNode.get())
-                node->mChildren.push_back(currentNode.release());
         }
 
-        if (child == mChildren.end())
+        if (source == mChildren.end())
             break;
     }
 
-    // If only one child left, return it without enclosing <mrow> tags.
-    if (!node->mChildren.empty() &&
-        (++node->mChildren.begin() == node->mChildren.end())
+    // Now do second pass where styles get adjusted
+    list<MathmlNode*>::iterator outputPtr = outputList.end();
+    for (vector<MathmlEnvironment>::reverse_iterator
+        environment = environments.rbegin();
+        environment != environments.rend();
+        environment++
     )
     {
-        auto_ptr<XmlNode> singleton(node->mChildren.back());
-        node->mChildren.pop_back();     // required to relinquish ownership
-        node = singleton;
+        if (outputPtr != outputList.begin())
+            outputPtr--;
+        
+        if (environment == environments.rbegin())
+            continue;
+        
+        if (!(environment[-1] == environment[0]))
+        {
+            list<MathmlNode*>::iterator previousOutputPtr = outputPtr;
+            previousOutputPtr++;
+            
+            auto_ptr<MathmlNode> enclosedNode;
+            
+            if (--outputList.end() == previousOutputPtr)
+            {
+                // If outputPtr is already the last node, we don't need
+                // to create a new <mrow>
+                enclosedNode.reset(*previousOutputPtr);
+                outputList.pop_back();
+            }
+            else
+            {
+                enclosedNode.reset(new MathmlNode(MathmlNode::cTypeMrow));
+                enclosedNode->mChildren.splice(
+                    enclosedNode->mChildren.begin(),
+                    outputList,
+                    previousOutputPtr,
+                    outputList.end()
+                );
+            }
+            
+            outputList.push_back(
+                AdjustMathmlEnvironment(
+                    enclosedNode,
+                    environment[0],
+                    environment[-1]
+                ).release()
+            );
+        }
+    }
+    
+    // If the result is an <mrow> with a single child, just return the
+    // child by itself.
+    // (We don't use list::size() here because that's O(n) :-))
+    if (!outputNode->mChildren.empty() &&
+        outputNode->mChildren.front() == outputNode->mChildren.back()
+    )
+    {
+        MathmlNode* child = outputNode->mChildren.back();
+        outputNode->mChildren.pop_back();       // relinquish ownership
+        outputNode.reset(child);
     }
 
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
+    return AdjustMathmlEnvironment(
+        outputNode,
+        inheritedEnvironment,
+        environments[0]
     );
 }
 
-auto_ptr<XmlNode> Space::BuildMathmlTree(
-    const MathmlOptions& options,
-    const MathmlEnvironment& inheritedEnvironment,
-    unsigned& nodeCount
-) const
+
+// This function converts a "MathML styled text" plane-1 character from the
+// code point that it SHOULD be at to the code point that it REALLY is at.
+//
+// For example, the double-struck "C" (&Copf;) should be at U+1D53A, but for
+// historical reasons it ended up at U+2102.
+wchar_t FixOutOfSequenceMathmlCharacter(wchar_t c)
 {
-    if (!mIsUserRequested)
-        throw logic_error(
-            "Unexpected lonely automatic space in Space::BuildMathmlTree"
-        );
+    switch (c)
+    {
+        case L'\U0001D49D':   return L'\U0000212C';    // script B
+        case L'\U0001D4A0':   return L'\U00002130';    // script E
+        case L'\U0001D4A1':   return L'\U00002131';    // script F
+        case L'\U0001D4A3':   return L'\U0000210B';    // script H
+        case L'\U0001D4A4':   return L'\U00002110';    // script I
+        case L'\U0001D4A7':   return L'\U00002112';    // script L
+        case L'\U0001D4A8':   return L'\U00002133';    // script M
+        case L'\U0001D4AD':   return L'\U0000211B';    // script R
+        case L'\U0001D53A':   return L'\U00002102';    // double struck C
+        case L'\U0001D53F':   return L'\U0000210D';    // double struck H
+        case L'\U0001D545':   return L'\U00002115';    // double struck N
+        case L'\U0001D547':   return L'\U00002119';    // double struck P
+        case L'\U0001D548':   return L'\U0000211A';    // double struck Q
+        case L'\U0001D549':   return L'\U0000211D';    // double struck R
+        case L'\U0001D551':   return L'\U00002124';    // double struck Z
+        case L'\U0001D506':   return L'\U0000212D';    // fraktur C
+        case L'\U0001D50B':   return L'\U0000210C';    // fraktur H
+        case L'\U0001D50C':   return L'\U00002111';    // fraktur I
+        case L'\U0001D515':   return L'\U0000211C';    // fraktur R
+        case L'\U0001D51D':   return L'\U00002128';    // fraktur Z
+    }
 
-    // FIX: what happens with negative space?
-
-    wostringstream wos;
-    wos << fixed << setprecision(3) << (mWidth / 18.0) << L"em";
-
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mspace"));
-    IncrementNodeCount(nodeCount);
-    node->mAttributes[L"width"] = wos.str();
-
-    return node;
+    return c;
 }
 
-auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(
+
+auto_ptr<MathmlNode> SymbolIdentifier::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
 ) const
 {
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag,
-        (mText.size() == 1 && mText[0] >= L'0' && mText[0] <= '9')
-        ? L"mn" : L"mi"
-    ));
-
-    // FIX: what about merging commas, decimal points into <mn> nodes?
-    // Might need to special-case it.
-
+    auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMi, mText));
     IncrementNodeCount(nodeCount);
 
-    if (options.mUseVersion1FontAttributes && mText.size() == 1)
+    // Here we have a special case to deal with the "fancy" fonts
+    // (fraktur, script, bold-fraktur, bold-script, double-struck)
+    // when MathML version 1.x fonts are requested, since then we need
+    // to explicitly substitute MathML entities.
+    if (
+        options.mUseVersion1FontAttributes &&
+        (
+            mFont == cMathmlFontFraktur ||
+            mFont == cMathmlFontBoldFraktur ||
+            mFont == cMathmlFontDoubleStruck ||
+            mFont == cMathmlFontScript ||
+            mFont == cMathmlFontBoldScript
+        )
+    )
     {
-        // Here is where we work out that e.g. a fraktur A should become
-        // unicode 1D504. This is only necessary if the user has requested
-        // MathML version 1 font attributes.
-
+        if (mText.size() != 1)
+            throw logic_error(
+                "Unexpected string length in "
+                "SymbolIdentifier::BuildMathmlTree()"
+            );
+        
         wchar_t replacement = 0;
+
+        // These hold the explicit characters for "A" and "a" in the
+        // desired font (or zero if unavailable)
         wchar_t baseUppercase = 0, baseLowercase = 0;
 
         switch (mFont)
@@ -543,12 +575,11 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(
                 {
                     // If we don't have plane 1 characters available, then
                     // we'll just have to do e.g.
-                    // <mi mathvariant="bold">&Acal;</mi>
+                    // <mi fontweight="bold">&Acal;</mi>
                     // since there aren't specific MathML names for bold
                     // script capitals.
-                    // (This should later get converted to
-                    // <mi fontweight="bold">&Acal;</mi>).
-                    node->mAttributes[L"mathvariant"] = L"bold";
+                    node->mAttributes
+                        [MathmlNode::cAttributeFontweight] = L"bold";
                     baseUppercase = L'\U0001D49C';
                     break;
                 }
@@ -567,7 +598,8 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(
                 else
                 {
                     // See comments above under cMathmlFontBoldScript
-                    node->mAttributes[L"mathvariant"] = L"bold";
+                    node->mAttributes
+                        [MathmlNode::cAttributeFontweight] = L"bold";
                     baseUppercase = L'\U0001D504';
                     baseLowercase = L'\U0001D51E';
                     break;
@@ -588,76 +620,30 @@ auto_ptr<XmlNode> SymbolPlain::BuildMathmlTree(
         if (baseLowercase && mText[0] >= 'a' && mText[0] <= 'z')
             replacement = baseLowercase + (mText[0] - 'a');
 
-        // Here we handle all the out-of-sequence codes for things like
-        // the double-struck C representing the complex numbers
-        switch (replacement)
-        {
-            case L'\U0001D49D':
-                replacement = L'\U0000212C'; break;       // script B
-            case L'\U0001D4A0':
-                replacement = L'\U00002130'; break;       // script E
-            case L'\U0001D4A1':
-                replacement = L'\U00002131'; break;       // script F
-            case L'\U0001D4A3':
-                replacement = L'\U0000210B'; break;       // script H
-            case L'\U0001D4A4':
-                replacement = L'\U00002110'; break;       // script I
-            case L'\U0001D4A7':
-                replacement = L'\U00002112'; break;       // script L
-            case L'\U0001D4A8':
-                replacement = L'\U00002133'; break;       // script M
-            case L'\U0001D4AD':
-                replacement = L'\U0000211B'; break;       // script R
-
-            case L'\U0001D53A':
-                replacement = L'\U00002102'; break;       // double struck C
-            case L'\U0001D53F':
-                replacement = L'\U0000210D'; break;       // double struck H
-            case L'\U0001D545':
-                replacement = L'\U00002115'; break;       // double struck N
-            case L'\U0001D547':
-                replacement = L'\U00002119'; break;       // double struck P
-            case L'\U0001D548':
-                replacement = L'\U0000211A'; break;       // double struck Q
-            case L'\U0001D549':
-                replacement = L'\U0000211D'; break;       // double struck R
-            case L'\U0001D551':
-                replacement = L'\U00002124'; break;       // double struck Z
-
-            case L'\U0001D506':
-                replacement = L'\U0000212D'; break;       // fraktur C
-            case L'\U0001D50B':
-                replacement = L'\U0000210C'; break;       // fraktur H
-            case L'\U0001D50C':
-                replacement = L'\U00002111'; break;       // fraktur I
-            case L'\U0001D515':
-                replacement = L'\U0000211C'; break;       // fraktur R
-            case L'\U0001D51D':
-                replacement = L'\U00002128'; break;       // fraktur Z
-        }
-
-        if (replacement)
-        {
-            node->mChildren.push_back(
-                new XmlNode(XmlNode::cString, wstring(1, replacement))
+        if (!replacement)
+            throw logic_error(
+                "Unexpected character/font combination in "
+                "SymbolIdentifier::BuildMathmlTree()"
             );
-            IncrementNodeCount(nodeCount);
-            return InsertMstyle(
-                node, inheritedEnvironment, MathmlEnvironment(mStyle)
-            );
-        }
+
+        node->mText =
+            wstring(1, FixOutOfSequenceMathmlCharacter(replacement));
+
+        return AdjustMathmlEnvironment(
+            node,
+            inheritedEnvironment,
+            MathmlEnvironment(mStyle, mColour)
+        );
     }
 
-    node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
-    IncrementNodeCount(nodeCount);
-    node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
-
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
+    node->AddFontAttributes(mFont, options);
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, MathmlEnvironment(mStyle, mColour)
     );
 }
 
-auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(
+
+auto_ptr<MathmlNode> SymbolOperator::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
@@ -708,6 +694,20 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(
         END_ARRAY(stretchyByDefaultArray)
     );
 
+    // Special case for "\not":
+    if (mText == L"NOT")
+    {
+        auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMpadded));
+        auto_ptr<MathmlNode> space(new MathmlNode(MathmlNode::cTypeMspace));
+        space->mAttributes[MathmlNode::cAttributeWidth] = L"0.1em";
+        node->mChildren.push_back(space.release());
+        node->mChildren.push_back(
+            new MathmlNode(MathmlNode::cTypeMo, L"/")
+        );
+        node->mAttributes[MathmlNode::cAttributeWidth] = L"0";
+        return node;
+    }
+
     // And these are the characters that are accents by default;
     // again we may need to modify this explicitly.
     static wchar_t accentByDefaultArray[] =
@@ -720,54 +720,138 @@ auto_ptr<XmlNode> SymbolOperator::BuildMathmlTree(
         END_ARRAY(accentByDefaultArray)
     );
 
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
-    IncrementNodeCount(nodeCount);
-    node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
-    IncrementNodeCount(nodeCount);
-
-    if (mFont != cMathmlFontNormal)
-        node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
+    auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMo, mText));
 
     if (mIsStretchy)
     {
-        node->mAttributes[L"stretchy"] = L"true";
+        node->mAttributes[MathmlNode::cAttributeStretchy] = L"true";
         if (!mSize.empty())
-            node->mAttributes[L"minsize"] = node->mAttributes[L"maxsize"]
-                = mSize;
+            node->mAttributes[MathmlNode::cAttributeMinsize] =
+            node->mAttributes[MathmlNode::cAttributeMaxsize] = mSize;
     }
     else if (mText.size() == 1 && stretchyByDefaultTable.count(mText[0]))
-        node->mAttributes[L"stretchy"] = L"false";
+        node->mAttributes[MathmlNode::cAttributeStretchy] = L"false";
 
     if (mIsAccent)
     {
-        node->mAttributes[L"accent"] = L"true";
+        node->mAttributes[MathmlNode::cAttributeAccent] = L"true";
         return node;
     }
     else if (mText.size() == 1 && accentByDefaultTable.count(mText[0]))
-        node->mAttributes[L"accent"] = L"false";
+        node->mAttributes[MathmlNode::cAttributeAccent] = L"false";
 
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
+    node->AddFontAttributes(mFont, options);
+
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, MathmlEnvironment(mStyle, mColour)
     );
 }
 
-auto_ptr<XmlNode> SymbolText::BuildMathmlTree(
+
+auto_ptr<MathmlNode> SymbolNumber::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
 ) const
 {
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mtext"));
+    // FIX: what about merging commas, decimal points into <mn> nodes?
+    // Might need to special-case it.
+
+    auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMn, mText));
     IncrementNodeCount(nodeCount);
-    node->mAttributes[L"mathvariant"] = gMathmlFontStrings[mFont];
-    node->mChildren.push_back(new XmlNode(XmlNode::cString, mText));
-    IncrementNodeCount(nodeCount);
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
+    node->AddFontAttributes(mFont, options);
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, MathmlEnvironment(mStyle, mColour)
     );
 }
 
-auto_ptr<XmlNode> Scripts::BuildMathmlTree(
+
+auto_ptr<MathmlNode> SymbolText::BuildMathmlTree(
+    const MathmlOptions& options,
+    const MathmlEnvironment& inheritedEnvironment,
+    unsigned& nodeCount
+) const
+{
+    auto_ptr<MathmlNode> node(
+        new MathmlNode(MathmlNode::cTypeMtext, mText)
+    );
+    IncrementNodeCount(nodeCount);
+    node->AddFontAttributes(mFont, options);
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, MathmlEnvironment(mStyle, mColour)
+    );
+}
+
+
+auto_ptr<MathmlNode> Sqrt::BuildMathmlTree(
+    const MathmlOptions& options,
+    const MathmlEnvironment& inheritedEnvironment,
+    unsigned& nodeCount
+) const
+{
+    MathmlEnvironment desiredEnvironment(mStyle, mColour);
+
+    auto_ptr<MathmlNode> child =
+        mChild->BuildMathmlTree(
+            options, desiredEnvironment, nodeCount
+        );
+    
+    auto_ptr<MathmlNode> node;
+    
+    if (child->mType == MathmlNode::cTypeMrow)
+    {
+        // This removes redundant <mrow>s, i.e. things like
+        // <msqrt><mrow>...</mrow></msqrt>
+        node = child;
+        node->mType = MathmlNode::cTypeMsqrt;
+    }
+    else
+    {
+        node.reset(new MathmlNode(MathmlNode::cTypeMsqrt));
+        IncrementNodeCount(nodeCount);
+        node->mChildren.push_back(child.release());
+    }
+
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, desiredEnvironment
+    );
+}
+
+
+auto_ptr<MathmlNode> Root::BuildMathmlTree(
+    const MathmlOptions& options,
+    const MathmlEnvironment& inheritedEnvironment,
+    unsigned& nodeCount
+) const
+{
+    auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMroot));
+    IncrementNodeCount(nodeCount);
+
+    MathmlEnvironment desiredEnvironment(mStyle, mColour);
+
+    node->mChildren.push_back(
+        mInside->BuildMathmlTree(
+            options,
+            desiredEnvironment,
+            nodeCount
+        ).release()
+    );
+
+    node->mChildren.push_back(
+        mOutside->BuildMathmlTree(
+            options,
+            MathmlEnvironment(false, 2, mColour),
+            nodeCount
+        ).release()
+    );
+    
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, desiredEnvironment
+    );
+}
+
+
+auto_ptr<MathmlNode> Scripts::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
@@ -775,37 +859,53 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(
 {
     // Simulate the change in rendering environment for the super/
     // sub/over/underscripts.
-    MathmlEnvironment scriptEnvironment = MathmlEnvironment(mStyle);
+    MathmlEnvironment baseEnvironment(mStyle, mColour);
+    MathmlEnvironment scriptEnvironment = baseEnvironment;
     scriptEnvironment.mDisplayStyle = false;
     scriptEnvironment.mScriptLevel++;
 
-    auto_ptr<XmlNode> base;
+    auto_ptr<MathmlNode> base;
     if (mBase.get())
-        base = mBase->BuildMathmlTree(
-            options, MathmlEnvironment(mStyle), nodeCount
-        );
+        base = mBase->BuildMathmlTree(options, baseEnvironment, nodeCount);
     else
     {
         // An empty base gets represented by "<mrow/>"
-        base.reset(new XmlNode(XmlNode::cTag, L"mrow"));
+        base.reset(new MathmlNode(MathmlNode::cTypeMrow));
         IncrementNodeCount(nodeCount);
     }
 
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L""));
+    MathmlNode::Type type;
+
+    if (mUpper.get())
+    {
+        if (mLower.get())
+            type = mIsSideset
+                ? MathmlNode::cTypeMsubsup
+                : MathmlNode::cTypeMunderover;
+        else
+            type = mIsSideset
+                ? MathmlNode::cTypeMsup
+                : MathmlNode::cTypeMover;
+    }
+    else
+        type = mIsSideset
+            ? MathmlNode::cTypeMsub
+            : MathmlNode::cTypeMunder;
+
+    auto_ptr<MathmlNode> scriptsNode(new MathmlNode(type));
     IncrementNodeCount(nodeCount);
-    node->mChildren.push_back(base.release());
+    scriptsNode->mChildren.push_back(base.release());
 
     if (mUpper.get())
     {
         if (mLower.get())
         {
-            node->mText = mIsSideset ? L"msubsup" : L"munderover";
-            node->mChildren.push_back(
+            scriptsNode->mChildren.push_back(
                 mLower->BuildMathmlTree(
                     options, scriptEnvironment, nodeCount
                 ).release()
             );
-            node->mChildren.push_back(
+            scriptsNode->mChildren.push_back(
                 mUpper->BuildMathmlTree(
                     options, scriptEnvironment, nodeCount
                 ).release()
@@ -813,8 +913,7 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(
         }
         else
         {
-            node->mText = mIsSideset ? L"msup" : L"mover";
-            node->mChildren.push_back(
+            scriptsNode->mChildren.push_back(
                 mUpper->BuildMathmlTree(
                     options, scriptEnvironment, nodeCount
                 ).release()
@@ -823,8 +922,7 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(
     }
     else
     {
-        node->mText = mIsSideset ? L"msub" : L"munder";
-        node->mChildren.push_back(
+        scriptsNode->mChildren.push_back(
             mLower->BuildMathmlTree(
                 options, scriptEnvironment, nodeCount
             ).release()
@@ -846,31 +944,35 @@ auto_ptr<XmlNode> Scripts::BuildMathmlTree(
         // is likely to need movablelimits adjusted because of the
         // operator dictionary.
 
-        XmlNode* core = GetCore(node->mChildren.front());
-        if (core->mText == L"mo")
-            core->mAttributes[L"movablelimits"] = L"false";
+        MathmlNode* core = GetCore(scriptsNode->mChildren.front());
+        if (core->mType == MathmlNode::cTypeMo)
+            core->mAttributes
+                [MathmlNode::cAttributeMovablelimits] = L"false";
     }
 
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
+    return AdjustMathmlEnvironment(
+        scriptsNode, inheritedEnvironment, baseEnvironment
     );
 }
 
-auto_ptr<XmlNode> Fraction::BuildMathmlTree(
+
+auto_ptr<MathmlNode> Fraction::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
 ) const
 {
     // Determine the rendering style for the numerator and denominator.
-    MathmlEnvironment smallerEnvironment = MathmlEnvironment(mStyle);
+    MathmlEnvironment baseEnvironment(mStyle, mColour);
+    MathmlEnvironment smallerEnvironment = baseEnvironment;
     if (smallerEnvironment.mDisplayStyle)
         smallerEnvironment.mDisplayStyle = false;
     else
         smallerEnvironment.mScriptLevel++;
 
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mfrac"));
+    auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMfrac));
     IncrementNodeCount(nodeCount);
+
     node->mChildren.push_back(
         mNumerator->BuildMathmlTree(
             options, smallerEnvironment, nodeCount
@@ -883,46 +985,77 @@ auto_ptr<XmlNode> Fraction::BuildMathmlTree(
     );
 
     if (!mIsLineVisible)
-        node->mAttributes[L"linethickness"] = L"0";
+        node->mAttributes
+            [MathmlNode::cAttributeLinethickness] = L"0";
 
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, baseEnvironment
     );
 }
 
-auto_ptr<XmlNode> Fenced::BuildMathmlTree(
+
+auto_ptr<MathmlNode> Space::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
 ) const
 {
-    auto_ptr<XmlNode> inside = mChild->BuildMathmlTree(
-        options, MathmlEnvironment(mStyle), nodeCount
+    if (!mIsUserRequested)
+        throw logic_error(
+            "Unexpected lonely automatic space in Space::BuildMathmlTree"
+        );
+
+    // FIX: what happens with negative space?
+
+    auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMspace));
+    IncrementNodeCount(nodeCount);
+
+    wostringstream wos;
+    wos << fixed << setprecision(3) << (mWidth / 18.0) << L"em";
+    node->mAttributes[MathmlNode::cAttributeWidth] = wos.str();
+
+    return node;
+}
+
+
+auto_ptr<MathmlNode> Fenced::BuildMathmlTree(
+    const MathmlOptions& options,
+    const MathmlEnvironment& inheritedEnvironment,
+    unsigned& nodeCount
+) const
+{
+    auto_ptr<MathmlNode> inside = mChild->BuildMathmlTree(
+        options, MathmlEnvironment(mStyle, mColour), nodeCount
     );
 
     if (mLeftDelimiter.empty() && mRightDelimiter.empty())
         return inside;
 
-    if (inside->mText != L"mrow")
+    if (inside->mType != MathmlNode::cTypeMrow)
     {
-        auto_ptr<XmlNode> temp(new XmlNode(XmlNode::cTag, L"mrow"));
+        // Ensure that the stuff between the fences is surrounded by
+        // an <mrow>. (I don't really understand why this is necessary,
+        // but the MathML spec suggests it, and Firefox seems a bit fussy,
+        // so let's just do it.)
+        auto_ptr<MathmlNode> temp(new MathmlNode(MathmlNode::cTypeMrow));
         IncrementNodeCount(nodeCount);
         temp->mChildren.push_back(inside.release());
         inside = temp;
     }
 
-    auto_ptr<XmlNode> output(new XmlNode(XmlNode::cTag, L"mrow"));
+    // And surround the whole thing by an <mrow> as well.
+    // (This one makes more sense... we want the delimiters to stretch
+    // around the correct stuff.)
+    auto_ptr<MathmlNode> output(new MathmlNode(MathmlNode::cTypeMrow));
     IncrementNodeCount(nodeCount);
 
     if (!mLeftDelimiter.empty())
     {
-        auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
-        IncrementNodeCount(nodeCount);
-        node->mChildren.push_back(
-            new XmlNode(XmlNode::cString, mLeftDelimiter)
+        auto_ptr<MathmlNode> node(
+            new MathmlNode(MathmlNode::cTypeMo, mLeftDelimiter)
         );
         IncrementNodeCount(nodeCount);
-        node->mAttributes[L"stretchy"] = L"true";
+        node->mAttributes[MathmlNode::cAttributeStretchy] = L"true";
         output->mChildren.push_back(node.release());
     }
 
@@ -930,70 +1063,27 @@ auto_ptr<XmlNode> Fenced::BuildMathmlTree(
 
     if (!mRightDelimiter.empty())
     {
-        auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mo"));
-        IncrementNodeCount(nodeCount);
-        node->mChildren.push_back(
-            new XmlNode(XmlNode::cString, mRightDelimiter)
+        auto_ptr<MathmlNode> node(
+            new MathmlNode(MathmlNode::cTypeMo, mRightDelimiter)
         );
         IncrementNodeCount(nodeCount);
-        node->mAttributes[L"stretchy"] = L"true";
+        node->mAttributes[MathmlNode::cAttributeStretchy] = L"true";
         output->mChildren.push_back(node.release());
     }
 
-    return InsertMstyle(
-        output, inheritedEnvironment, MathmlEnvironment(mStyle)
+    return AdjustMathmlEnvironment(
+        output, inheritedEnvironment, MathmlEnvironment(mStyle, mColour)
     );
 }
 
-auto_ptr<XmlNode> Sqrt::BuildMathmlTree(
+
+auto_ptr<MathmlNode> Table::BuildMathmlTree(
     const MathmlOptions& options,
     const MathmlEnvironment& inheritedEnvironment,
     unsigned& nodeCount
 ) const
 {
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"msqrt"));
-    IncrementNodeCount(nodeCount);
-    node->mChildren.push_back(
-        mChild->BuildMathmlTree(
-            options, MathmlEnvironment(mStyle), nodeCount
-        ).release()
-    );
-    CollapseMrow(*node);
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
-    );
-}
-
-auto_ptr<XmlNode> Root::BuildMathmlTree(
-    const MathmlOptions& options,
-    const MathmlEnvironment& inheritedEnvironment,
-    unsigned& nodeCount
-) const
-{
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mroot"));
-    IncrementNodeCount(nodeCount);
-    node->mChildren.push_back(
-        mInside->BuildMathmlTree(
-            options, MathmlEnvironment(mStyle), nodeCount
-        ).release()
-    );
-    node->mChildren.push_back(
-        mOutside->BuildMathmlTree(
-            options, MathmlEnvironment(false, 2), nodeCount
-        ).release()
-    );
-    return InsertMstyle(
-        node, inheritedEnvironment, MathmlEnvironment(mStyle)
-    );
-}
-
-auto_ptr<XmlNode> Table::BuildMathmlTree(
-    const MathmlOptions& options,
-    const MathmlEnvironment& inheritedEnvironment,
-    unsigned& nodeCount
-) const
-{
-    auto_ptr<XmlNode> node(new XmlNode(XmlNode::cTag, L"mtable"));
+    auto_ptr<MathmlNode> node(new MathmlNode(MathmlNode::cTypeMtable));
     IncrementNodeCount(nodeCount);
 
     // Compute the table width. We do this so we can "fill out" each
@@ -1012,13 +1102,13 @@ auto_ptr<XmlNode> Table::BuildMathmlTree(
     }
 
     if (mAlign == cAlignLeft)
-        node->mAttributes[L"columnalign"] = L"left";
+        node->mAttributes[MathmlNode::cAttributeColumnalign] = L"left";
     else if (mAlign == cAlignRightLeft)
     {
         wstring alignString = L"right";
         for (int i = 1; i < tableWidth; i++)
             alignString += (i % 2) ? L" left" : L" right";
-        node->mAttributes[L"columnalign"] = alignString;
+        node->mAttributes[MathmlNode::cAttributeColumnalign] = alignString;
     }
 
     for (vector<vector<Node*> >::const_iterator
@@ -1027,7 +1117,7 @@ auto_ptr<XmlNode> Table::BuildMathmlTree(
         inRow++
     )
     {
-        auto_ptr<XmlNode> outRow(new XmlNode(XmlNode::cTag, L"mtr"));
+        auto_ptr<MathmlNode> outRow(new MathmlNode(MathmlNode::cTypeMtr));
         IncrementNodeCount(nodeCount);
         int count = 0;
         for (vector<Node*>::const_iterator
@@ -1036,73 +1126,365 @@ auto_ptr<XmlNode> Table::BuildMathmlTree(
             inEntry++, count++
         )
         {
-            auto_ptr<XmlNode> outEntry(new XmlNode(XmlNode::cTag, L"mtd"));
-            IncrementNodeCount(nodeCount);
-            outEntry->mChildren.push_back(
-                (*inEntry)->BuildMathmlTree(
-                    options, MathmlEnvironment(mStyle), nodeCount
-                ).release()
+            auto_ptr<MathmlNode> outEntry(
+                new MathmlNode(MathmlNode::cTypeMtd)
             );
-            // FIX: this next line should be uncommented, except that
+            IncrementNodeCount(nodeCount);
+        
+            auto_ptr<MathmlNode> child =
+                (*inEntry)->BuildMathmlTree(
+                    options, MathmlEnvironment(mStyle, mColour), nodeCount
+                );
+
             // Firefox has a bug (#236963) where it doesn't correctly put
-            // an "inferred mrow" inside a <mtd> block, so stuff inside the
-            // <mtd> doesn't stretch properly unless we put in an mrow.
-#if 0
-            CollapseMrow(*outEntry);
+            // an "inferred mrow" inside a <mtd> block, so for the moment
+            // we add the <mrow> ourselves.
+#define MOZILLA_BUG_236963_WORKAROUND 1
+
+#if MOZILLA_BUG_236963_WORKAROUND
+            if (child->mType == MathmlNode::cTypeMrow)
+            {
+                child->mType = MathmlNode::cTypeMtd;
+                outEntry = child;
+            }
+            else
+                outEntry->mChildren.push_back(child.release());
+#else
+            if (child->mType != MathmlNode::cTypeMrow)
+            {
+                auto_ptr<MathmlNode> temp(
+                    new MathmlNode(MathmlNode::cTypeMrow)
+                );
+                IncrementNodeCount(nodeCount);
+                temp->mChildren.push_back(child.release());
+                child = temp;
+            }
+            outEntry->mChildren.push_back(child.release());
 #endif
+
             outRow->mChildren.push_back(outEntry.release());
         }
+
+        // fill out the extra table entries:
         for (; count < tableWidth; count++)
         {
-            outRow->mChildren.push_back(new XmlNode(XmlNode::cTag, L"mtd"));
+            outRow->mChildren.push_back(
+                new MathmlNode(MathmlNode::cTypeMtd)
+            );
             IncrementNodeCount(nodeCount);
         }
 
         node->mChildren.push_back(outRow.release());
     }
 
-    // Here we would prefer to use the InsertMstyle function, but the MathML
-    // spec says that the displaystyle attribute needs to be set on the
-    // <mtable> element itself, since the default "false" overrides any
-    // enclosing <mstyle>. So we only put the scriptlevel in an mstyle (if
-    // necessary).
-    MathmlEnvironment tableEnvironment(mStyle);
-    if (tableEnvironment.mDisplayStyle)
-        node->mAttributes[L"displaystyle"] = L"true";
+    return AdjustMathmlEnvironment(
+        node, inheritedEnvironment, MathmlEnvironment(mStyle, mColour)
+    );
+}
 
-    // FIX: In certain situations in Firefox, <mtable>s don't seem to
-    // inherit the scriptlevel properly. For example, in
-    // <munder><mi>x</mi><mtable>...</mtable></munder>,
-    // the scriptlevel of the table is incorrect. So we need to set it
-    // using an <mstyle> node explicitly.
-    // Need to report this and then uncomment the following line when
-    // it's fixed:
-#if 0
-    if (tableEnvironment.mScriptLevel != inheritedEnvironment.mScriptLevel)
-#else
-    if (true)
-#endif
+
+// This is a list of all symbols that we know how to negate.
+pair<wstring, wstring> gNegationArray[] =
+{
+    // Element => NotElement
+    make_pair(L"\U00002208", L"\U00002209"),
+    // Congruent => NotCongruent
+    make_pair(L"\U00002261", L"\U00002262"),
+    // Exists => NotExists
+    make_pair(L"\U00002203", L"\U00002204"),
+    // = => NotEqual
+    make_pair(L"=",          L"\U00002260"),
+    // SubsetEqual => NotSubsetEqual
+    make_pair(L"\U00002286", L"\U00002288"),
+    // Tilde => NotTilde
+    make_pair(L"\U0000223C", L"\U00002241"),
+    // LeftArrow => nleftarrow
+    make_pair(L"\U00002190", L"\U0000219A"),
+    // RightArrow => nrightarrow
+    make_pair(L"\U00002192", L"\U0000219B"),
+    // LeftRightArrow => nleftrightarrow
+    make_pair(L"\U00002194", L"\U000021AE"),
+    // DoubleLeftArrow => nLeftArrow
+    make_pair(L"\U000021D0", L"\U000021CD"),
+    // DoubleRightArrow => nRightArrow
+    make_pair(L"\U000021D2", L"\U000021CF"),
+    // DoubleLeftRightArrow => nLeftrightArrow
+    make_pair(L"\U000021D4", L"\U000021CE"),
+    // ReverseElement => NotReverseElement
+    make_pair(L"\U0000220B", L"\U0000220C"),
+    // FIX: what happens to the pipe character?
+    // VerticalBar => NotVerticalBar
+    make_pair(L"\U00002223", L"\U00002224"),
+    // DoubleVerticalBar => NotDoubleVerticalBar
+    make_pair(L"\U00002225", L"\U00002226"),
+    // TildeEqual => NotTildeEqual
+    make_pair(L"\U00002243", L"\U00002244"),
+    // TildeFullEqual => NotTildeFullEqual
+    make_pair(L"\U00002245", L"\U00002247"),
+    // TildeTilde => NotTildeTilde
+    make_pair(L"\U00002248", L"\U00002249"),
+    // > => NotLess
+    make_pair(L"<", L"\U0000226E"),
+    // < => NotGreater
+    make_pair(L">", L"\U0000226F"),
+    // leq => NotLessEqual
+    make_pair(L"\U00002264", L"\U00002270"),
+    // GreaterEqual => NotGreaterEqual
+    make_pair(L"\U00002265", L"\U00002271"),
+    // FIX: what about "Precedes", "Succeeds"?
+    // subset => nsub
+    make_pair(L"\U00002282", L"\U00002284"),
+    // Superset => nsup
+    make_pair(L"\U00002283", L"\U00002285"),
+    // SubsetEqual => NotSubsetEqual
+    make_pair(L"\U00002286", L"\U00002288"),
+    // SupersetEqual => NotSupersetEqual
+    make_pair(L"\U00002287", L"\U00002289"),
+    // RightTee => nvdash
+    make_pair(L"\U000022A2", L"\U000022AC"),
+    // DoubleRightTee => nvDash
+    make_pair(L"\U000022A8", L"\U000022AD"),
+    // Vdash => nVdash
+    make_pair(L"\U000022A9", L"\U000022AE"),
+    // SquareSubsetEqual => NotSquareSubsetEqual
+    make_pair(L"\U00002291", L"\U000022E2"),
+    // SquareSupersetEqual => NotSquareSupersetEqual
+    make_pair(L"\U00002292", L"\U000022E3"),
+    // LeftTriangle => NotLeftTriangle
+    make_pair(L"\U000022B2", L"\U000022EA"),
+    // RightTriangle => NotRightTriangle
+    make_pair(L"\U000022B3", L"\U000022EB"),
+    // LeftTriangleEqual => NotLeftTriangleEqual
+    make_pair(L"\U000022B4", L"\U000022EC"),
+    // RightTriangleEqual => NotRightTriangleEqual
+    make_pair(L"\U000022B5", L"\U000022ED")
+};
+wishful_hash_map<wstring, wstring> gNegationTable(
+    gNegationArray,
+    END_ARRAY(gNegationArray)
+);
+
+
+void Row::Optimise()
+{
+    list<Node*>::iterator lastSpace = mChildren.end();
+    list<Node*>::iterator lastNonSpace = mChildren.end();
+    
+    // Throughout this loop, we ensure that:
+    // * lastNonSpace points to the most recently seen non-Space node,
+    //   or mChildren.end() if none have yet been seen;
+    // * lastSpace points to the most recently seen Space node *following*
+    //   lastNonSpace, or just the most recently seen Space node if
+    //   lastNonSpace == mChildren.end().
+    
+    for (list<Node*>::iterator
+        current = mChildren.begin(); current != mChildren.end(); ++current
+    )
     {
-        auto_ptr<XmlNode> styleNode(new XmlNode(XmlNode::cTag, L"mstyle"));
-        IncrementNodeCount(nodeCount);
-        styleNode->mChildren.push_back(node.release());
+        // Recurse:
+        (*current)->Optimise();
+        
+        Space* currentAsSpace = dynamic_cast<Space*>(*current);
+        if (currentAsSpace)
+        {
+            if (lastSpace == mChildren.end())
+                lastSpace = current;
+            else
+            {
+                // Merge the two adjacent Space nodes.
+                Space* lastSpaceAsSpace = dynamic_cast<Space*>(*lastSpace);
+                if (lastSpaceAsSpace->mIsUserRequested)
+                    currentAsSpace->mIsUserRequested = true;
+                currentAsSpace->mWidth += lastSpaceAsSpace->mWidth;
+                mChildren.erase(lastSpace);
+                lastSpace = current;
+            }
+        }
+        else
+        {
+            if (
+                lastNonSpace != mChildren.end() &&
+                (
+                    lastSpace == mChildren.end() ||
+                    (dynamic_cast<Space*>(*lastSpace))->mWidth == 0
+                )
+            )
+            {
+                // We have found two non-Space nodes with zero space between
+                // them. Now determine whether we want to merge them.
+                
+                // The first special case is if the first symbol is a
+                // "\not" command, and we try to come up with a MathML
+                // character which represents the negation of the following
+                // operator.
+                SymbolOperator* lastNonSpaceAsOperator =
+                    dynamic_cast<SymbolOperator*>(*lastNonSpace);
+                SymbolOperator* currentAsOperator =
+                    dynamic_cast<SymbolOperator*>(*current);
+                wishful_hash_map<wstring, wstring>::const_iterator
+                    negationLookup;
 
-        wostringstream os;
-        os << tableEnvironment.mScriptLevel;
-        styleNode->mAttributes[L"scriptlevel"] = os.str();
+                if (
+                    lastNonSpaceAsOperator &&
+                    lastNonSpaceAsOperator->mText == L"NOT" &&
+                    currentAsOperator &&
+                    (negationLookup =
+                        gNegationTable.find(currentAsOperator->mText))
+                    != gNegationTable.end()
+                )
+                {
+                    // Replace with appropriate negated character.
 
-        return styleNode;
+                    if (lastSpace != mChildren.end())
+                        mChildren.erase(lastSpace);
+                    
+                    currentAsOperator->mText = negationLookup->second;
+                    mChildren.erase(lastNonSpace);
+                }
+                else
+                {
+
+                    // OK, that special case didn't work out.
+                    // If the current node is a scripts node, find its core.
+                    Node* currentCore = *current;
+                    Scripts* currentCoreAsScripts;
+                    while (
+                        currentCore &&
+                        (currentCoreAsScripts =
+                            dynamic_cast<Scripts*>(currentCore))
+                    )
+                        currentCore = currentCoreAsScripts->mBase.get();
+                    
+                    // Check candidates are Symbols and their fonts, styles,
+                    // colours match, and then either:
+                    // * both are SymbolNumber, or
+                    // * both are SymbolText, or
+                    // * both are SymbolIdentifier and their fonts are both
+                    //   normal (this case covers things like <mi>sin</mi>)
+                    
+                    Symbol* currentCoreAsSymbol =
+                        dynamic_cast<Symbol*>(currentCore);
+                    Symbol* lastNonSpaceAsSymbol =
+                        dynamic_cast<Symbol*>(*lastNonSpace);
+
+                    if (
+                        currentCoreAsSymbol && lastNonSpaceAsSymbol
+                        &&
+                        currentCoreAsSymbol->mFont ==
+                            lastNonSpaceAsSymbol->mFont
+                        &&
+                        currentCoreAsSymbol->mStyle ==
+                            lastNonSpaceAsSymbol->mStyle
+                        &&
+                        currentCoreAsSymbol->mColour ==
+                            lastNonSpaceAsSymbol->mColour
+                        &&
+                        (
+                            (dynamic_cast<SymbolNumber*>(currentCore) &&
+                             dynamic_cast<SymbolNumber*>(*lastNonSpace))
+                            ||
+                            (dynamic_cast<SymbolText*>(currentCore) &&
+                             dynamic_cast<SymbolText*>(*lastNonSpace))
+                            ||
+                            (
+                                dynamic_cast<SymbolIdentifier*>
+                                    (currentCore)
+                                &&
+                                dynamic_cast<SymbolIdentifier*>
+                                    (*lastNonSpace)
+                                &&
+                                currentCoreAsSymbol->mFont ==
+                                    cMathmlFontNormal
+                                &&
+                                lastNonSpaceAsSymbol->mFont ==
+                                    cMathmlFontNormal
+                            )
+                        )
+                    )
+                    {
+                        // Let's MERGE.
+                        // (We do this a slightly odd way to maintain O(n)
+                        // complexity.)
+                        
+                        if (lastSpace != mChildren.end())
+                            mChildren.erase(lastSpace);
+                        
+                        lastNonSpaceAsSymbol->mText +=
+                            currentCoreAsSymbol->mText;
+
+                        lastNonSpaceAsSymbol->mText.swap(
+                            currentCoreAsSymbol->mText
+                        );
+                        
+                        mChildren.erase(lastNonSpace);
+                    }
+                }
+            }
+            
+            lastNonSpace = current;
+            lastSpace = mChildren.end();
+        }
     }
-    else
-        return node;
+}
+
+
+void Scripts::Optimise()
+{
+    if (mBase.get())
+        mBase->Optimise();
+    if (mLower.get())
+        mLower->Optimise();
+    if (mUpper.get())
+        mUpper->Optimise();
+}
+
+
+void Fraction::Optimise()
+{
+    mNumerator->Optimise();
+    mDenominator->Optimise();
+}
+
+
+void Fenced::Optimise()
+{
+    mChild->Optimise();
+}
+
+
+void Sqrt::Optimise()
+{
+    mChild->Optimise();
+}
+
+
+void Root::Optimise()
+{
+    mInside->Optimise();
+    mOutside->Optimise();
+}
+
+
+void Table::Optimise()
+{
+    for (
+        vector<vector<Node*> >::iterator row = mRows.begin();
+        row != mRows.end();
+        ++row
+    )
+        for (
+            vector<Node*>::iterator entry = row->begin();
+            entry != row->end();
+            ++entry
+        )
+            (*entry)->Optimise();
 }
 
 
 // =========================================================================
 // Now all the LayoutTree debugging code
 
-// This function generates the indents used by various debugging
-// Print functions.
+
 wstring indent(int depth)
 {
     return wstring(2 * depth, L' ');
@@ -1141,6 +1523,9 @@ wstring Node::PrintFields() const
     if (mFlavour == cFlavourOp)
         output += L" " + gLimitsStrings[mLimits];
     output += L" " + gStyleStrings[mStyle];
+    wostringstream colourHex;
+    colourHex << hex << setw(6) << setfill(L'0') << mColour;
+    output += L" 0x" + colourHex.str();
     return output;
 }
 
@@ -1155,9 +1540,15 @@ void Row::Print(wostream& os, int depth) const
         (*ptr)->Print(os, depth+1);
 }
 
-void SymbolPlain::Print(wostream& os, int depth) const
+void SymbolIdentifier::Print(wostream& os, int depth) const
 {
-    os << indent(depth) << L"SymbolPlain \"" << mText << L"\" "
+    os << indent(depth) << L"SymbolIdentifier \"" << mText << L"\" "
+        << gMathmlFontStrings[mFont] << L" " << PrintFields() << endl;
+}
+
+void SymbolNumber::Print(wostream& os, int depth) const
+{
+    os << indent(depth) << L"SymbolNumber \"" << mText << L"\" "
         << gMathmlFontStrings[mFont] << L" " << PrintFields() << endl;
 }
 

@@ -1,6 +1,6 @@
 // File "main.cpp"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -20,6 +20,7 @@
 
 #include "BlahtexCore/Interface.h"
 #include "UnicodeConverter.h"
+#include "mainPng.h"
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -27,7 +28,7 @@
 using namespace std;
 using namespace blahtex;
 
-string gBlahtexVersion = "0.4.2";
+string gBlahtexVersion = "0.4.4";
 
 // A single global instance of UnicodeConverter.
 UnicodeConverter gUnicodeConverter;
@@ -35,20 +36,6 @@ UnicodeConverter gUnicodeConverter;
 // Imported from Messages.cpp:
 extern wstring GetErrorMessage(const blahtex::Exception& e);
 extern wstring GetErrorMessages();
-
-// Imported from mainPng.cpp:
-extern pair<string, int> MakePngFile(
-    const wstring& purifiedTex,
-    bool computeVerticalShift,
-    const string& tempDirectory,
-    const string& pngDirectory,
-    const string& shellLatex,
-    const string& shellDvips,
-    const string& shellConvert,
-    const string& imageMagickOptions,
-    bool deleteTempFiles
-);
-
 
 // FormatError() converts a blahtex Exception object into a string like
 // "<error><id>...</id><arg>...</arg><arg>...</arg> ...
@@ -86,101 +73,31 @@ void ShowUsage()
 "\n"
 "Usage: blahtex [ options ] < inputfile > outputfile\n"
 "\n"
-"INPUT OPTIONS\n"
+"SUMMARY OF OPTIONS (see manual for details)\n"
 "\n"
 " --texvc-compatible-commands\n"
-"     recognise nonstandard texvc-specific commands\n"
-"\n"
-"MATHML OPTIONS\n"
 "\n"
 " --mathml\n"
-"     generate MathML output\n"
 " --indented\n"
-"     produce nicely indented MathML tags\n"
-"\n"
-" --spacing strict\n"
-"     emit MathML spacing markup wherever possible\n"
-" --spacing moderate (default)\n"
-"     emit spacing markup where a MathML renderer is likely to\n"
-"     have trouble\n"
-" --spacing relaxed\n"
-"     emit spacing markup only where specifically requested in\n"
-"     the TeX input\n"
-"\n"
+" --spacing { strict | moderate | relaxed }\n"
 " --mathml-version-1-fonts\n"
-"     use character entities and MathML version 1 font attributes\n"
-"     instead of \"mathvariant\"\n"
-"\n"
 " --disallow-plane-1\n"
-"     force plane-1 MathML characters to be encoded as e.g. \"&Afr;\"\n"
-"     instead of e.g. \"&#x1d504;\"\n"
-"\n"
-" --mathml-encoding raw\n"
-"     encode non-ASCII MathML characters as raw UTF-8\n"
-" --mathml-encoding numeric (default)\n"
-"     encode non-ASCII MathML characters as numeric codes\n"
-"     (like \"&#x2191;\")\n"
-" --mathml-encoding short\n"
-"     encode non-ASCII MathML characters using short names\n"
-"     (like \"&uarr;\")\n"
-" --mathml-encoding long\n"
-"     encode non-ASCII MathML characters using long names\n"
-"     (like \"&UpArrow;\")\n"
-"\n"
-" --other-encoding raw\n"
-"     encode non-ASCII, non-MathML characters as raw UTF-8\n"
-" --other-encoding numeric (default)\n"
-"     encode non-ASCII, non-MathML characters as numeric codes\n"
-"\n"
-"PNG OPTIONS\n"
+" --mathml-encoding { raw | numeric | short | long }\n"
+" --other-encoding { raw | numeric }\n"
 "\n"
 " --png\n"
-"     generate PNG output\n"
-"\n"
 " --use-ucs-package\n"
-"     use the LaTeX ucs package to handle some non-ASCII characters\n"
-#ifdef BLAHTEX_USING_MAGICK
-"\n"
-" --compute-vertical-shift\n"
-"     determine the location of the baseline of the equation, and output\n"
-"     the number of pixels to shift (SOMEWHAT EXPERIMENTAL)\n"
-#endif
-"\n"
+" --use-cjk-package\n"
+" --japanese-font  fontname\n"
 " --shell-latex  command\n"
-" --shell-dvips  command\n"
-" --shell-convert  command\n"
-"     indicates commands for latex, dvips, ImageMagick utilities\n"
-"     (default is just \"latex\", \"dvips\", \"convert\")\n"
-"\n"
-" --convert-options  options-string\n"
-"     indicates options to be passed to ImageMagick convert utility\n"
-"     (default is:\n"
-"     -quality 100 -density 120 -matte -fill None -opaque White)\n"
-"\n"
+" --shell-dvipng  command\n"
 " --temp-directory  directory\n"
-"     which directory to use for temp files (.tex, .aux, .log, .dvi, .ps)\n"
-"     (default is current directory)\n"
 " --png-directory  directory\n"
-"     where to put the output PNG file\n"
-"     (default is current directory)\n"
 "\n"
-"DEBUGGING OPTIONS\n"
-"\n"
-" --debug parse\n"
-"     display the parse tree (output is NOT XML)\n"
-" --debug layout\n"
-"     display the layout tree (output is NOT XML)\n"
-" --debug purified\n"
-"     display purified TeX (output is NOT XML)\n"
-"\n"
+" --debug { parse | layout | purified }\n"
 " --keep-temp-files\n"
-"     don't delete temporary files used during PNG generation\n"
-"\n"
 " --throw-logic-error\n"
-"     simulate a debug assertion occurring\n"
-"\n"
 " --print-error-messages\n"
-"     print a list of all the errors that blahtex can produce\n"
 "\n"
 "More information available at www.blahtex.org\n"
 "\n";
@@ -222,13 +139,10 @@ int main (int argc, char* const argv[]) {
         bool debugLayoutTree  = false;
         bool debugParseTree   = false;
         bool debugPurifiedTex = false;
-        bool deleteTempFiles = true;
+        bool deleteTempFiles  = true;
 
         string shellLatex   = "latex";
-        string shellDvips   = "dvips";
-        string shellConvert = "convert";
-        string imageMagickOptions =
-            "-quality 100 -density 120 -matte -fill None -opaque White";
+        string shellDvipng  = "dvipng";
         string tempDirectory = "./";
         string  pngDirectory = "./";
 
@@ -259,31 +173,13 @@ int main (int argc, char* const argv[]) {
                 shellLatex = string(argv[i]);
             }
 
-            else if (arg == "--shell-dvips")
+            else if (arg == "--shell-dvipng")
             {
                 if (++i == argc)
                     throw CommandLineException(
-                        "Missing string after \"--shell-dvips\""
+                        "Missing string after \"--shell-dvipng\""
                     );
-                shellDvips = string(argv[i]);
-            }
-
-            else if (arg == "--shell-convert")
-            {
-                if (++i == argc)
-                    throw CommandLineException(
-                        "Missing string after \"--shell-convert\""
-                    );
-                shellConvert = string(argv[i]);
-            }
-
-            else if (arg == "--convert-options")
-            {
-                if (++i == argc)
-                    throw CommandLineException(
-                        "Missing string after \"--convert-options\""
-                    );
-                imageMagickOptions = string(argv[i]);
+                shellDvipng = string(argv[i]);
             }
 
             else if (arg == "--temp-directory")
@@ -304,6 +200,22 @@ int main (int argc, char* const argv[]) {
                     );
                 pngDirectory = string(argv[i]);
                 AddTrailingSlash(pngDirectory);
+            }
+
+            else if (arg == "--use-ucs-package")
+                interface.mPurifiedTexOptions.mAllowUcs = true;
+
+            else if (arg == "--use-cjk-package")
+                interface.mPurifiedTexOptions.mAllowCJK = true;
+            
+            else if (arg == "--japanese-font")
+            {
+                if (++i == argc)
+                    throw CommandLineException(
+                        "Missing string after \"--japanese-font\""
+                    );
+                interface.mPurifiedTexOptions.mJapaneseFont =
+                    gUnicodeConverter.ConvertIn(string(argv[i]));
             }
 
             else if (arg == "--indented")
@@ -335,8 +247,6 @@ int main (int argc, char* const argv[]) {
                     );
             }
 
-            else if (arg == "--use-ucs-package")
-                interface.mPurifiedTexOptions.mUseUcsPackage = true;
 
             else if (arg == "--mathml-version-1-fonts")
                 interface.mMathmlOptions.mUseVersion1FontAttributes = true;
@@ -346,11 +256,6 @@ int main (int argc, char* const argv[]) {
 
             else if (arg == "--png")
                 doPng = true;
-
-#ifdef BLAHTEX_USING_MAGICK
-            else if (arg == "--compute-vertical-shift")
-                interface.mPurifiedTexOptions.mComputeVerticalShift = true;
-#endif
 
             else if (arg == "--mathml")
                 doMathml = true;
@@ -507,25 +412,26 @@ int main (int argc, char* const argv[]) {
                     // if requested.
                     if (doPng)
                     {
-                        pair<string, int> pngData = MakePngFile(
+                        PngInfo info = MakePngFile(
                             purifiedTex,
-                            interface.mPurifiedTexOptions.
-                                mComputeVerticalShift,
                             tempDirectory,
                             pngDirectory,
+                            "",
                             shellLatex,
-                            shellDvips,
-                            shellConvert,
-                            imageMagickOptions,
+                            shellDvipng,
                             deleteTempFiles
                         );
 
-                        if (pngData.second != 1)
-                            pngOutput << L"<vshift>"
-                                << pngData.second << L"</vshift>\n";
+                        if (info.mDimensionsValid)
+                        {
+                            pngOutput << L"<height>"
+                                << info.mHeight << L"</height>\n";
+                            pngOutput << L"<depth>"
+                                << info.mDepth << L"</depth>\n";
+                        }
 
                         pngOutput << L"<md5>"
-                            << gUnicodeConverter.ConvertIn(pngData.first)
+                            << gUnicodeConverter.ConvertIn(info.mMd5)
                             << L"</md5>\n";
                     }
                 }
@@ -551,7 +457,9 @@ int main (int argc, char* const argv[]) {
                 {
                     mathmlOutput << L"<markup>\n";
                     mathmlOutput << interface.GetMathml();
-                    mathmlOutput << L"\n</markup>\n";
+                    if (!interface.mIndented)
+                        mathmlOutput << L"\n";
+                    mathmlOutput << L"</markup>\n";
                 }
 
                 // Catch errors in generating the MathML:
@@ -595,14 +503,14 @@ int main (int argc, char* const argv[]) {
     // These indicate incorrect command line syntax:
     catch (CommandLineException& e)
     {
-        cout << "Blahtex: " << e.mMessage << " (try \"blahtex --help\")\n";
+        cout << "blahtex: " << e.mMessage << " (try \"blahtex --help\")\n";
     }
 
     // These kind of errors should only occur if the program has been
     // installed incorrectly.
     catch (std::runtime_error& e)
     {
-        cout << "Blahtex runtime error: " << e.what() << endl;
+        cout << "blahtex runtime error: " << e.what() << endl;
     }
 
     return 0;

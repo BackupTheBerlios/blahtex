@@ -1,6 +1,6 @@
 // File "Misc.h"
 //
-// blahtex (version 0.4.2)
+// blahtex (version 0.4.4)
 // a TeX to MathML converter designed with MediaWiki in mind
 // Copyright (C) 2006, David Harvey
 //
@@ -21,6 +21,8 @@
 #ifndef BLAHTEX_MISC_H
 #define BLAHTEX_MISC_H
 
+
+#include <set>
 #include <vector>
 #include <string>
 
@@ -41,6 +43,12 @@
 
 namespace blahtex
 {
+
+
+// Stores colours in 0x00rrggbb format.
+// Better be 32 bits wide!
+typedef unsigned RGBColour;
+
 
 // The blahtex core throws an Exception object when it detects the input is
 // invalid in some way. This doesn't include more serious things like debug
@@ -65,7 +73,8 @@ public:
     Exception(
         const std::wstring& code,
         const std::wstring& arg1 = L"",
-        const std::wstring& arg2 = L""
+        const std::wstring& arg2 = L"",
+        const std::wstring& arg3 = L""
     ) :
         mCode(code)
     {
@@ -73,6 +82,8 @@ public:
             mArgs.push_back(arg1);
         if (!arg2.empty())
             mArgs.push_back(arg2);
+        if (!arg3.empty())
+            mArgs.push_back(arg3);
     }
     
     const std::wstring& GetCode() const
@@ -171,7 +182,7 @@ struct MathmlOptions
     bool mAllowPlane1;
 
     MathmlOptions() :
-        mSpacingControl(cSpacingControlModerate),
+        mSpacingControl(cSpacingControlStrict),
         mUseVersion1FontAttributes(false),
         mAllowPlane1(true)
     { }
@@ -183,19 +194,20 @@ struct MathmlOptions
 // generate PNG output.
 struct PurifiedTexOptions
 {
-    // If true, blahtex will include the command "\usepackage{ucs}" in the
-    // purified TeX (if required), and will emit appropriate "\unichar{nnn}"
-    // commands when it encounters supported non-ASCII characters in the
-    // input.
-    bool mUseUcsPackage;
+    // Blahtex may use "\usepackage[utf8x]{inputenc}" (which also requires
+    // the "ucs" package)
+    bool mAllowUcs;
     
-    // If true, blahtex will make a few changes that allow it to compute
-    // the vertical shift required on the PNG.
-    bool mComputeVerticalShift;
+    // Blahtex may use "\usepackage{CJK}"
+    bool mAllowCJK;
+    
+    // The font name (e.g. "ipam") which gets passed to "\begin{CJK}..."
+    // for handling japanese, or blank if no font is available.
+    std::wstring mJapaneseFont;
 
     PurifiedTexOptions() :
-        mUseUcsPackage(false),
-        mComputeVerticalShift(false)
+        mAllowUcs(false),
+        mAllowCJK(false)
     { }
 };
 
