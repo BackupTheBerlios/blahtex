@@ -209,7 +209,7 @@ class MathRenderer {
 	 */
 	function invokeTexvc($tex)
 	{
-	        global $wgMathDirectory, $wgTmpDirectory, $wgTexvc, $wgInputEncoding;
+		global $wgMathDirectory, $wgTmpDirectory, $wgTexvc, $wgInputEncoding;
 
 		$cmd = $wgTexvc . ' ' . 
 			escapeshellarg( $wgTmpDirectory ).' '.
@@ -233,11 +233,11 @@ class MathRenderer {
 		return array(true, $contents);
 	}
 
-        /**
+	/**
 	 * Process texvc output and fill the mathml, html, hash, and conservativeness fields.
 	 * Returns an error message, or false if no error occurred.
 	 */
-        function processTexvcOutput($contents) {
+	function processTexvcOutput($contents) {
 		global $wgMathDirectory;
 
 		$retval = substr ($contents, 0, 1);
@@ -307,41 +307,45 @@ class MathRenderer {
 
                 $descriptorspec = array(0 => array("pipe", "r"),
                                         1 => array("pipe", "w"));
-		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --use-ucs-package --spacing strict';
-		if ($makePNG)
-			$options = "$options --png --temp-directory $wgTmpDirectory --png-directory $wgMathDirectory";
-			global $wgUseBlahtexVerticalShift;
-			if ( $wgUseBlahtexVerticalShift )
-				$options .= " --compute-vertical-shift";
-                $process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
-                if (!$process) {
-			return array(false, $this->_error('math_unknown_error', ' #1'));
-                }
-		fwrite($pipes[0], '\\displaystyle ');
-                fwrite($pipes[0], $tex);
-                fclose($pipes[0]);
+		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --spacing strict';
+		if ($makePNG) {
+			$options .= " --png --temp-directory $wgTmpDirectory --png-directory $wgMathDirectory";
+			$options .= " --use-ucs-package --use-cjk-package --japanese-font ipam";
+		}
 
-                $contents = '';
-                while (!feof($pipes[1])) {
+		global $wgUseBlahtexVerticalShift;
+		if ( $wgUseBlahtexVerticalShift )
+			$options .= " --compute-vertical-shift";
+
+		$process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
+		if (!$process) {
+			return array(false, $this->_error('math_unknown_error', ' #1'));
+		}
+		fwrite($pipes[0], '\\displaystyle ');
+		fwrite($pipes[0], $tex);
+		fclose($pipes[0]);
+		
+		$contents = '';
+		while (!feof($pipes[1])) {
 			$contents .= fgets($pipes[1], 4096);
-                }
-                fclose($pipes[1]);
-                if (proc_close($process) != 0) {
+		}
+		fclose($pipes[1]);
+		if (proc_close($process) != 0) {
 			// exit code of blahtex is not zero; this shouldn't happen
 			return array(false, $this->_error('math_unknown_error', ' #2'));
-                }
-
+		}
+		
 		return array(true, $contents);
 	}
 
-        /**
+	/**
 	 * Process blahtex output and update the mathml and png fields.
 	 * Returns an error message, or false if no error occurred.
 	 * Bug: assumes that mathml and png errors have no arguments.
 	 */
 	function processBlahtexOutput($results)
 	{
-	        if (isset($results["blahtex:logicError"])) {
+		if (isset($results["blahtex:logicError"])) {
 			// Case I: Something went completely wrong
 			return $this->_error('math_unknown_error', $results["blahtex:logicError"]);
 
