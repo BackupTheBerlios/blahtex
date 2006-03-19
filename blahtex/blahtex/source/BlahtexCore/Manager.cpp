@@ -528,13 +528,23 @@ wstring Manager::GeneratePurifiedTex(
         }
     }
 
-    output << L"\\usepackage[active]{preview}\n";
+    if (options.mAllowPreview)
+        output << L"\\usepackage[active]{preview}\n";
+    else
+        output << L"\\pagestyle{empty}\n";
+        
     output << L"\\begin{document}\n";
-    output << L"\\begin{preview}\n";
-    output << L"$\n" << latex << L"\n$\n";
-    output << L"\\end{preview}\n";
-    output << L"\\end{document}\n";
+
+    if (options.mAllowPreview)
+        output << L"\\begin{preview}\n";
     
+    output << L"$\n" << latex << L"\n$\n";
+
+    if (options.mAllowPreview)
+        output << L"\\end{preview}\n";
+
+    output << L"\\end{document}\n";
+
     return output.str();
 }
 

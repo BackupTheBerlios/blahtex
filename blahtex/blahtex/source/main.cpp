@@ -88,6 +88,7 @@ void ShowUsage()
 " --png\n"
 " --use-ucs-package\n"
 " --use-cjk-package\n"
+" --use-preview-package\n"
 " --japanese-font  fontname\n"
 " --shell-latex  command\n"
 " --shell-dvipng  command\n"
@@ -208,6 +209,9 @@ int main (int argc, char* const argv[]) {
             else if (arg == "--use-cjk-package")
                 interface.mPurifiedTexOptions.mAllowCJK = true;
             
+            else if (arg == "--use-preview-package")
+                interface.mPurifiedTexOptions.mAllowPreview = true;
+            
             else if (arg == "--japanese-font")
             {
                 if (++i == argc)
@@ -246,7 +250,6 @@ int main (int argc, char* const argv[]) {
                         "Illegal string after \"--spacing\""
                     );
             }
-
 
             else if (arg == "--mathml-version-1-fonts")
                 interface.mMathmlOptions.mUseVersion1FontAttributes = true;
@@ -422,7 +425,11 @@ int main (int argc, char* const argv[]) {
                             deleteTempFiles
                         );
 
-                        if (info.mDimensionsValid)
+                        // The height and depth measurements are only
+                        // valid if the "preview" package is used:
+                        if (interface.mPurifiedTexOptions.mAllowPreview
+                            && info.mDimensionsValid
+                        )
                         {
                             pngOutput << L"<height>"
                                 << info.mHeight << L"</height>\n";

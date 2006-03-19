@@ -201,13 +201,17 @@ struct PurifiedTexOptions
     // Blahtex may use "\usepackage{CJK}"
     bool mAllowCJK;
     
+    // Blahtex may use the "preview" package.
+    bool mAllowPreview;
+    
     // The font name (e.g. "ipam") which gets passed to "\begin{CJK}..."
     // for handling japanese, or blank if no font is available.
     std::wstring mJapaneseFont;
 
     PurifiedTexOptions() :
         mAllowUcs(false),
-        mAllowCJK(false)
+        mAllowCJK(false),
+        mAllowPreview(false)
     { }
 };
 

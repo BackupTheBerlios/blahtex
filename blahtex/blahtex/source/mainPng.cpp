@@ -151,8 +151,7 @@ PngInfo MakePngFile(
 
 
     if (!Execute(
-            shellLatex + " " + md5
-                + ".tex >/dev/null 2>/dev/null",
+            shellLatex + " " + md5 + ".tex >/dev/null 2>/dev/null",
             tempDirectory
         )
         ||
@@ -163,7 +162,7 @@ PngInfo MakePngFile(
 
     if (!Execute(
             shellDvipng + " " + md5 + ".dvi " +
-                "--picky --bg Transparent --gamma 1.3 -D 120 -q " +
+                "--picky --bg Transparent --gamma 1.3 -D 120 -q -T tight " +
                 "--height --depth " +
                 "-o \"" + pngActualFilename +
                 "\" > " + md5 + ".data 2>/dev/null", 
