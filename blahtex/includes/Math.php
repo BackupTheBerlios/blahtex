@@ -529,13 +529,20 @@ class MathRenderer {
 
 	function _linkToMathImage() {
 		global $wgMathPath;
-		$url = htmlspecialchars( "$wgMathPath/{$this->hash}.png" );
+		$url = htmlspecialchars( "$wgMathPath/" . substr($this->hash, 0, 1)
+					.'/'. substr($this->hash, 1, 1) .'/'. substr($this->hash, 2, 1)
+					. "/{$this->hash}.png" );
 		$alt = trim(str_replace("\n", ' ', htmlspecialchars( $this->tex )));
-		global $wgUseBlahtexVerticalShift;
-		if ( $wgUseBlahtexVerticalShift && $this->verticalShift != "unknown" )
-			return "<img class='tex' src=\"$url\" alt=\"$alt\" style=\"vertical-align: {$this->verticalShift}px\" />";
-		else
-			return "<img class='tex' src=\"$url\" alt=\"$alt\" />";
+		return "<img class='tex' src=\"$url\" alt=\"$alt\" />";
+	}
+
+	function _getHashPath() {
+		global $wgMathDirectory;
+		$path = $wgMathDirectory .'/'. substr($this->hash, 0, 1)
+					.'/'. substr($this->hash, 1, 1)
+					.'/'. substr($this->hash, 2, 1);
+		wfDebug( "TeX: getHashPath, hash is: $this->hash, path is: $path\n" );
+		return $path;
 	}
 
 }
