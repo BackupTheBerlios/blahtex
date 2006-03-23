@@ -1575,7 +1575,7 @@ In the latter case you can also use a link, e.g. [[{{ns:Special}}:Export/{{Media
 'mw_math_html' => 'HTML if possible or else PNG',
 'mw_math_source' => 'Leave it as TeX (for text browsers)',
 'mw_math_modern' => 'Recommended for modern browsers',
-'mw_math_mathml' => 'MathML if possible (experimental)',
+'mw_math_mathml' => 'MathML (experimental)',
 
 # Patrolling
 'markaspatrolleddiff'   => "Mark as patrolled",
