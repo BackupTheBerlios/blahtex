@@ -5,7 +5,7 @@
  */
 
 class blahtexOutputParser  {
-        var $parser;
+	var $parser;
 	var $stack;
 	var $results;
 
@@ -83,7 +83,7 @@ class MathRenderer {
 	
 	function MathRenderer( $tex ) {
 		$this->tex = $tex;
- 	}
+	 }
 	
 	function setOutputMode( $mode ) {
 		$this->mode = $mode;
@@ -154,8 +154,8 @@ class MathRenderer {
 				{
 					if ( $this->verticalShift != "unknown" )
 					{
-						global $wgMathDirectory;
-						$verticalShiftFile = @fopen( "$wgMathDirectory/{$this->hash}.vshift", "wb" );
+						$hashpath = $this->_getHashPath();
+						$verticalShiftFile = @fopen( "$hashpath/{$this->hash}.vshift", "wb" );
 						if ( !($verticalShiftFile === false) )
 						{
 							@fwrite( $verticalShiftFile, $this->verticalShift );
@@ -176,15 +176,8 @@ class MathRenderer {
 	 */
 	function testEnvironment()
 	{
-	        global $wgMathDirectory, $wgTmpDirectory, $wgTexvc, $wgBlahtex;
-
-                if( !file_exists( $wgMathDirectory ) ) {
-			if( !@mkdir( $wgMathDirectory ) ) {
-				return $this->_error( 'math_bad_output' );
-			}
-		} elseif( !is_dir( $wgMathDirectory ) || !is_writable( $wgMathDirectory ) ) {
-			return $this->_error( 'math_bad_output' );
-		}
+		global $wgTmpDirectory, $wgTexvc, $wgBlahtex;
+		
 		if( !file_exists( $wgTmpDirectory ) ) {
 			if( !@mkdir( $wgTmpDirectory ) ) {
 				return $this->_error( 'math_bad_tmpdir' );
@@ -196,9 +189,9 @@ class MathRenderer {
 		if( function_exists( 'is_executable' ) && !is_executable( $wgTexvc ) ) {
 			return $this->_error( 'math_notexvc' );
 		}
-                if ($wgBlahtex && function_exists('is_executable') && !is_executable($wgBlahtex))
+		if ($wgBlahtex && function_exists('is_executable') && !is_executable($wgBlahtex))
 			return $this->_error('math_noblahtex', $wgBlahtex);
-
+		
 		return false;
 	}
 
@@ -213,7 +206,7 @@ class MathRenderer {
 
 		$cmd = $wgTexvc . ' ' . 
 			escapeshellarg( $wgTmpDirectory ).' '.
-			escapeshellarg( $wgMathDirectory ).' '.
+			escapeshellarg( $wgTmpDirectory ).' '.
 			escapeshellarg( $this->tex ).' '.
 			escapeshellarg( $wgInputEncoding );
 					
@@ -234,11 +227,12 @@ class MathRenderer {
 	}
 
 	/**
-	 * Process texvc output and fill the mathml, html, hash, and conservativeness fields.
+	 * Process texvc output: fill the mathml, html, hash, and conservativeness fields
+	 * in the database and move the PNG image to its final destination.
 	 * Returns an error message, or false if no error occurred.
 	 */
 	function processTexvcOutput($contents) {
-		global $wgMathDirectory;
+		global $wgTmpDirectory;
 
 		$retval = substr ($contents, 0, 1);
 		if (($retval == 'C') || ($retval == 'M') || ($retval == 'L')) {
@@ -287,10 +281,14 @@ class MathRenderer {
 			return $this->_error( 'math_unknown_error' );
 		}
 		
-		if( !file_exists( "$wgMathDirectory/{$hash}.png" ) ) {
+		if( !file_exists( "$wgTmpDirectory/{$hash}.png" ) ) {
 			return $this->_error( 'math_image_error' );
 		}
 		
+		$tmp = $this->moveToMathDir( "{$hash}.png" );
+		if ( $tmp !== false ) 
+			return $tmp;
+
 		$this->hash = $hash;
 		return false;
 	}
@@ -303,13 +301,13 @@ class MathRenderer {
 	 */
 	function invokeBlahtex($tex, $makePNG)
 	{
-		global $wgBlahtex, $wgMathDirectory, $wgTmpDirectory;
+		global $wgBlahtex, $wgTmpDirectory;
 
-                $descriptorspec = array(0 => array("pipe", "r"),
-                                        1 => array("pipe", "w"));
+		$descriptorspec = array(0 => array("pipe", "r"),
+					1 => array("pipe", "w"));
 		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --spacing strict';
 		if ($makePNG) {
-			$options .= " --png --temp-directory $wgTmpDirectory --png-directory $wgMathDirectory";
+			$options .= " --png --temp-directory $wgTmpDirectory --png-directory $wgTmpDirectory";
 			$options .= " --use-ucs-package --use-cjk-package --japanese-font ipam";
 		}
 
@@ -341,7 +339,7 @@ class MathRenderer {
 	/**
 	 * Process blahtex output and update the mathml and png fields.
 	 * Returns an error message, or false if no error occurred.
-	 * Bug: assumes that mathml and png errors have no arguments.
+	 * FIXME: this assumes incorrectly that mathml and png errors have no arguments.
 	 */
 	function processBlahtexOutput($results)
 	{
@@ -361,17 +359,20 @@ class MathRenderer {
 					return $this->_error('math_' . $results["blahtex:error:id"], $results["blahtex:error:arg"]);
 			}
 			else	
-				// Error message has no arguments
-				return $this->_error('math_' . $results["blahtex:error:id"]);
+			  // Error message has no arguments
+			  return $this->_error('math_' . $results["blahtex:error:id"]);
 
 		} elseif (isset($results["mathmlMarkup"]) || isset($results["blahtex:png:md5"])) {
 			// Case III: We got some results
-			if (isset($results["mathmlMarkup"])) 	
+			if (isset($results["mathmlMarkup"]))	 
 				$this->mathml = $results['mathmlMarkup'];
 			if (isset($results["blahtex:png:md5"])) 
 				$this->hash = $results["blahtex:png:md5"];
 			if (isset($results["blahtex:png:vshift"]))
 				$this->verticalShift = $results["blahtex:png:vshift"];
+			$tmp = $this->moveToMathDir( "{$this->hash}.png" );
+			if ( $tmp !== false ) 
+				return $tmp;
 			return false;
 
 		} else {
@@ -384,14 +385,35 @@ class MathRenderer {
 		}
 	}
 
+	/**
+	 * Move a file from $wgTmpDirectory to a directory under $wgMathDirectory.
+	 * Returns false or an error message.
+	 */
+	function moveToMathDir( $fname ) {
+		global $wgTmpDirectory;
+
+		$hashpath = $this->_getHashPath();
+		if( !file_exists( $hashpath ) ) {
+			if( !@wfMkdirParents( $hashpath, 0755 ) ) {
+				return $this->_error( 'math_bad_output' );
+			}
+		} elseif( !is_dir( $hashpath ) || !is_writable( $hashpath ) ) {
+			return $this->_error( 'math_bad_output' );
+		}
+		
+		if( !rename( "$wgTmpDirectory/$fname", "$hashpath/$fname" ) ) {
+			return $this->_error( 'math_output_error' );
+		}
+	}
+
 	function _error( $msg, $arg1 = '', $arg2 = '' ) {
 		$mf = htmlspecialchars( wfMsg( 'math_failure' ) );
 		if ($msg) 
 			$errmsg = htmlspecialchars( wfMsg( $msg, $arg1, $arg2 ) );
 		else
 			$errmsg = '';
-                $source = htmlspecialchars(str_replace("\n", ' ', $this->tex));
-                // Note: the str_replace above is because the return value must not contain newlines
+		$source = htmlspecialchars(str_replace("\n", ' ', $this->tex));
+		// Note: the str_replace above is because the return value must not contain newlines
 		return "<strong class='error'>$mf ($errmsg): $source</strong>\n";
 	}
 	
@@ -402,9 +424,9 @@ class MathRenderer {
 		$this->md5 = md5( $this->tex );
 		$dbr =& wfGetDB( DB_SLAVE );
 		$rpage = $dbr->selectRow( 'math', 
-			array( 'math_outputhash','math_html_conservativeness','math_html','math_mathml' ),
-			array( 'math_inputhash' => pack("H32", $this->md5)), # Binary packed, not hex
-			$fname
+					  array( 'math_outputhash','math_html_conservativeness','math_html','math_mathml' ),
+					  array( 'math_inputhash' => pack("H32", $this->md5)), # Binary packed, not hex
+					  $fname
 		);
 
 		if( $rpage !== false ) {
