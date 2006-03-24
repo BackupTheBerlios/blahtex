@@ -301,15 +301,13 @@ class MathRenderer {
 	 */
 	function invokeBlahtex($tex, $makePNG)
 	{
-		global $wgBlahtex, $wgTmpDirectory;
+		global $wgBlahtex, $wgBlahtexOptions, $wgTmpDirectory;
 
 		$descriptorspec = array(0 => array("pipe", "r"),
 					1 => array("pipe", "w"));
-		$options = '--mathml --texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --spacing strict';
-		if ($makePNG) {
+		$options = '--mathml ' . $wgBlahtexOptions;
+		if ($makePNG) 
 			$options .= " --png --temp-directory $wgTmpDirectory --png-directory $wgTmpDirectory";
-			$options .= " --use-ucs-package --use-cjk-package --japanese-font ipam";
-		}
 
 		global $wgUseBlahtexVerticalShift;
 		if ( $wgUseBlahtexVerticalShift )
@@ -442,13 +440,33 @@ class MathRenderer {
 			$this->html = $rpage->math_html;
 			$this->mathml = $rpage->math_mathml;
 			
-			if( $this->hash && !file_exists( "$wgMathDirectory/{$this->hash}.png" ) ) 
-				$this->hash = NULL;
+			if( file_exists( $this->_getHashPath() . "/{$this->hash}.png" ) ) {
+				return true;
+			}
+
+			if( file_exists( $wgMathDirectory . "/{$this->hash}.png" ) ) {
+				$hashpath = $this->_getHashPath();
+
+				if( !file_exists( $hashpath ) ) {
+					if( !@wfMkdirParents( $hashpath, 0755 ) ) {
+						return false;
+					}
+				} elseif( !is_dir( $hashpath ) || !is_writable( $hashpath ) ) {
+					return false;
+				}
+				if ( function_exists( "link" ) ) {
+					return link ( $wgMathDirectory . "/{$this->hash}.png",
+							$hashpath . "/{$this->hash}.png" );
+				} else {
+					return rename ( $wgMathDirectory . "/{$this->hash}.png",
+							$hashpath . "/{$this->hash}.png" );
+				}
+			}
 
 			global $wgUseBlahtexVerticalShift;
 			if ( $wgUseBlahtexVerticalShift && $this->hash )
 			{
-				$verticalShiftFile = @fopen( "$wgMathDirectory/{$this->hash}.vshift", "rb" );
+				$verticalShiftFile = @fopen( "$hashpath/{$this->hash}.vshift", "rb" );
 				if ( !($verticalShiftFile === false) )
 				{
 					$this->verticalShift = @fgets( $verticalShiftFile );
