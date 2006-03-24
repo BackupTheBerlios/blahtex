@@ -303,22 +303,30 @@ class Parser
 		}
 
 		if( $tag == STRIP_COMMENTS ) {
-			$start = '/<!--()()/';
+			$start = '/<!--()/';
 			$end   = '/-->/';
 		} else {
-			$start = "/<$tag(\\s+[^\\/>]*|\\s*)(\\/?)>/i";
+			$start = "/<$tag(\\s+[^>]*|\\s*\/?)>/i";
 			$end   = "/<\\/$tag\\s*>/i";
 		}
-
+		
 		while ( '' != $text ) {
 			$p = preg_split( $start, $text, 2, PREG_SPLIT_DELIM_CAPTURE );
 			$stripped .= $p[0];
-			if( count( $p ) < 4 ) {
+			if( count( $p ) < 3 ) {
 				break;
 			}
 			$attributes = $p[1];
-			$empty      = $p[2];
-			$inside     = $p[3];
+			$inside     = $p[2];
+
+			// If $attributes ends with '/', we have an empty element tag, <tag />
+			if ( $tag != STRIP_COMMENTS && substr( $attributes, -1 ) == '/' ) {
+				$attributes = substr( $attributes, 0, -1);
+				$empty = '/';
+			}
+			else {
+				$empty = '';
+			}
 
 			$marker = $rnd . sprintf('%08X', $n++);
 			$stripped .= $marker;
@@ -327,7 +335,6 @@ class Parser
 			$params[$marker] = Sanitizer::decodeTagAttributes( $attributes );
 
 			if ( $empty === '/' ) {
-				// Empty element tag, <tag />
 				$content[$marker] = null;
 				$text = $inside;
 			} else {
@@ -594,7 +601,7 @@ class Parser
 		global $wgTidyInternal;
 		$math_content = array();
 		$text = Parser::extractTagsAndParams( 'math', $text, $math_content,
-														  $math_tags, $math_params, $this->mUniqPrefix );
+						      $math_tags, $math_params, $this->mUniqPrefix );
 		$wrappedtext = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"'.
 ' "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html>'.
 '<head><title>test</title></head><body>'.$text.'</body></html>';
@@ -608,8 +615,8 @@ class Parser
 			return $text . "\n<!-- Tidy found serious XHTML errors -->\n";
 		}
 		foreach( $math_content as $marker => $content ) {
-		  $full_tag = $math_tags[$marker] . $content . "</math>";
-		  $correctedtext = str_replace( $marker, $full_tag, $correctedtext );
+			$full_tag = $math_tags[$marker] . $content . "</math>";
+			$correctedtext = str_replace( $marker, $full_tag, $correctedtext );
 		}
 		return $correctedtext;
 	}
@@ -655,6 +662,7 @@ class Parser
 		if( $cleansource == '' && $text != '') {
 			// Some kind of error happened, so we couldn't get the corrected text.
 			// Just give up; we'll use the source text and append a warning.
+			wfDebug("tidy invocation: $wgTidyBin -config $wgTidyConf $wgTidyOpts$opts\n");
 			return null;
 		} else {
 			return $cleansource;
