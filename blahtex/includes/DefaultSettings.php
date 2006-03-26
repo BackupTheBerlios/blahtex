@@ -32,7 +32,7 @@ require_once( 'includes/SiteConfiguration.php' );
 $wgConf = new SiteConfiguration;
 
 /** MediaWiki version number */
-$wgVersion			= '1.6alpha + blahtex 0.4.4-pre2';
+$wgVersion			= '1.6alpha + blahtex 0.4.4';
 
 /** Name of the site. It must be changed in LocalSettings.php */
 $wgSitename         = 'MediaWiki';
@@ -1079,6 +1079,8 @@ $wgUseTeX = false;
 $wgTexvc = './math/texvc';
 /** Location of the blahtex binary. If empty, texvc is used instead */
 $wgBlahtex = '';
+/** Command-line options for blahtex */
+$wgBlahtexOptions = '--texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --spacing strict';
 /** Whether to use blahtex's "--compute-vertical-shift" facility */
 $wgUseBlahtexVerticalShift = false;
 
