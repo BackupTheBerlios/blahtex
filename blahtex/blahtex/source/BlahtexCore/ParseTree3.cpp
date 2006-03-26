@@ -227,18 +227,10 @@ void MathStateChange::Apply(
 {
     static pair<wstring, LayoutTree::Node::Style> styleCommandArray[] =
     {
-        make_pair(L"\\displaystyle",
-            LayoutTree::Node::cStyleDisplay
-        ),
-        make_pair(L"\\textstyle",
-            LayoutTree::Node::cStyleText
-        ),
-        make_pair(L"\\scriptstyle",
-            LayoutTree::Node::cStyleScript
-        ),
-        make_pair(L"\\scriptscriptstyle",
-            LayoutTree::Node::cStyleScriptScript
-        )
+        make_pair(L"\\displaystyle",       LayoutTree::Node::cStyleDisplay),
+        make_pair(L"\\textstyle",          LayoutTree::Node::cStyleText),
+        make_pair(L"\\scriptstyle",        LayoutTree::Node::cStyleScript),
+        make_pair(L"\\scriptscriptstyle",  LayoutTree::Node::cStyleScriptScript)
     };
     static wishful_hash_map<wstring, LayoutTree::Node::Style>
         styleCommandTable(
@@ -289,26 +281,12 @@ void TextStateChange::Apply(
 ) const
 {
     static pair<wstring, TexTextFont> textCommandArray[] =
-    {                                       //  bold?  italic?
-        make_pair(L"\\rm",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        ),
-
-        make_pair(L"\\it",
-            TexTextFont(TexTextFont::cFamilyRm, false, true)
-        ),
-
-        make_pair(L"\\bf",
-            TexTextFont(TexTextFont::cFamilyRm, true, false)
-        ),
-
-        make_pair(L"\\sf",
-            TexTextFont(TexTextFont::cFamilySf, false, false)
-        ),
-
-        make_pair(L"\\tt",
-            TexTextFont(TexTextFont::cFamilyTt, false, false)
-        ),
+    {                                                       //  bold?  italic?
+        make_pair(L"\\rm",  TexTextFont(TexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\it",  TexTextFont(TexTextFont::cFamilyRm, false, true)),
+        make_pair(L"\\bf",  TexTextFont(TexTextFont::cFamilyRm, true,  false)),
+        make_pair(L"\\sf",  TexTextFont(TexTextFont::cFamilySf, false, false)),
+        make_pair(L"\\tt",  TexTextFont(TexTextFont::cFamilyTt, false, false)),
     };
     static wishful_hash_map<wstring, TexTextFont> textCommandTable(
         textCommandArray,
@@ -916,16 +894,17 @@ void MathEnvironment::GetPurifiedTex(
     wstring beginCommand, endCommand;
     if (mIsShort)
     {
-        beginCommand = L"\\" + mName + L"{";
+        beginCommand = L"\\" + mName;
+        features.Update(beginCommand);
+        beginCommand += L"{";
         endCommand = L"}";
     }
     else
     {
         beginCommand = L"\\begin{" + mName + L"}";
+        features.Update(beginCommand);
         endCommand = L"\\end{" + mName + L"}";
     }
-    
-    features.Update(beginCommand);
     
     os << beginCommand;
     mTable->GetPurifiedTex(os, features, fontEncoding);
@@ -1007,9 +986,6 @@ void TextSymbol::GetPurifiedTex(
         gSimpleUnicodeArray,
         END_ARRAY(gSimpleUnicodeArray)
     );
-
-    // FIX: need command line option to select output DPI
-    // FIX: the above comment doesn't belong here
 
     if (mCommand.size() > 1 || mCommand[0] <= 0x7F)
     {

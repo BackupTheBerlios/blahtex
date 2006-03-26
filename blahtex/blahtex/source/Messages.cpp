@@ -320,7 +320,7 @@ wstring GetErrorMessages()
         ptr != gEnglishMessagesTable.end();
         ++ptr
     )
-        output += ptr->first + L"\n" + ptr->second + L"\n";
+        output += ptr->first + L" " + ptr->second + L"\n";
 
     return output;
 }

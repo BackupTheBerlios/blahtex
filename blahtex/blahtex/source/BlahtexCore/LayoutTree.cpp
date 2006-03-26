@@ -1109,7 +1109,18 @@ auto_ptr<MathmlNode> Table::BuildMathmlTree(
         for (int i = 1; i < tableWidth; i++)
             alignString += (i % 2) ? L" left" : L" right";
         node->mAttributes[MathmlNode::cAttributeColumnalign] = alignString;
+        
+        wstring spacingString = L"0.2em";
+        for (int i = 2; i < tableWidth; i++)
+            spacingString += (i % 2) ? L" 0.2em" : L" 1em";
+        node->mAttributes[MathmlNode::cAttributeColumnspacing] =
+            spacingString;
     }
+    
+    // FIX: need to test this for Firefox whenever they get that bug fixed
+    // (mozilla bug 330964)
+    if (mRowSpacing == cRowSpacingTight)
+        node->mAttributes[MathmlNode::cAttributeRowspacing] = L"0.3ex";
 
     for (vector<vector<Node*> >::const_iterator
         inRow = mRows.begin();
@@ -1183,7 +1194,7 @@ auto_ptr<MathmlNode> Table::BuildMathmlTree(
 }
 
 
-// This is a list of all symbols that we know how to negate.
+// This is a list of all operators that we know how to negate.
 pair<wstring, wstring> gNegationArray[] =
 {
     // Element => NotElement

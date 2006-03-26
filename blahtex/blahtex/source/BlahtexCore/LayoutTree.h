@@ -593,13 +593,25 @@ namespace LayoutTree
             cAlignRightLeft
         }
         mAlign;
+        
+        // How much space to put between rows of the table. Currently
+        // "tight" is used for "\substack" blocks, everything else
+        // gets "normal".
+        enum RowSpacing
+        {
+            cRowSpacingNormal,
+            cRowSpacingTight
+        }
+        mRowSpacing;
 
         Table(
             Style style,
-            RGBColour colour
+            RGBColour colour,
+            RowSpacing rowSpacing = cRowSpacingNormal
         ) :
             Node(style, cFlavourOrd, cLimitsDisplayLimits, colour),
-            mAlign(cAlignCentre)
+            mAlign(cAlignCentre),
+            mRowSpacing(rowSpacing)
         { }
 
         ~Table();

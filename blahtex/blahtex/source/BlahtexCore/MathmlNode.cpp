@@ -205,6 +205,8 @@ void MathmlNode::PrintAttributes(wostream& os) const
         L"movablelimits",
         L"linethickness",
         L"columnalign",
+        L"columnspacing",
+        L"rowspacing",
         L"fontfamily",
         L"fontstyle",
         L"fontweight"

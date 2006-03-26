@@ -103,6 +103,8 @@ struct MathmlNode
         cAttributeMovablelimits,
         cAttributeLinethickness,
         cAttributeColumnalign,
+        cAttributeColumnspacing,
+        cAttributeRowspacing,
         cAttributeFontfamily,
         cAttributeFontstyle,
         cAttributeFontweight

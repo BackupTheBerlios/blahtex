@@ -102,6 +102,9 @@ void ShowUsage()
 "\n"
 "More information available at www.blahtex.org\n"
 "\n";
+
+    // FIX: need command line option to select output DPI
+
     exit(0);
 }
 

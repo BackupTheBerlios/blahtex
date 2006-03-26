@@ -452,6 +452,7 @@ pair<wstring, Parser::TokenCode> gMathTokenArray[] =
     // FIX: we still don't size large operators correctly with style
     // changes. TeX only uses TWO sizes for its "large operators".
     // textstyle and below should all be the same size.
+    // Although, amsmath does things differently: investigate that.
 
     make_pair(L"\\sum",                    Parser::cSymbolUnsafe),
     make_pair(L"\\prod",                   Parser::cSymbolUnsafe),

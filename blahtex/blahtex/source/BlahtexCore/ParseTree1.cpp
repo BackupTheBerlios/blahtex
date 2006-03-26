@@ -921,7 +921,7 @@ auto_ptr<LayoutTree::Node> MathBig::BuildLayoutTree(
         )
             newStyle = LayoutTree::Node::cStyleText;
 
-        // FIX: TeX allows "\big."... do we?
+        // FIX: TeX allows "\big."; do we?
         return auto_ptr<LayoutTree::Node>(
             new LayoutTree::SymbolOperator(
                 true,       // indicates stretchy="true"
@@ -1016,10 +1016,8 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(
         make_pair(L"bmatrix",      EnvironmentInfo(L"[",      L"]")),
         make_pair(L"Bmatrix",      EnvironmentInfo(L"{",      L"}")),
         make_pair(L"vmatrix",      EnvironmentInfo(L"|",      L"|")),
-        make_pair(L"Vmatrix",
-            // DoubleVerticalBar:
-            EnvironmentInfo(L"\U00002225", L"\U00002225")
-        ),
+        // DoubleVerticalBar:
+        make_pair(L"Vmatrix",      EnvironmentInfo(L"\U00002225", L"\U00002225")),
         make_pair(L"cases",        EnvironmentInfo(L"{",      L"")),
         make_pair(L"aligned",      EnvironmentInfo(L"",       L"")),
         make_pair(L"smallmatrix",  EnvironmentInfo(L"",       L"")),
@@ -1045,10 +1043,6 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(
     newState.mMathFont = TexMathFont();
     newState.mMathFont.mIsBoldsymbol = state.mMathFont.mIsBoldsymbol;
 
-    // FIX: I think probably the substack rows need to be closer together,
-    // but Firefox doesn't respect the "rowspacing" attribute on <mtable>.
-    // Need to report that and write some code here too.
-
     LayoutTree::Node::Style fencedStyle;
     if (mName == L"smallmatrix" || mName == L"substack")
         newState.mStyle = LayoutTree::Node::cStyleScript;
@@ -1064,14 +1058,20 @@ auto_ptr<LayoutTree::Node> MathEnvironment::BuildLayoutTree(
     }
 
     auto_ptr<LayoutTree::Node> table = mTable->BuildLayoutTree(newState);
+    LayoutTree::Table* tablePtr =
+        dynamic_cast<LayoutTree::Table*>(table.get());
+    if (!tablePtr)
+        throw logic_error(
+            "Unexpected node type in MathEnvironment::BuildLayoutTree"
+        );
+
+    if (mName == L"substack")
+        tablePtr->mRowSpacing = LayoutTree::Table::cRowSpacingTight;
 
     if (mName == L"aligned")
-        dynamic_cast<LayoutTree::Table*>(table.get())->mAlign
-            = LayoutTree::Table::cAlignRightLeft;
-
+        tablePtr->mAlign = LayoutTree::Table::cAlignRightLeft;
     else if (mName == L"cases")
-        dynamic_cast<LayoutTree::Table*>(table.get())->mAlign
-            = LayoutTree::Table::cAlignLeft;
+        tablePtr->mAlign = LayoutTree::Table::cAlignLeft;
 
     if (environmentLookup->second.mLeftDelimiter.empty() &&
         environmentLookup->second.mRightDelimiter.empty()
@@ -1097,40 +1097,18 @@ auto_ptr<LayoutTree::Node> EnterTextMode::BuildLayoutTree(
     // List of all commands that launch into text mode, and some information
     // about which font they select.
     static pair<wstring, TexTextFont> textCommandArray[] =
-    {                         // flags are:     bold?  italic?
-        make_pair(L"\\mbox",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        ),
-        make_pair(L"\\hbox",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        ),
-        make_pair(L"\\text",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        ),
-        make_pair(L"\\textrm",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        ),
-        make_pair(L"\\textbf",
-            TexTextFont(TexTextFont::cFamilyRm, true,  false)
-        ),
-        make_pair(L"\\emph",
-            TexTextFont(TexTextFont::cFamilyRm, false, true)
-        ),
-        make_pair(L"\\textit",
-            TexTextFont(TexTextFont::cFamilyRm, false, true)
-        ),
-        make_pair(L"\\textsf",
-            TexTextFont(TexTextFont::cFamilySf, false, false)
-        ),
-        make_pair(L"\\texttt",
-            TexTextFont(TexTextFont::cFamilyTt, false, false)
-        ),
-        make_pair(L"\\cyr",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        ),
-        make_pair(L"\\jap",
-            TexTextFont(TexTextFont::cFamilyRm, false, false)
-        )
+    {                                             // flags are:     bold?  italic?
+        make_pair(L"\\mbox",    TexTextFont(TexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\hbox",    TexTextFont(TexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\text",    TexTextFont(TexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\textrm",  TexTextFont(TexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\textbf",  TexTextFont(TexTextFont::cFamilyRm, true,  false)),
+        make_pair(L"\\emph",    TexTextFont(TexTextFont::cFamilyRm, false, true)),
+        make_pair(L"\\textit",  TexTextFont(TexTextFont::cFamilyRm, false, true)),
+        make_pair(L"\\textsf",  TexTextFont(TexTextFont::cFamilySf, false, false)),
+        make_pair(L"\\texttt",  TexTextFont(TexTextFont::cFamilyTt, false, false)),
+        make_pair(L"\\cyr",     TexTextFont(TexTextFont::cFamilyRm, false, false)),
+        make_pair(L"\\jap",     TexTextFont(TexTextFont::cFamilyRm, false, false))
     };
     static wishful_hash_map<wstring, TexTextFont> textCommandTable(
         textCommandArray,
@@ -1216,6 +1194,7 @@ auto_ptr<LayoutTree::Node> TextSymbol::BuildLayoutTree(
 
         make_pair(L"\\&",                 L"&"),
         // FIX: why did I put in these next two lines again?
+        // FIX: The character "<" and ">" actually do funny things in TeX...
         make_pair(L"<",                   L"<"),
         make_pair(L">",                   L">"),
         make_pair(L"\\_",                 L"_"),
