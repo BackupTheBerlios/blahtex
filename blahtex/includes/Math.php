@@ -285,11 +285,13 @@ class MathRenderer {
 			return $this->_error( 'math_image_error' );
 		}
 		
-		$tmp = $this->moveToMathDir( "{$hash}.png" );
-		if ( $tmp !== false ) 
-			return $tmp;
-
 		$this->hash = $hash;
+		$tmp = $this->moveToMathDir( "{$hash}.png" );
+		if ( $tmp !== false ) {
+			$this->hash = NULL;
+			return $tmp;
+		}
+
 		return false;
 	}
 
@@ -364,13 +366,14 @@ class MathRenderer {
 			// Case III: We got some results
 			if (isset($results["mathmlMarkup"]))	 
 				$this->mathml = $results['mathmlMarkup'];
-			if (isset($results["blahtex:png:md5"])) 
+			if (isset($results["blahtex:png:md5"])) {
 				$this->hash = $results["blahtex:png:md5"];
+				$tmp = $this->moveToMathDir( "{$this->hash}.png" );
+				if ( $tmp !== false ) 
+					return $tmp;
+			}
 			if (isset($results["blahtex:png:vshift"]))
 				$this->verticalShift = $results["blahtex:png:vshift"];
-			$tmp = $this->moveToMathDir( "{$this->hash}.png" );
-			if ( $tmp !== false ) 
-				return $tmp;
 			return false;
 
 		} else {
@@ -385,6 +388,7 @@ class MathRenderer {
 
 	/**
 	 * Move a file from $wgTmpDirectory to a directory under $wgMathDirectory.
+	 * Assumes that $this->hash is set.
 	 * Returns false or an error message.
 	 */
 	function moveToMathDir( $fname ) {
@@ -427,26 +431,31 @@ class MathRenderer {
 					  $fname
 		);
 
-		if( $rpage !== false ) {
-			if( $rpage->math_outputhash == '' )
-				$this->hash = NULL;
-			else {
-				// Tailing 0x20s can get dropped by the database, add them back on if necessary:
-				$xhash = unpack( 'H32md5', $rpage->math_outputhash . "                " );
-				$this->hash = $xhash ['md5'];
-			}
-			
-			$this->conservativeness = $rpage->math_html_conservativeness;
-			$this->html = $rpage->math_html;
-			$this->mathml = $rpage->math_mathml;
-			
-			if( file_exists( $this->_getHashPath() . "/{$this->hash}.png" ) ) {
-				return true;
-			}
+		if( $rpage === false ) 
+			return false; // Missing from the database
 
-			if( file_exists( $wgMathDirectory . "/{$this->hash}.png" ) ) {
-				$hashpath = $this->_getHashPath();
+		if( $rpage->math_outputhash == '' )
+			$this->hash = NULL;
+		else {
+			// Tailing 0x20s can get dropped by the database, add them back on if necessary:
+			$xhash = unpack( 'H32md5', $rpage->math_outputhash . "                " );
+			$this->hash = $xhash ['md5'];
+		}
+		
+		$this->conservativeness = $rpage->math_html_conservativeness;
+		$this->html = $rpage->math_html;
+		$this->mathml = $rpage->math_mathml;
+		
+		if( !$this->html && !$this->mathml && !$this->hash )
+			return false; // Database contains no useful information
 
+		if( $this->hash) {
+			$hashpath = $this->_getHashPath();
+			
+			// All files used to be stored directly under $wgMathDirectory
+			// Move them to the new layout if necessary
+			if( file_exists( $wgMathDirectory . "/{$this->hash}.png" )
+			    && !file_exists( $hashpath . "/{$this->hash}.png" ) ) {
 				if( !file_exists( $hashpath ) ) {
 					if( !@wfMkdirParents( $hashpath, 0755 ) ) {
 						return false;
@@ -456,31 +465,30 @@ class MathRenderer {
 				}
 				if ( function_exists( "link" ) ) {
 					return link ( $wgMathDirectory . "/{$this->hash}.png",
-							$hashpath . "/{$this->hash}.png" );
+						      $hashpath . "/{$this->hash}.png" );
 				} else {
 					return rename ( $wgMathDirectory . "/{$this->hash}.png",
 							$hashpath . "/{$this->hash}.png" );
 				}
 			}
+			
+			if ( !file_exists( $hashpath . "/{$this->hash}.png" ) ) {
+				$this->hash = NULL; // File disappeared from the render cache
+				return false;
+			}
 
 			global $wgUseBlahtexVerticalShift;
-			if ( $wgUseBlahtexVerticalShift && $this->hash )
-			{
+			if ( $wgUseBlahtexVerticalShift && $this->hash ) {
 				$verticalShiftFile = @fopen( "$hashpath/{$this->hash}.vshift", "rb" );
-				if ( !($verticalShiftFile === false) )
-				{
+				if ( !($verticalShiftFile === false) ) {
 					$this->verticalShift = @fgets( $verticalShiftFile );
 					@fclose( $verticalShiftFile );
 				}
 				// Silently ignore vertical shift if the file is missing
-			}
-
-			if( $this->html || $this->mathml || $this->hash )
-				return true;
+			}			
 		}
 		
-		# Missing from the database and/or the render cache
-		return false;
+		return true;
 	}
 
 	/**
