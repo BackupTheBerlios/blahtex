@@ -406,6 +406,7 @@ class MathRenderer {
 		if( !rename( "$wgTmpDirectory/$fname", "$hashpath/$fname" ) ) {
 			return $this->_error( 'math_output_error' );
 		}
+		return false;
 	}
 
 	function _error( $msg, $arg1 = '', $arg2 = '' ) {
