@@ -315,8 +315,7 @@ $wgHtmlEntities = array(
 	'zeta'     => 950,
 	'zwj'      => 8205,
         'zwnj'     => 8204,
-	/* Plane-1 entities for MathML.
-	 FIXME: Need to decide what to do with these. */
+	/* Plane-1 entities for MathML. */
         'Ascr'     => 0x1D49C, 
         'Cscr'     => 0x1D49E, 
         'Dscr'     => 0x1D49F, 
