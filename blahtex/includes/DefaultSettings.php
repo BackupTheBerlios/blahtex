@@ -1081,8 +1081,6 @@ $wgTexvc = './math/texvc';
 $wgBlahtex = '';
 /** Command-line options for blahtex */
 $wgBlahtexOptions = '--texvc-compatible-commands --mathml-version-1-fonts --disallow-plane-1 --spacing strict';
-/** Whether to use blahtex's "--compute-vertical-shift" facility */
-$wgUseBlahtexVerticalShift = false;
 
 #
 # Profiling / debugging
