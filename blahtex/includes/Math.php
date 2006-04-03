@@ -11,54 +11,66 @@ class blahtexOutputParser  {
 
 	function blahtexOutputParser()
 	{
-		$this->parser = xml_parser_create("UTF-8");
+		$this->parser = xml_parser_create( "UTF-8" );
 		$this->stack = array();
 		$this->results = array();
+		$this->prevCdata = false;
 		
-		xml_set_object($this->parser, $this);
-		xml_parser_set_option($this->parser, XML_OPTION_CASE_FOLDING, 0);
-		xml_set_element_handler($this->parser, "startElement", "stopElement");
-		xml_set_character_data_handler($this->parser, "characterData");
+		xml_set_object( $this->parser, $this );
+		xml_parser_set_option( $this->parser, XML_OPTION_CASE_FOLDING, 0 );
+		xml_set_element_handler( $this->parser, "startElement", "stopElement" );
+		xml_set_character_data_handler( $this->parser, "characterData" );
 	}
 	
-	function parse($data)
+	function parse( $data )
 	{
-		// We splice out any segment between <markup> and </markup>  so that the XML parser doesn't have to
-		// deal with all the MathML tags.
-		$markupBegin = strpos($data, "<markup>");
-		if (!($markupBegin === false)) {
-			$markupEnd = strpos($data, "</markup>");
-			$this->results["mathmlMarkup"] = trim(substr($data, $markupBegin + 8, $markupEnd - $markupBegin - 8));
-			$data = substr($data, 0, $markupBegin + 8) . substr($data, $markupEnd);
+		// We splice out any segment between <markup> and </markup>  
+		// so that the XML parser doesn't have to deal with all the MathML tags.
+		$markupBegin = strpos( $data, "<markup>" );
+		if ( !( $markupBegin === false ) ) {
+			$markupEnd = strpos( $data, "</markup>" );
+			$this->results["mathmlMarkup"] = 
+				trim( substr( $data, $markupBegin + 8, $markupEnd - $markupBegin - 8 ) );
+			$data = substr( $data, 0, $markupBegin + 8 ) . substr( $data, $markupEnd );
 		}
-		xml_parse($this->parser, $data);
+		xml_parse( $this->parser, $data );
 		return $this->results;
 	}
 	
-	function startElement($parser, $name, $attributes)
+	function startElement( $parser, $name, $attributes )
 	{
-		if (count($this->stack) == 0)
-			array_push($this->stack, $name);
+		$this->prevCdata = false;
+		if ( count( $this->stack ) == 0 )
+			array_push( $this->stack, $name );
 		else
-			array_push($this->stack, $this->stack[count($this->stack)-1] . ":$name");
+			array_push( $this->stack, $this->stack[count( $this->stack ) - 1] . ":$name" );
 	}
 	
 	function stopElement($parser, $name)
 	{
-		array_pop($this->stack);
+		$this->prevCdata = false;
+		array_pop( $this->stack );
 	}
 	
 	function characterData($parser, $data)
 	{
-		$index = $this->stack[count($this->stack)-1];
-		if (isset($this->results[$index])) {
-			if (is_array($this->results[$index]))
-				array_push($this->results[$index], $data);
+		$index = $this->stack[count( $this->stack ) - 1];
+		if ( $this->prevCdata ) {
+			// Merge subsequent CDATA blocks
+			if ( is_array( $this->results[$index] ) )
+				array_push( $this->results[$index], 
+					    array_pop( $this->results[$index] ) . $data);
 			else
-				$this->results[$index] = array($this->results[$index], $data);
+				$this->results[$index] .= $data;
+		} else {
+			if ( !isset( $this->results[$index] ) ) 
+				$this->results[$index] = $data;
+			elseif ( is_array( $this->results[$index] ) )
+				array_push( $this->results[$index], $data );
+			else
+				$this->results[$index] = array( $this->results[$index], $data );
 		}
-		else
-			$this->results[$this->stack[count($this->stack)-1]] = $data;
+		$this->prevCdata = true;
 	}
 }
 
@@ -79,7 +91,6 @@ class MathRenderer {
 	var $html = '';
 	var $mathml = '';
 	var $conservativeness = 0;
-	var $verticalShift = "unknown";
 	
 	function MathRenderer( $tex ) {
 		$this->tex = $tex;
@@ -95,43 +106,44 @@ class MathRenderer {
 	
 		if( $this->mode == MW_MATH_SOURCE ) {
 			# No need to render or parse anything more!
-			return ('$ '.htmlspecialchars( $this->tex ).' $');
+			return ( '$ '.htmlspecialchars( $this->tex ).' $' );
 		}
 		
 		if( !$this->_recall() ) {
 			$res = $this->testEnvironment();
-			if ($res)
+			if ( $res )
 				return $res;
 			
 			// Run texvc
-			list($success, $res) = $this->invokeTexvc($this->tex);
-			if (!$success)
+			list( $success, $res ) = $this->invokeTexvc( $this->tex );
+			if ( !$success )
 				return $res;
-			$texvcError = $this->processTexvcOutput($res);
+			$texvcError = $this->processTexvcOutput( $res );
 			
 			// Run blahtex, if configured
-			if ($wgBlahtex) {
-				list($success, $res) = $this->invokeBlahtex($this->tex, $this->hash == NULL);
-				if (!$success)
+			if ( $wgBlahtex ) {
+				list( $success, $res ) = $this->invokeBlahtex( $this->tex, $this->hash == NULL );
+				if ( !$success )
 					return $res;
 				$parser = new blahtexOutputParser();
-				$res = $parser->parse($res);
-				$blahtexError = $this->processBlahtexOutput($res);
-				if ($blahtexError && $texvcError)
+				$res = $parser->parse( $res );
+				wfDebug(print_r($res, TRUE));
+				$blahtexError = $this->processBlahtexOutput( $res );
+				if ( $blahtexError && $texvcError )
 					return $blahtexError;
 			} else {
-				if ($texvcError)
+				if ( $texvcError )
 					return $texvcError;
 			}
 
 			# Now save it back to the DB:
 			if ( !wfReadOnly() ) {
-				if ($this->hash)
-					$outmd5_sql = pack('H32', $this->hash);
+				if ( $this->hash )
+					$outmd5_sql = pack( 'H32', $this->hash );
 				else
 					$outmd5_sql = '';
 			
-				$md5_sql = pack('H32', $this->md5); # Binary packed, not hex
+				$md5_sql = pack( 'H32', $this->md5 ); # Binary packed, not hex
 				
 				$dbw =& wfGetDB( DB_MASTER );
 				$dbw->replace( 'math', array( 'math_inputhash' ),
@@ -143,27 +155,6 @@ class MathRenderer {
 					'math_mathml' => $this->mathml,
 				  ), $fname, array( 'IGNORE' ) 
 				);
-				
-				// Write the vertical shift value to the filesystem.
-				// FIXME: this data should really live in the "math" table.
-				// The filesystem approach is is just a temporary measure
-				// until we decide whether we really want to modify the
-				// database schema.
-				global $wgUseBlahtexVerticalShift;
-				if ( $wgUseBlahtexVerticalShift )
-				{
-					if ( $this->verticalShift != "unknown" )
-					{
-						$hashpath = $this->_getHashPath();
-						$verticalShiftFile = @fopen( "$hashpath/{$this->hash}.vshift", "wb" );
-						if ( !($verticalShiftFile === false) )
-						{
-							@fwrite( $verticalShiftFile, $this->verticalShift );
-							@fclose( $verticalShiftFile );
-						}
-					}
-				}
-				
 			}
 		}
 		  
@@ -189,8 +180,8 @@ class MathRenderer {
 		if( function_exists( 'is_executable' ) && !is_executable( $wgTexvc ) ) {
 			return $this->_error( 'math_notexvc' );
 		}
-		if ($wgBlahtex && function_exists('is_executable') && !is_executable($wgBlahtex))
-			return $this->_error('math_noblahtex', $wgBlahtex);
+		if ($wgBlahtex && function_exists( 'is_executable' ) && !is_executable( $wgBlahtex ))
+			return $this->_error( 'math_noblahtex', $wgBlahtex );
 		
 		return false;
 	}
@@ -200,7 +191,7 @@ class MathRenderer {
 	 * If there is an error, the return value is (false, error message).
 	 * If there is no error, the return value is (true, texvc output).
 	 */
-	function invokeTexvc($tex)
+	function invokeTexvc( $tex )
 	{
 		global $wgMathDirectory, $wgTmpDirectory, $wgTexvc, $wgInputEncoding;
 
@@ -219,11 +210,11 @@ class MathRenderer {
 		$contents = `$cmd`;
 		wfDebug( "TeX output:\n $contents\n---\n" );
 		
-		if (strlen($contents) == 0) {
-			return array(false, $this->_error( 'math_unknown_error' ));
+		if ( strlen( $contents ) == 0 ) {
+			return array( false, $this->_error( 'math_unknown_error' ) );
 		}
 
-		return array(true, $contents);
+		return array( true, $contents );
 	}
 
 	/**
@@ -231,42 +222,42 @@ class MathRenderer {
 	 * in the database and move the PNG image to its final destination.
 	 * Returns an error message, or false if no error occurred.
 	 */
-	function processTexvcOutput($contents) {
+	function processTexvcOutput( $contents ) {
 		global $wgTmpDirectory;
 
-		$retval = substr ($contents, 0, 1);
-		if (($retval == 'C') || ($retval == 'M') || ($retval == 'L')) {
-			if ($retval == 'C')
+		$retval = substr( $contents, 0, 1 );
+		if ( ( $retval == 'C' ) || ( $retval == 'M' ) || ( $retval == 'L' ) ) {
+			if ( $retval == 'C' )
 				$this->conservativeness = 2;
-			else if ($retval == 'M')
+			else if ( $retval == 'M' )
 				$this->conservativeness = 1;
 			else
 				$this->conservativeness = 0;
-			$outdata = substr ($contents, 33);
+			$outdata = substr( $contents, 33 );
 			
-			$i = strpos($outdata, "\000");
+			$i = strpos( $outdata, "\000" );
 			
-			$this->html = substr($outdata, 0, $i);
-			$this->mathml = substr($outdata, $i+1);
-		} else if (($retval == 'c') || ($retval == 'm') || ($retval == 'l'))  {
-			$this->html = substr ($contents, 33);
-			if ($retval == 'c')
+			$this->html = substr( $outdata, 0, $i );
+			$this->mathml = substr( $outdata, $i+1 );
+		} else if ( ( $retval == 'c' ) || ( $retval == 'm' ) || ( $retval == 'l' ) )  {
+			$this->html = substr( $contents, 33 );
+			if ( $retval == 'c' )
 				$this->conservativeness = 2;
-			else if ($retval == 'm')
+			else if ( $retval == 'm' )
 				$this->conservativeness = 1;
 			else
 				$this->conservativeness = 0;
 			$this->mathml = NULL;
-		} else if ($retval == 'X') {
+		} else if ( $retval == 'X' ) {
 			$this->html = NULL;
-			$this->mathml = substr ($contents, 33);
+			$this->mathml = substr( $contents, 33 );
 			$this->conservativeness = 0;
-		} else if ($retval == '+') {
+		} else if ( $retval == '+' ) {
 			$this->html = NULL;
 			$this->mathml = NULL;
 			$this->conservativeness = 0;
 		} else {
-			$errbit = htmlspecialchars( substr($contents, 1) );
+			$errbit = htmlspecialchars( substr( $contents, 1 ) );
 			switch( $retval ) {
 			case 'E': return $this->_error( 'math_lexing_error', $errbit );
 			case 'S': return $this->_error( 'math_syntax_error', $errbit );
@@ -276,8 +267,8 @@ class MathRenderer {
 		}
 
 		$this->hash = NULL;
-		$hash = substr ($contents, 1, 32);
-		if (!preg_match("/^[a-f0-9]{32}$/", $hash)) {
+		$hash = substr( $contents, 1, 32 );
+		if ( !preg_match( "/^[a-f0-9]{32}$/", $hash ) ) {
 			return $this->_error( 'math_unknown_error' );
 		}
 		
@@ -299,93 +290,103 @@ class MathRenderer {
 	 * Invoke the blahtex executable.
 	 * If there is an error, the return value is (false, error message).
 	 * If there is no error, the return value is (true, blatex output).
-	 * @todo Assumes standard input encoding
 	 */
-	function invokeBlahtex($tex, $makePNG)
+	function invokeBlahtex( $tex, $makePNG )
 	{
 		global $wgBlahtex, $wgBlahtexOptions, $wgTmpDirectory;
 
-		$descriptorspec = array(0 => array("pipe", "r"),
-					1 => array("pipe", "w"));
+		$descriptorspec = array( 0 => array( "pipe", "r" ),
+					 1 => array( "pipe", "w" ) );
 		$options = '--mathml ' . $wgBlahtexOptions;
-		if ($makePNG) 
+		if ( $makePNG ) 
 			$options .= " --png --temp-directory $wgTmpDirectory --png-directory $wgTmpDirectory";
 
-		global $wgUseBlahtexVerticalShift;
-		if ( $wgUseBlahtexVerticalShift )
-			$options .= " --compute-vertical-shift";
-
-		$process = proc_open($wgBlahtex.' '.$options, $descriptorspec, $pipes);
-		if (!$process) {
-			return array(false, $this->_error('math_unknown_error', ' #1'));
+		$process = proc_open( $wgBlahtex.' '.$options, $descriptorspec, $pipes );
+		if ( !$process ) {
+			return array( false, $this->_error( 'math_unknown_error', ' #1' ) );
 		}
-		fwrite($pipes[0], '\\displaystyle ');
-		fwrite($pipes[0], $tex);
-		fclose($pipes[0]);
+		fwrite( $pipes[0], '\\displaystyle ' );
+		fwrite( $pipes[0], $tex );
+		fclose( $pipes[0] );
 		
 		$contents = '';
-		while (!feof($pipes[1])) {
-			$contents .= fgets($pipes[1], 4096);
+		while ( !feof($pipes[1] ) ) {
+			$contents .= fgets( $pipes[1], 4096 );
 		}
-		fclose($pipes[1]);
-		if (proc_close($process) != 0) {
+		fclose( $pipes[1] );
+		if ( proc_close( $process ) != 0 ) {
 			// exit code of blahtex is not zero; this shouldn't happen
-			return array(false, $this->_error('math_unknown_error', ' #2'));
+			return array( false, $this->_error( 'math_unknown_error', ' #2' ) );
 		}
 		
-		return array(true, $contents);
+		return array( true, $contents );
 	}
 
 	/**
 	 * Process blahtex output and update the mathml and png fields.
 	 * Returns an error message, or false if no error occurred.
-	 * FIXME: this assumes incorrectly that mathml and png errors have no arguments.
 	 */
-	function processBlahtexOutput($results)
+	function processBlahtexOutput( $results )
 	{
-		if (isset($results["blahtex:logicError"])) {
-			// Case I: Something went completely wrong
+		if ( isset( $results["blahtex:logicError"] ) ) {
+			// Something went completely wrong
 			return $this->_error('math_unknown_error', $results["blahtex:logicError"]);
 
-		} elseif (isset($results["blahtex:error:id"])) {
-			// Case II: There was a syntax error in the input. 
-			if (isset($results["blahtex:error:arg"])) {
-				if (is_array($results["blahtex:error:arg"])) 
-					// Error message has two arguments
-					return $this->_error('math_' . $results["blahtex:error:id"], 
-							     $results["blahtex:error:arg"][0], $results["blahtex:error:arg"][1]);
-				else
-					// Error message has one argument
-					return $this->_error('math_' . $results["blahtex:error:id"], $results["blahtex:error:arg"]);
-			}
-			else	
-			  // Error message has no arguments
-			  return $this->_error('math_' . $results["blahtex:error:id"]);
+		} elseif ( isset( $results["blahtex:error:id"] ) ) {
+			// There was a syntax error in the input
+			return $this->blahtexError( $results, "blahtex:error" );
 
 		} elseif (isset($results["mathmlMarkup"]) || isset($results["blahtex:png:md5"])) {
-			// Case III: We got some results
-			if (isset($results["mathmlMarkup"]))	 
+			// We got some results
+			if ( isset( $results["mathmlMarkup"] ) )	 
 				$this->mathml = $results['mathmlMarkup'];
-			if (isset($results["blahtex:png:md5"])) {
+			if ( isset( $results["blahtex:png:md5"] ) ) {
 				$this->hash = $results["blahtex:png:md5"];
 				$tmp = $this->moveToMathDir( "{$this->hash}.png" );
 				if ( $tmp !== false ) 
 					return $tmp;
 			}
-			if (isset($results["blahtex:png:vshift"]))
-				$this->verticalShift = $results["blahtex:png:vshift"];
 			return false;
 
 		} else {
-			// Case IV: There is an error somewhere
-			if (isset($results["blahtex:mathml:error:id"])) 
-				return $this->_error('math_' . $results["blahtex:mathml:error:id"]);	
-			if (isset($results["blahtex:png:error:id"]))
-				return $this->_error('math_' . $results["blahtex:png:error:id"]);	
-			return $this->_error('math_unknown_error', ' #3');
+			// There is an error somewhere
+			if ( isset( $results["blahtex:mathml:error:id"] ) ) 
+				return $this->blahtexError( $results, "blahtex:mathml:error" );
+			if ( isset( $results["blahtex:png:error:id"] ) )
+				return $this->blahtexError( $results, "blahtex:png:error" );
+			return $this->_error( 'math_unknown_error', ' #3' );
 		}
 	}
 
+	/**
+	 * Returns the error message stored in the $results parse tree
+	 * under the node $node.
+	 */
+	function blahtexError( $results, $node ) {
+		$id = 'math_' . $results[$node . ":id"];
+		$fallback = $results[$node . ":message"];
+		if ( isset( $results[$node . ":arg"] ) ) {
+			if ( is_array( $results[$node . ":arg"] ) ) {
+				// Error message has two or three arguments
+				$arg1 = $results[$node . ":arg"][0];
+				$arg2 = $results[$node . ":arg"][1];
+				if ( count( $results[$node . ":arg"][1] > 2 ) )
+					$arg3 = $results[$node . ":arg"][1];
+				else
+					$arg3 = '';
+				return $this->_error( $id, $arg1, $arg2, $arg3, $fallback );
+			} else {
+				// Error message has one argument
+				$arg = $results[$node . ":arg"];
+				return $this->_error( $id, $arg, '', '', $fallback );
+			}
+		}
+		else {
+			// Error message without arguments
+			return $this->_error( $id, '', '', '', $fallback );
+		}
+	}
+		
 	/**
 	 * Move a file from $wgTmpDirectory to a directory under $wgMathDirectory.
 	 * Assumes that $this->hash is set.
@@ -409,13 +410,17 @@ class MathRenderer {
 		return false;
 	}
 
-	function _error( $msg, $arg1 = '', $arg2 = '' ) {
+	function _error( $msg, $arg1 = '', $arg2 = '', $arg3 = '', $fallback = NULL ) {
 		$mf = htmlspecialchars( wfMsg( 'math_failure' ) );
-		if ($msg) 
-			$errmsg = htmlspecialchars( wfMsg( $msg, $arg1, $arg2 ) );
+		if ( $msg ) {
+			if ( $fallback && wfMsg( $msg ) == '&lt;' . htmlspecialchars( $msg ) . '&gt;' ) 
+				$errmsg = htmlspecialchars( $fallback );
+			else
+				$errmsg = htmlspecialchars( wfMsg( $msg, $arg1, $arg2, $arg3 ) );
+		}
 		else
 			$errmsg = '';
-		$source = htmlspecialchars(str_replace("\n", ' ', $this->tex));
+		$source = htmlspecialchars( str_replace( "\n", ' ', $this->tex ) );
 		// Note: the str_replace above is because the return value must not contain newlines
 		return "<strong class='error'>$mf ($errmsg): $source</strong>\n";
 	}
@@ -452,7 +457,8 @@ class MathRenderer {
 
 		if( $this->hash) {
 			$hashpath = $this->_getHashPath();
-			
+
+			// MediaWiki 1.5 / 1.6 transition:
 			// All files used to be stored directly under $wgMathDirectory
 			// Move them to the new layout if necessary
 			if( file_exists( $wgMathDirectory . "/{$this->hash}.png" )
@@ -477,16 +483,6 @@ class MathRenderer {
 				$this->hash = NULL; // File disappeared from the render cache
 				return false;
 			}
-
-			global $wgUseBlahtexVerticalShift;
-			if ( $wgUseBlahtexVerticalShift && $this->hash ) {
-				$verticalShiftFile = @fopen( "$hashpath/{$this->hash}.vshift", "rb" );
-				if ( !($verticalShiftFile === false) ) {
-					$this->verticalShift = @fgets( $verticalShiftFile );
-					@fclose( $verticalShiftFile );
-				}
-				// Silently ignore vertical shift if the file is missing
-			}			
 		}
 		
 		return true;
@@ -509,7 +505,7 @@ class MathRenderer {
 			break;
 
 		case MW_MATH_SIMPLE:
-			if( $this->hash && ( !$this->html || $this->conservativeness != 2 ))
+			if( $this->hash && ( !$this->html || $this->conservativeness != 2 ) )
 				$choice = 'png';
 			elseif ( $this->html )
 				$choice = 'html';
@@ -527,7 +523,7 @@ class MathRenderer {
 			break;
 
 		case MW_MATH_MODERN:
-			if( $this->hash && ( !$this->html || $this->conservativeness == 0 ))
+			if( $this->hash && ( !$this->html || $this->conservativeness == 0 ) )
 				$choice = 'png';
 			elseif ( $this->html )
 				$choice = 'html';
@@ -577,7 +573,7 @@ class MathRenderer {
 function renderMath( $tex ) {
 	global $wgUser;
 	$math = new MathRenderer( $tex );
-	$math->setOutputMode( $wgUser->getOption('math'));
+	$math->setOutputMode( $wgUser->getOption( 'math' ) );
 	return $math->render();
 }
 
