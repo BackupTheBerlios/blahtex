@@ -219,13 +219,11 @@ class SkinTemplate extends Skin {
 			$tpl->set( 'trackbackhtml', $wgTitle->trackbackRDF());
 
                 /* If the user has selected MathML, then we should prepare an XHTML page */
-                if ($wgUser->getOption('math') == MW_MATH_MATHML) {
+                if( $wgUser->getOption('math') == MW_MATH_MATHML ) {
                         $tpl->set( 'mimetype', 'application/xhtml+xml' );
                         $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN' );
                         $tpl->set( 'dtd', 'http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd' );
                         $tpl->set( 'xmlheaders', "<?xml version=\"1.0\" encoding=\"$wgOutputEncoding\"?>\n" );
-                        /* $tpl->set( 'xmlheaders', "<?xml version=\"1.0\"?>\n" .
-                                                    "<?xml-stylesheet type=\"text/xsl\" href=\"/mathml.xsl\"?>\n" ); */
                 } else {
                         $tpl->setRef( 'mimetype', $wgMimeType );
                         $tpl->set( 'doctype', '-//W3C//DTD XHTML 1.0 Transitional//EN' );
