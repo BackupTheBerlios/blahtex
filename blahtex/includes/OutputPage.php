@@ -557,7 +557,6 @@ class OutputPage {
 		$sk->postParseLinkColour( false );
 
 		/* Send page as XHTML if the user has selected MathML and the browser accepts XHTML */
-		/* FIXME: Use $wgRequest? */
                 if ( $wgUser->getOption( 'math' ) == MW_MATH_MATHML ) {
                         if ( isset( $_SERVER['HTTP_ACCEPT'] ) && stristr( $_SERVER['HTTP_ACCEPT'], 'application/xhtml+xml' )) {
                                 header( "Content-type: application/xhtml+xml; charset={$wgOutputEncoding}" );
@@ -924,13 +923,22 @@ class OutputPage {
 		global $wgDocType, $wgDTD, $wgContLanguageCode, $wgOutputEncoding, $wgMimeType;
 		global $wgUser, $wgContLang, $wgUseTrackbacks, $wgTitle;
 
-		if( $wgMimeType == 'text/xml' || $wgMimeType == 'application/xhtml+xml' || $wgMimeType == 'application/xml' ) {
-			$ret = "<?xml version=\"1.0\" encoding=\"$wgOutputEncoding\" ?>\n";
-		} else {
-			$ret = '';
+                /* If the user has selected MathML, then we should prepare an XHTML page */
+		if( $wgUser->getOption('math') == MW_MATH_MATHML ) {
+			$ret = "<?xml version=\"1.0\" encoding=\"$wgOutputEncoding\"?>\n"
+				. "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN\"\n"
+				. "        \"http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd\">\n";
+			array_push( $this->mMetatags, array( "http:Content-type", 
+							     "application/xhtml+xml; charset={$wgOutputEncoding}" ) );
+		} else { 
+			if( $wgMimeType == 'text/xml' || $wgMimeType == 'application/xhtml+xml' || $wgMimeType == 'application/xml' ) {
+				$ret = "<?xml version=\"1.0\" encoding=\"$wgOutputEncoding\" ?>\n";
+			} else {
+				$ret = '';
+			}
+			$ret .= "<!DOCTYPE html PUBLIC \"$wgDocType\"\n        \"$wgDTD\">\n";
+			array_push( $this->mMetatags, array( "http:Content-type", "$wgMimeType; charset={$wgOutputEncoding}" ) );
 		}
-
-		$ret .= "<!DOCTYPE html PUBLIC \"$wgDocType\"\n        \"$wgDTD\">\n";
 
 		if ( '' == $this->getHTMLTitle() ) {
 			$this->setHTMLTitle(  wfMsg( 'pagetitle', $this->getPageTitle() ));
@@ -939,7 +947,6 @@ class OutputPage {
 		$rtl = $wgContLang->isRTL() ? " dir='RTL'" : '';
 		$ret .= "<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"$wgContLanguageCode\" lang=\"$wgContLanguageCode\" $rtl>\n";
 		$ret .= "<head>\n<title>" . htmlspecialchars( $this->getHTMLTitle() ) . "</title>\n";
-		array_push( $this->mMetatags, array( "http:Content-type", "$wgMimeType; charset={$wgOutputEncoding}" ) );
 
 		$ret .= $this->getHeadLinks();
 		global $wgStylePath;
