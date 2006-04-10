@@ -217,6 +217,9 @@ class OutputPage {
 	function addCategoryLinks($categories) {
 		global $wgUser, $wgContLang;
 
+		if ( !is_array( $categories ) ) {
+			return;
+		}
 		# Add the links to the link cache in a batch
 		$arr = array( NS_CATEGORY => $categories );
 		$lb = new LinkBatch;
@@ -459,7 +462,8 @@ class OutputPage {
 	 */
 	function output() {
 		global $wgUser, $wgOutputEncoding;
-		global $wgContLanguageCode, $wgDebugRedirects, $wgMimeType, $wgProfiler;
+		global $wgContLanguageCode, $wgDebugRedirects, $wgMimeType;
+		global $wgJsMimeType, $wgStylePath, $wgUseAjax, $wgScriptPath, $wgServer;
 
 		if( $this->mDoNothing ){
 			return;
@@ -467,6 +471,14 @@ class OutputPage {
 		$fname = 'OutputPage::output';
 		wfProfileIn( $fname );
 		$sk = $wgUser->getSkin();
+
+		if ( $wgUseAjax ) {
+			$this->addScript( "<script type=\"{$wgJsMimeType}\">
+				var wgScriptPath=\"{$wgScriptPath}\";
+				var wgServer=\"{$wgServer}\";
+			</script>" );
+			$this->addScript( "<script type=\"{$wgJsMimeType}\" src=\"{$wgStylePath}/common/ajax.js\"></script>\n" );
+		}
 
 		if ( '' != $this->mRedirect ) {
 			if( substr( $this->mRedirect, 0, 4 ) != 'http' ) {
@@ -491,7 +503,6 @@ class OutputPage {
 			} else {
 				header( 'Location: '.$this->mRedirect );
 			}
-			if ( isset( $wgProfiler ) ) { wfDebug( $wgProfiler->getOutput() ); }
 			wfProfileOut( $fname );
 			return;
 		}
@@ -800,13 +811,15 @@ class OutputPage {
 	}
 
 	function readOnlyPage( $source = null, $protected = false ) {
-		global $wgUser, $wgReadOnlyFile, $wgReadOnly;
+		global $wgUser, $wgReadOnlyFile, $wgReadOnly, $wgTitle;
 
 		$this->setRobotpolicy( 'noindex,nofollow' );
 		$this->setArticleRelated( false );
 
 		if( $protected ) {
+			$skin = $wgUser->getSkin();
 			$this->setPageTitle( wfMsg( 'viewsource' ) );
+			$this->setSubtitle( wfMsg( 'viewsourcefor', $skin->makeKnownLinkObj( $wgTitle ) ) );
 			$this->addWikiText( wfMsg( 'protectedtext' ) );
 		} else {
 			$this->setPageTitle( wfMsg( 'readonly' ) );
@@ -905,6 +918,9 @@ class OutputPage {
 		$this->addKeyword( $wgTitle->getPrefixedText() );
 		$count = 1;
 		$links2d =& $parserOutput->getLinks();
+		if ( !is_array( $links2d ) ) {
+			return;
+		}
 		foreach ( $links2d as $ns => $dbkeys ) {
 			foreach( $dbkeys as $dbkey => $id ) {
 				$this->addKeyword( $dbkey );

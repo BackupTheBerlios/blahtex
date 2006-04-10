@@ -1,9 +1,0 @@
-K 10
-svn:ignore
-V 49
-*.html
-media
-MediaWiki
-memcached-client
-UtfNormal
-END

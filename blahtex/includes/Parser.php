@@ -93,7 +93,7 @@ class Parser
 	 * @access private
 	 */
 	# Persistent:
-	var $mTagHooks;
+	var $mTagHooks, $mFunctionHooks;
 
 	# Cleared with clearState():
 	var $mOutput, $mAutonumber, $mDTopen, $mStripState = array();
@@ -120,6 +120,7 @@ class Parser
 	 */
 	function Parser() {
 		$this->mTagHooks = array();
+		$this->mFunctionHooks = array();
 		$this->clearState();
 	}
 
@@ -200,8 +201,6 @@ class Parser
 		$this->mRevisionId = $revid;
 		$this->mOutputType = OT_HTML;
 
-		$this->mStripState = NULL;
-
 		//$text = $this->strip( $text, $this->mStripState );
 		// VOODOO MAGIC FIX! Sometimes the above segfaults in PHP5.
 		$x =& $this->mStripState;
@@ -250,6 +249,32 @@ class Parser
 
 		if (($wgUseTidy and $this->mOptions->mTidy) or $wgAlwaysUseTidy) {
 			$text = Parser::tidy($text);
+		} else {
+			# attempt to sanitize at least some nesting problems
+			# (bug #2702 and quite a few others)
+			$tidyregs = array(	
+				# ''Something [http://www.cool.com cool''] --> 
+				# <i>Something</i><a href="http://www.cool.com"..><i>cool></i></a>
+				'/(<([bi])>)(<([bi])>)?([^<]*)(<\/?a[^<]*>)([^<]*)(<\/\\4>)?(<\/\\2>)/' =>
+				'\\1\\3\\5\\8\\9\\6\\1\\3\\7\\8\\9',
+				# fix up an anchor inside another anchor, only
+				# at least for a single single nested link (bug 3695)
+				'/(<a[^>]+>)([^<]*)(<a[^>]+>[^<]*)<\/a>(.*)<\/a>/' =>
+				'\\1\\2</a>\\3</a>\\1\\4</a>',
+				# fix div inside inline elements- doBlockLevels won't wrap a line which
+				# contains a div, so fix it up here; replace
+				# div with escaped text
+				'/(<([aib]) [^>]+>)([^<]*)(<div([^>]*)>)(.*)(<\/div>)([^<]*)(<\/\\2>)/' =>
+				'\\1\\3&lt;div\\5&gt;\\6&lt;/div&gt;\\8\\9',
+				# remove empty italic or bold tag pairs, some
+				# introduced by rules above
+				'/<([bi])><\/\\1>/' => '' 
+			);
+
+			$text = preg_replace( 
+				array_keys( $tidyregs ),
+				array_values( $tidyregs ),
+				$text );
 		}
 
 		wfRunHooks( 'ParserAfterTidy', array( &$this, &$text ) );
@@ -320,11 +345,10 @@ class Parser
 			$inside     = $p[2];
 
 			// If $attributes ends with '/', we have an empty element tag, <tag />
-			if ( $tag != STRIP_COMMENTS && substr( $attributes, -1 ) == '/' ) {
+			if( $tag != STRIP_COMMENTS && substr( $attributes, -1 ) == '/' ) {
 				$attributes = substr( $attributes, 0, -1);
 				$empty = '/';
-			}
-			else {
+			} else {
 				$empty = '';
 			}
 
@@ -454,11 +478,9 @@ class Parser
 		}
 
 		# Comments
-		if($stripcomments) {
-			$text = Parser::extractTags(STRIP_COMMENTS, $text, $comment_content, $uniq_prefix);
-			foreach( $comment_content as $marker => $content ){
-				$comment_content[$marker] = '<!--'.$content.'-->';
-			}
+		$text = Parser::extractTags(STRIP_COMMENTS, $text, $comment_content, $uniq_prefix);
+		foreach( $comment_content as $marker => $content ){
+			$comment_content[$marker] = '<!--'.$content.'-->';
 		}
 
 		# Extensions
@@ -480,6 +502,16 @@ class Parser
 					}
 				}
 			}
+		}
+
+		# Unstrip comments unless explicitly told otherwise.
+		# (The comments are always stripped prior to this point, so as to
+		# not invoke any extension tags / parser hooks contained within
+		# a comment.)
+		if ( !$stripcomments ) {
+			$tempstate = array( 'comment' => $comment_content );
+			$text = $this->unstrip( $text, $tempstate );
+			$comment_content = array();
 		}
 
 		# Merge state with the pre-existing state, if there is one
@@ -767,7 +799,13 @@ class Parser
 				}
 				$after = substr ( $x , 1 ) ;
 				if ( $fc == '!' ) $after = str_replace ( '!!' , '||' , $after ) ;
-				$after = explode ( '||' , $after ) ;
+				
+				// Split up multiple cells on the same line.
+				// FIXME: This can result in improper nesting of tags processed
+				// by earlier parser steps, but should avoid splitting up eg
+				// attribute values containing literal "||".
+				$after = wfExplodeMarkup( '||', $after );
+				
 				$t[$k] = '' ;
 
 				# Loop through each table cell
@@ -822,6 +860,9 @@ class Parser
 		}
 
 		$t = implode ( "\n" , $t ) ;
+		# special case: don't return empty table
+		if($t == "<table>\n<tr><td></td></tr>\n</table>")
+			$t = '';
 		wfProfileOut( $fname );
 		return $t ;
 	}
@@ -1196,6 +1237,19 @@ class Parser
 				$url = $protocol . $m[1];
 				$trail = $m[2];
 
+				# special case: handle urls as url args:
+				# http://www.example.com/foo?=http://www.example.com/bar
+				if(strlen($trail) == 0 && 
+					isset($bits[$i]) &&
+					preg_match('/^'. wfUrlProtocols() . '$/S', $bits[$i]) &&
+					preg_match( '/^('.EXT_LINK_URL_CLASS.'+)(.*)$/s', $bits[$i + 1], $m )) 
+				{
+					# add protocol, arg
+					$url .= $bits[$i] . $bits[$i + 1]; # protocol, url as arg to previous link
+					$i += 2;
+					$trail = $m[2];
+				}
+
 				# The characters '<' and '>' (which were escaped by
 				# removeHTMLtags()) should not be included in
 				# URLs, per RFC 2396.
@@ -1383,12 +1437,18 @@ class Parser
 				# Still some problems for cases where the ] is meant to be outside punctuation,
 				# and no image is in sight. See bug 2095.
 				#
-				if( $text !== '' && preg_match( "/^\](.*)/s", $m[3], $n ) ) {
+				if( $text !== '' && 
+					preg_match( "/^\](.*)/s", $m[3], $n ) && 
+					strpos($text, '[') !== false 
+				) 
+				{
 					$text .= ']'; # so that replaceExternalLinks($text) works later
 					$m[3] = $n[1];
 				}
 				# fix up urlencoded title texts
-				if(preg_match('/%/', $m[1] )) $m[1] = urldecode($m[1]);
+				if(preg_match('/%/', $m[1] )) 
+					# Should anchors '#' also be rejected?
+					$m[1] = str_replace( array('<', '>'), array('&lt;', '&gt;'), urldecode($m[1]) );
 				$trail = $m[3];
 			} elseif( preg_match($e1_img, $line, $m) ) { # Invalid, but might be an image with a link in its caption
 				$might_be_img = true;
@@ -2045,6 +2105,8 @@ class Parser
 				return $this->mTitle->getPrefixedURL();
 			case MAG_SUBPAGENAME:
 				return $this->mTitle->getSubpageText();
+			case MAG_SUBPAGENAMEE:
+				return $this->mTitle->getSubpageUrlForm();
 			case MAG_REVISIONID:
 				return $this->mRevisionId;
 			case MAG_NAMESPACE:
@@ -2560,6 +2622,29 @@ class Parser
 			}
 		}
 
+		# Extensions
+		if ( !$found ) {
+			$colonPos = strpos( $part1, ':' );
+			if ( $colonPos !== false ) {
+				$function = strtolower( substr( $part1, 0, $colonPos ) );
+				if ( isset( $this->mFunctionHooks[$function] ) ) {
+					$funcArgs = array_merge( array( &$this, substr( $part1, $colonPos + 1 ) ), $args );
+					$result = call_user_func_array( $this->mFunctionHooks[$function], $funcArgs );
+					$found = true;
+					if ( is_array( $result ) ) {
+						$text = $linestart . $result[0];
+						unset( $result[0] );
+
+						// Extract flags into the local scope
+						// This allows callers to set flags such as nowiki, noparse, found, etc.
+						extract( $result );
+					} else {
+						$text = $linestart . $result;
+					}
+				}
+			}
+		}
+
 		# Template table test
 
 		# Did we encounter this template already? If yes, it is in the cache
@@ -2586,7 +2671,11 @@ class Parser
 		$lastPathLevel = $this->mTemplatePath;
 		if ( !$found ) {
 			$ns = NS_TEMPLATE;
-			$part1 = $this->maybeDoSubpageLink( $part1, $subpage='' );
+			# declaring $subpage directly in the function call
+			# does not work correctly with references and breaks
+			# {{/subpage}}-style inclusions
+			$subpage = '';
+			$part1 = $this->maybeDoSubpageLink( $part1, $subpage );
 			if ($subpage !== '') {
 				$ns = $this->mTitle->getNamespace();
 			}
@@ -3139,6 +3228,13 @@ class Parser
 		$valid = '0123456789-Xx';
 
 		foreach ( $a as $x ) {
+			# hack: don't replace inside thumbnail title/alt
+			# attributes
+			if(preg_match('/<[^>]+(alt|title)="[^">]*$/', $text)) {
+				$text .= "ISBN $x";
+				continue;
+			}
+
 			$isbn = $blank = '' ;
 			while ( ' ' == $x{0} ) {
 				$blank .= ' ';
@@ -3161,7 +3257,7 @@ class Parser
 			} else {
 				$titleObj = Title::makeTitle( NS_SPECIAL, 'Booksources' );
 				$text .= '<a href="' .
-				$titleObj->escapeLocalUrl( 'isbn='.$num ) .
+					$titleObj->escapeLocalUrl( 'isbn='.$num ) .
 					"\" class=\"internal\">ISBN $isbn</a>";
 				$text .= $x;
 			}
@@ -3205,6 +3301,13 @@ class Parser
 				continue;
 				}
 
+			# hack: don't replace inside thumbnail title/alt
+			# attributes
+			if(preg_match('/<[^>]+(alt|title)="[^">]*$/', $text)) {
+				$text .= $keyword . $x;
+				continue;
+			}
+			
 			$id = $blank = '' ;
 
 			/** remove and save whitespaces in $blank */
@@ -3471,6 +3574,35 @@ class Parser
 		$oldVal = @$this->mTagHooks[$tag];
 		$this->mTagHooks[$tag] = $callback;
 
+		return $oldVal;
+	}
+
+	/**
+	 * Create a function, e.g. {{sum:1|2|3}}
+	 * The callback function should have the form:
+	 *    function myParserFunction( &$parser, $arg1, $arg2, $arg3 ) { ... }
+	 *
+	 * The callback may either return the text result of the function, or an array with the text 
+	 * in element 0, and a number of flags in the other elements. The names of the flags are 
+	 * specified in the keys. Valid flags are:
+	 *   found                     The text returned is valid, stop processing the template. This 
+	 *                             is on by default.
+	 *   nowiki                    Wiki markup in the return value should be escaped
+	 *   noparse                   Unsafe HTML tags should not be stripped, etc.
+	 *   noargs                    Don't replace triple-brace arguments in the return value
+	 *   isHTML                    The returned text is HTML, armour it against wikitext transformation
+	 *
+	 * @access public
+	 *
+	 * @param string $name The function name. Function names are case-insensitive.
+	 * @param mixed $callback The callback function (and object) to use
+	 *
+	 * @return The old callback function for this name, if any
+	 */
+	function setFunctionHook( $name, $callback ) {
+		$name = strtolower( $name );
+		$oldVal = @$this->mFunctionHooks[$name];
+		$this->mFunctionHooks[$name] = $callback;
 		return $oldVal;
 	}
 
@@ -3790,6 +3922,11 @@ class Parser
 		}
 		# Strip bad stuff out of the alt text
 		$alt = $this->replaceLinkHoldersText( $caption );
+
+		# make sure there are no placeholders in thumbnail attributes
+		# that are later expanded to html- so expand them now and
+		# remove the tags
+		$alt = $this->unstrip($alt, $this->mStripState); 
 		$alt = Sanitizer::stripAllTags( $alt );
 
 		# Linker does the rest
@@ -4058,14 +4195,14 @@ function wfNumberOfArticles() {
  * Return the number of files
  */
 function wfNumberOfFiles() {
-	$fname = 'Parser::wfNumberOfFiles';
+	$fname = 'wfNumberOfFiles';
 
 	wfProfileIn( $fname );
 	$dbr =& wfGetDB( DB_SLAVE );
-	$res = $dbr->selectField('image', 'COUNT(*)', array(), $fname );
+	$numImages = $dbr->selectField('site_stats', 'ss_images', array(), $fname );
 	wfProfileOut( $fname );
 
-	return $res;
+	return $numImages;
 }
 
 /**

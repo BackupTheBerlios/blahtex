@@ -45,8 +45,8 @@ parent class in order maintain consistency across languages.
 'tog-showtoc'			=> 'Show table of contents (for pages with more than 3 headings)',
 'tog-rememberpassword' => 'Remember across sessions',
 'tog-editwidth' => 'Edit box has full width',
-'tog-watchcreations' => 'Add pages you create to your watchlist',
-'tog-watchdefault' => 'Add pages you edit to your watchlist',
+'tog-watchcreations' => 'Add pages I create to my watchlist',
+'tog-watchdefault' => 'Add pages I edit to my watchlist',
 'tog-minordefault' => 'Mark all edits minor by default',
 'tog-previewontop' => 'Show preview before edit box',
 'tog-previewonfirst' => 'Show preview on first edit',
@@ -61,7 +61,8 @@ parent class in order maintain consistency across languages.
 'tog-externaldiff' => 'Use external diff by default',
 'tog-showjumplinks' => 'Enable "jump to" accessibility links',
 'tog-uselivepreview' => 'Use live preview (JavaScript) (Experimental)',
-'tog-autopatrol' => 'Mark edits you make as patrolled',
+'tog-autopatrol' => 'Mark edits I make as patrolled',
+'tog-forceeditsummary' => 'Prompt me when entering a blank edit summary',
 
 'underline-always' => 'Always',
 'underline-never' => 'Never',
@@ -113,8 +114,14 @@ parent class in order maintain consistency across languages.
 'linktrail'		=> '/^([a-z]+)(.*)$/sD',
 'linkprefix'		=> '/^(.*?)([a-zA-Z\x80-\xff]+)$/sD',
 'mainpage'		=> 'Main Page',
-'mainpagetext'	=> "'''MediaWiki has been successfully installed.'''",
-'mainpagedocfooter' => "Consult the [http://www.mediawiki.org/wiki/Help:Configuration_settings configuration settings list] and the [http://meta.wikipedia.org/wiki/MediaWiki_User%27s_Guide User's Guide] for information on customising and using the wiki software.",
+'mainpagetext'	=> "<big>'''MediaWiki has been successfully installed.'''</big>",
+'mainpagedocfooter' => "Consult the [http://meta.wikipedia.org/wiki/MediaWiki_User%27s_Guide User's Guide] for information on using the wiki software.
+
+== Getting started ==
+
+* [http://www.mediawiki.org/wiki/Help:Configuration_settings Configuration settings list]
+* [http://www.mediawiki.org/wiki/Help:FAQ MediaWiki FAQ]
+* [http://mail.wikipedia.org/mailman/listinfo/mediawiki-announce MediaWiki release mailing list]",
 
 'portal'		=> 'Community portal',
 'portal-url'	=> 'Project:Community Portal',
@@ -325,6 +332,7 @@ Please report this to an administrator, making note of the URL.',
 Function: $1<br />
 Query: $2',
 'viewsource' => 'View source',
+'viewsourcefor' => 'for $1',
 'protectedtext' => 'This page has been locked to prevent editing; there are
 a number of reasons why this may be so, please see
 [[Project:Protected page]].
@@ -456,6 +464,7 @@ format. Please enter a well-formatted address or empty that field.',
 'showlivepreview'	=> 'Live preview',
 'showdiff'	=> 'Show changes',
 'anoneditwarning' => 'You are not logged in. Your IP address will be recorded in this page\'s edit history.',
+'missingsummary' => "'''Reminder:''' You have not provided an edit summary. If you click Save again, your edit will be saved without one.",
 'missingcommenttext' => 'Please enter a comment below.',
 'blockedtitle'	=> 'User is blocked',
 'blockedtext'	=> 'Your user name or IP address has been blocked by $1.
@@ -846,7 +855,12 @@ Unselected groups will not be changed. You can deselect a group with CTRL + Left
 'rcnote'		=> "Below are the last <strong>$1</strong> changes in last <strong>$2</strong> days.",
 'rcnotefrom'	=> "Below are the changes since <b>$2</b> (up to <b>$1</b> shown).",
 'rclistfrom'	=> "Show new changes starting from $1",
-'showhideminor' => "$1 minor edits | $2 bots | $3 logged in users | $4 patrolled edits",
+'rcshowhideminor' => '$1 minor edits',
+'rcshowhidebots' => '$1 bots',
+'rcshowhideliu' => '$1 logged-in users',
+'rcshowhideanons' => '$1 anonymous users',
+'rcshowhidepatr' => '$1 patrolled edits',
+'rcshowhidemine' => '$1 my edits',
 'rclinks'		=> "Show last $1 changes in last $2 days<br />$3",
 'rchide'		=> "in $4 form; $1 minor edits; $2 secondary namespaces; $3 multiple edits.",
 'rcliu'			=> "; $1 edits from logged in users",
@@ -979,7 +993,9 @@ this old version, (rev) = revert to this old version.
 This includes \"talk\" pages, pages about {{SITENAME}}, minimal \"stub\"
 pages, redirects, and others that probably don't qualify as content pages.
 Excluding those, there are '''$2''' pages that are probably legitimate
-content pages.
+content pages. 
+
+'''$8''' files have been uploaded.
 
 There have been a total of '''$3''' page views, and '''$4''' page edits
 since the wiki was setup.
@@ -989,27 +1005,16 @@ The [http://meta.wikimedia.org/wiki/Help:Job_queue job queue] length is '''$7'''
 'userstatstext' => "There are '''$1''' registered users, of which
 '''$2''' (or '''$4%''') are administrators (see $3).",
 
-# Maintenance Page
-#
-'maintenance'		=> 'Maintenance page',
-'maintnancepagetext'	=> 'This page includes several handy tools for everyday maintenance. Some of these functions tend to stress the database, so please do not hit reload after every item you fixed ;-)',
-'maintenancebacklink'	=> 'Back to Maintenance Page',
 'disambiguations'	=> 'Disambiguation pages',
 'disambiguationspage'	=> 'Template:disambig',
 'disambiguationstext'	=> "The following pages link to a <i>disambiguation page</i>. They should link to the appropriate topic instead.<br />A page is treated as disambiguation if it is linked from $1.<br />Links from other namespaces are <i>not</i> listed here.",
+
 'doubleredirects'	=> 'Double redirects',
 'doubleredirectstext'	=> "Each row contains links to the first and second redirect, as well as the first line of the second redirect text, usually giving the \"real\" target page, which the first redirect should point to.",
 'doubleredirectsarrow'	=> '→',
+
 'brokenredirects'	=> 'Broken redirects',
 'brokenredirectstext'	=> 'The following redirects link to non-existent pages:',
-'selflinks'		=> 'Self-linking pages',
-'selflinkstext'		    => 'The following pages link to themselves:',
-'mispeelings'           => 'Pages with misspellings',
-'mispeelingstext'               => "The following pages contain a common misspelling, which are listed on $1. The correct spelling might be given (like this).",
-'mispeelingspage'       => 'List of common misspellings',
-'missinglanguagelinks'  => 'Missing Language Links',
-'missinglanguagelinksbutton'    => 'Find missing language links for',
-'missinglanguagelinkstext'      => "These pages do <i>not</i> link to their counterpart in $1. Redirects and subpages are <i>not</i> shown.",
 
 
 # Miscellaneous special pages
@@ -1121,14 +1126,14 @@ or has chosen not to receive e-mail from other users.',
 'watchnologin'		=> 'Not logged in',
 'watchnologintext'	=> 'You must be [[Special:Userlogin|logged in]] to modify your watchlist.',
 'addedwatch'		=> 'Added to watchlist',
-'addedwatchtext'	=> "The page \"$1\" has been added to your [[Special:Watchlist|watchlist]].
+'addedwatchtext'	=> "The page \"[[:$1]]\" has been added to your [[Special:Watchlist|watchlist]].
 Future changes to this page and its associated Talk page will be listed there,
 and the page will appear '''bolded''' in the [[Special:Recentchanges|list of recent changes]] to
 make it easier to pick out.
 
 <p>If you want to remove the page from your watchlist later, click \"Unwatch\" in the sidebar.",
 'removedwatch'		=> 'Removed from watchlist',
-'removedwatchtext' 	=> "The page \"$1\" has been removed from your watchlist.",
+'removedwatchtext' 	=> "The page \"[[:$1]]\" has been removed from your watchlist.",
 'watch' => 'Watch',
 'watchthispage'		=> 'Watch this page',
 'unwatch' => 'Unwatch',
@@ -1467,9 +1472,8 @@ The destination article "[[$1]]" already exists. Do you want to delete it to mak
 
 'export'		=> 'Export pages',
 'exporttext'	=> 'You can export the text and editing history of a particular page or
-set of pages wrapped in some XML. In the future, this may then be imported into another
-wiki running MediaWiki software, although there is no support for this feature in the
-current version.
+set of pages wrapped in some XML. This can be imported into another wiki using MediaWiki
+via the Special:Import page.
 
 To export pages, enter the titles in the text box below, one title per line, and
 select whether you want the current version as well as all old versions, with the page
@@ -1487,8 +1491,8 @@ In the latter case you can also use a link, e.g. [[{{ns:Special}}:Export/{{Media
 'allmessagesdefault' => 'Default text',
 'allmessagescurrent' => 'Current text',
 'allmessagestext'	=> 'This is a list of system messages available in the MediaWiki: namespace.',
-'allmessagesnotsupportedUI' => 'Your current interface language <b>$1</b> is not supported by Special:AllMessages at this site.',
-'allmessagesnotsupportedDB' => 'Special:AllMessages not supported because wgUseDatabaseMessages is off.',
+'allmessagesnotsupportedUI' => 'Your current interface language <b>$1</b> is not supported by Special:Allmessages at this site.',
+'allmessagesnotsupportedDB' => 'Special:Allmessages cannot be used because wgUseDatabaseMessages is off.',
 'allmessagesfilter' => 'Message name filter:',
 'allmessagesmodified' => 'Show only modified',
 
@@ -1519,6 +1523,7 @@ In the latter case you can also use a link, e.g. [[{{ns:Special}}:Export/{{Media
 'accesskey-preview' => 'p',
 'accesskey-diff' => 'v',
 'accesskey-compareselectedversions' => 'v',
+'accesskey-watch' => 'w',
 
 # tooltip help for some actions, most are in Monobook.js
 'tooltip-search' => 'Search {{SITENAME}} [alt-f]',
@@ -2060,6 +2065,10 @@ Please confirm that really want to recreate this article.',
 
 'youhavenewmessagesmulti' => "You have new messages on $1",
 'newtalkseperator' => ',_',
+'searchcontaining' => "Search for articles containing ''$1''.",
+'searchnamed' => "Search for articles named ''$1''.",
+'articletitles' => "Articles starting with ''$1''",
+'hideresults' => 'Hide results',
 
 );
 

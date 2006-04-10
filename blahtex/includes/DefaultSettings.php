@@ -32,7 +32,7 @@ require_once( 'includes/SiteConfiguration.php' );
 $wgConf = new SiteConfiguration;
 
 /** MediaWiki version number */
-$wgVersion			= '1.6alpha + blahtex 0.4.4';
+$wgVersion			= '1.7alpha';
 
 /** Name of the site. It must be changed in LocalSettings.php */
 $wgSitename         = 'MediaWiki';
@@ -728,6 +728,13 @@ $wgDebugLogGroups       = array();
 $wgShowSQLErrors        = false;
 
 /**
+ * If true, some error messages will be colorized when running scripts on the
+ * command line; this can aid picking important things out when debugging.
+ * Ignored when running on Windows or when output is redirected to a file.
+ */
+$wgColorErrors          = true;
+
+/**
  * disable experimental dmoz-like category browsing. Output things like:
  * Encyclopedia > Music > Style of Music > Jazz
  */
@@ -1394,6 +1401,7 @@ $wgImportSources = array();
  * disabled on Wikimedia's sites.
  */
 $wgExportAllowHistory = true;
+$wgExportAllowListContributors = false ;
 
 
 /** Text matching this regular expression will be recognised as spam
@@ -1451,7 +1459,6 @@ $wgDefaultSkin = 'monobook';
  *
  */
 $wgDefaultUserOptions = array();
-$wgDefaultUserOptions['watchcreations'] = 1;
 
 /** Whether or not to allow and use real name fields. Defaults to true. */
 $wgAllowRealName = true;
@@ -1825,6 +1832,12 @@ $wgExternalServers = array();
 /**
  * The place to put new revisions, false to put them in the local text table.
  * Part of a URL, e.g. DB://cluster1
+ *
+ * Can be an array instead of a single string, to enable data distribution. Keys 
+ * must be consecutive integers, starting at zero. Example:
+ *
+ * $wgDefaultExternalStore = array( 'DB://cluster1', 'DB://cluster2' );
+ *
  */
 $wgDefaultExternalStore = false;
 
@@ -1900,6 +1913,16 @@ $wgJobRunRate = 1;
  * Log file for job execution
  */
 $wgJobLogFile = false;
+
+/**
+ * Enable use of AJAX features, currently auto suggestion for the search bar
+ */
+$wgUseAjax = false;
+
+/**
+ * List of Ajax-callable functions
+ */
+$wgAjaxExportList = array( 'wfSajaxSearch' );
 
 
 ?>

@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
- * 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @package MediaWiki
@@ -663,6 +663,9 @@ class Sanitizer {
 			# Templates and links may be expanded in later parsing,
 			# creating invalid or dangerous output. Suppress this.
 			$value = strtr( $value, array(
+				'<'    => '&lt;',   // This should never happen,
+				'>'    => '&gt;',   // we've received invalid input
+				'"'    => '&quot;', // which should have been escaped.
 				'{'    => '&#123;',
 				'['    => '&#91;',
 				"''"   => '&#39;&#39;',

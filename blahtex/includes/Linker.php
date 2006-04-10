@@ -572,10 +572,10 @@ class Linker {
 			$height = $img->getHeight();
 		}
 		if ( 0 == $width || 0 == $height ) {
-			$width = $height = 200;
+			$width = $height = 180;
 		}
 		if ( $boxwidth == 0 ) {
-			$boxwidth = 200;
+			$boxwidth = 180;
 		}
 		if ( $framed ) {
 			// Use image dimensions, don't scale
@@ -1013,7 +1013,9 @@ class Linker {
 		   '<table id="toc" class="toc" summary="' . $title .'"><tr><td>'
 		 . '<div id="toctitle"><h2>' . $title . "</h2></div>\n"
 		 . $toc
-		 . "</ul>\n</td></tr></table>\n"
+		 # no trailing newline, script should not be wrapped in a
+		 # paragraph
+		 . "</ul>\n</td></tr></table>"
 		 . '<script type="' . $wgJsMimeType . '">'
 		 . ' if (window.showTocToggle) {'
 		 . ' var tocShowText = "' . wfEscapeJsString( wfMsgForContent('showtoc') ) . '";'
