@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13489"
+   name=""
+   committed-date="2006-04-05T07:43:17.767663Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/skins/common/images"
+   last-author="brion"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="13443"
+   name="gnu-fdl.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="0f563842cb0dd38b76a31e8d462fc108"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="poweredby_mediawiki_88x31.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="eb25b8a54aa10345a6f351afa657f7e6"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="Arr_l.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="2f95b120a41ef01ca1a4a9f3d38f247a"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="mediawiki-small.xcf"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="d8e02cf92cd6d0071c64e8b924d7accb"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:27.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="Arr_r.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="ad218d98c609f93f31a30ada4448d91d"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:27.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_template.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="a554388c19bd0d43a0f91b3f77a7ca0a"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:27.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_sig.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="03637d2d72f34eb9ae453c83e517d6cc"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:27.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="Arr_.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="bf598aa67228dde04af832481c9394e2"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:27.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="fileicon.xcf"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="1d2d3c652755152f29bae30849cecb4e"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:27.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_math.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="ab4a5f31487abe62cabd4825e4f615f9"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:27.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="mediawiki-large.xcf"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="ee7b7ca7c15effb313af12cc8ec5564b"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="gnu-fdl.xcf"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="0d0646ca9898263075c69f7dc76fe920"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13442"
+   name="Zoom_sans.gif"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T08:57:31.687830Z"
+   checksum="dd7399faac35051b020b75554e9e8b9f"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_nowiki.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="fe42bb1062ebfdf6e109feaa16693020"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_italic.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="fd9ef9c3c3e6400bb5dc2008152cb59d"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="Arr_r.xcf"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="f4130a129592f0abfb2e076c00a40898"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="wiki.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="3f08006c653b13ed1dd40dec680a0613"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="mediawiki.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="adf680acfd73ad16c74e261894f32b9d"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_hr.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="fa834feb782851bb06d42d9d9fe2acbd"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_headline.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="74e9fd3e9d89e745a5023f0093fa9cb3"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:31.000000Z"/>
+<entry
+   committed-rev="13442"
+   name="bullet.gif"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T08:57:31.687830Z"
+   checksum="119070a1502443a3d5796ef15a9c5e5c"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="mediawiki-largesquare.xcf"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="e8a5c885b7d8b917ad0ce9b7b32c2922"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_extlink.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="31890144c7eba1a7f854ec672a98bdb1"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_media.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="13cf4869b0a99b6c861085dfd26bf803"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_bold.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="92c5b9849312adb4f9ae6263c8973992"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="button_image.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="edff303704a543b618d034a0ff856a77"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="magnify-clip.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="db9efa2f584d0d10fde4a112c8749d97"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13444"
+   name="redirectltr.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:04:08.137301Z"
+   checksum="b866d328e2267967f8b73c686d7568d0"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13444"
+   name="redirectrtl.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:04:08.137301Z"
+   checksum="c42fb635e37a4cea110871afbcbf6c9f"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13442"
+   name="link_icon.gif"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T08:57:31.687830Z"
+   checksum="b6a7a24983a73f036bab46091219978d"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   committed-rev="13443"
+   name="Arr_d.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="2382eb35d138755cf010e5c2a74d8027"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:36.000000Z"/>
+<entry
+   name="icons"
+   kind="dir"/>
+<entry
+   committed-rev="13443"
+   name="button_link.png"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-04-03T09:02:01.163959Z"
+   checksum="242e26135bb437fe678d4d052220532d"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+</wc-entries>

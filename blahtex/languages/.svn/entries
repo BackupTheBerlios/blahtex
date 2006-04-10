@@ -1,0 +1,2110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13536"
+   name=""
+   committed-date="2006-04-07T14:25:27.664948Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/languages"
+   last-author="nikerabbit"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="12817"
+   name="LanguageSv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="3ee600e6743c0310999db4f5a976effe"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageDe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="3f81f74f90ca6069e30fc20c792d0c96"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageLa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="bcecd1637bd8bb03d1c8cf2ac969fe8f"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesEt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="dd69da60fcd7234c4d03a0859f93dd5c"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesIs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="b4ba68af8949d321f46d10fafe04c1a9"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12971"
+   name="LanguageTa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-07T07:19:33.000000Z"
+   checksum="708266cd7554b1996417ab294358c078"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageLi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="8616f5d89b7f19841c3468141a8d20d1"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageNah.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="57901be2e9ff93273a360effb86c5ac8"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageCsb.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="6807ce6d2f247bd013b4f2bff58c7250"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageTe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="5ed829efcd7920bfab17c09cdb73dcdc"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr_jl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="6cf2f1b0b96c55dd9fc6a8ff653db431"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageHr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="a18a5c00cde424b86efe6d7a868e6620"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesUdm.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="302dca764c610b52233fdf4cf8449fac"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageLo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="94afaae5f832f6bd288d3a3d13cd5d98"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesFa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="d1460ce31ddc23b358d4f5e1f0ec9757"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:56.000000Z"/>
+<entry
+   committed-rev="12956"
+   name="LanguagePl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-05T21:26:59.000000Z"
+   checksum="1b2cb8f63fd42a70465697532bbcc164"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageVec.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="2f29090860932af02d0f1ccf1032d9d2"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="13317"
+   name="LanguageNds_nl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-24T23:34:29.000000Z"
+   checksum="67e57dd642abb9977abbdeefef9a2292"
+   last-author="jeluf"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="11123"
+   name="LanguageNap.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-09-25T13:50:11.000000Z"
+   checksum="4e77fccb1a2da395ae9cfd85ea0d4731"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageQu.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="b71b324edbb45ff94fbdad8e48e4b876"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="13504"
+   name="MessagesFi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T13:00:38.810614Z"
+   checksum="644c02e07bed5bcd1d506c0e701240d1"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesBn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="00f40fa4674ead1118145762ae24b62e"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguagePt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="236b89dec16423e37d60f7133845baa4"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="13225"
+   name="MessagesBr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T19:12:25.000000Z"
+   checksum="634142f637ccb17b106afb1593ac1da4"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesFo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="58e85c15a5f40d6a170dd6e118b0af7a"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageIa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="7e2640aafe57a70a2c68b7507182cdd6"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesPt_br.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="33f1951d6358684df2c6e62d5d58fb80"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageZh_tw.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="eb10652b2e461172ec41bac11ed5131c"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="11588"
+   name="LanguageTy.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-10-31T11:30:23.000000Z"
+   checksum="a1a1a1cc6b2f55a5aa5148e15ec7fe96"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageZh_hk.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="78aa7c84cd2b3e66657e8b5e0afe4813"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr_el.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="dcb9a2dc7fde3422f38ab79e764d7ee3"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageAv.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="0f541d94f96543d2e0fbb3644225a724"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:57.000000Z"/>
+<entry
+   committed-rev="13371"
+   name="LanguageEl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-27T22:20:16.000000Z"
+   checksum="c27a2dd2dc04aedf42a5dafb9b5dc66a"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesNo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="35e2534fb3dc6a2c87d743daf4065f17"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="11935"
+   name="LanguageIi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-03T23:44:41.000000Z"
+   checksum="688101eeaa1b3d24a18befb5d2acb369"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="9938"
+   name="LanguageEn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-07-05T21:22:25.000000Z"
+   checksum="017c98ed09fccbfae6dd380798e25d92"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesFy.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="1199662fb0bade0723cd126ef02fabe0"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesVi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="be248a4d427ff281e8bb2bca8ee6c162"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="8130"
+   name="LanguageAs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-07T16:57:21.000000Z"
+   checksum="c9ddce78ebee370d1d7c96452ef7e07f"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="13507"
+   name="Messages.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T13:37:37.893980Z"
+   checksum="9c26ea5a92b0c53fba79f8f60a675c51"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:58.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesCa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="c1a9b602a551c8063e2baae5381c3da8"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageMl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="73994057e2212cff4710da6d70669ec3"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageEt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="5f3c52efa781610e1585370a084cc794"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="11588"
+   name="LanguageAy.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-10-31T11:30:23.000000Z"
+   checksum="e081e8f7f4f6f16bd21107134c1fd73c"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageIs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="ec2eb47f6ec9fc164c28975c9f15def9"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="618443352050c3ce6f3cd292246e0eab"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="13321"
+   name="LanguageYi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-25T11:18:33.000000Z"
+   checksum="4d8d9eacdf1cfb922c38ecd2f4ef8e17"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="11588"
+   name="LanguageQu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-10-31T11:30:23.000000Z"
+   checksum="7563cc8203b630c517bd02b48798bdbd"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:59.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesZh_cn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="244e94e7de5c40f2b711372d8f99ea64"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageFa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="fa2506d1d0a1e47f7ed383cd38f18b17"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageUr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="b76b96dc26ce824925c315dff0a9a30f"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageBm.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="53dd69094c873de9ef47137d896c9f77"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="13159"
+   name="MessagesSr_el.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T23:23:30.000000Z"
+   checksum="202e383aa7da2e968e07cb95ba9eeaf1"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="13368"
+   name="MessagesCs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-27T20:03:21.000000Z"
+   checksum="1741e5ac1956ef71cab21fd61b99c592"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesSc.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="21b864e08e6359e1789d7978d6661fdc"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr_jc.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="8d4db3da6821eedbc994dac274e4674e"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesKo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="f996700066c996821c4dfc6015c4b1a5"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageFi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="7e4d19ac630d62fcb5774d68be11f245"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageBn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="5586e6e72f16f724a1b4ebb401509297"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:00.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesCy.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="841a1cd50c7a8830ff053235fb696352"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguagePt_br.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="a1fa2a3898f57c5ae98b39a62ccd1823"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="13368"
+   name="MessagesSk.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-27T20:03:21.000000Z"
+   checksum="30d36eea6dd88d0e388aafcb26a11b2e"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesKu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="d103886065bbfb4b1250e35e38194d5d"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageBr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="c4d3a07c625a983f0e05a48b1ff45d97"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageFo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="0f452e24d064ab744782a81865b8b811"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesSq.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="be4d4d67d9c8255fe59fd112028c76b0"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesSu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="806f2e983934a88d5bd796d8cf12d178"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageOs.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="9a35024bd1f65e4ea6864c8609e85c34"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageNo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="21ccd7885a82e60760b0fd9cbd202ca2"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageVi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="f80e5360120aa0c3bd86f9f98d6521d4"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageFy.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="62a0497eabbab16b8ca97ea1302d9a01"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:01.000000Z"/>
+<entry
+   committed-rev="13433"
+   name="Language.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-02T16:19:29.541944Z"
+   checksum="48eb7d0b987a403a8e340256119acc38"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="13526"
+   name="MessagesHe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-06T16:08:37.416514Z"
+   checksum="57b1b0565dd01147f3b29d37456f4b09"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="10532"
+   name="LanguageZh.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-08-15T19:27:58.000000Z"
+   checksum="0c314fd1f8c28839a3cffd1d98730a42"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="3253"
+   name=".htaccess"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2004-04-21T23:17:36.000000Z"
+   checksum="a1751e1f10a3b96b05d0401c97e72008"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageCa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="3e5d9e36571fa19dd2db74045a99a4de"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesPa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="b335ca92e718d109e9df22ca044ee638"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesHi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="2a0045c12edb4f7fdfc55856dda2ad6c"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageTy.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="a92e5867e0e8066e82a4b1b760aba2d6"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="11935"
+   name="LanguageCe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-03T23:44:41.000000Z"
+   checksum="82df514160bbd749570942e10f4a2054"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesNah.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="acb3fe0e1b6b0b7787428585c791ed2f"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="13095"
+   name="LanguageGsw.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-24T21:15:33.000000Z"
+   checksum="6c35fa6a559ab3138a3e0926334d1bfa"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesCsb.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="dbd6d9dcbbf399e830fdb0b8e74348ba"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12549"
+   name="LanguageKa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-09T20:39:32.000000Z"
+   checksum="9b88304cf440c9042fe2a490212afc5f"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr_ec.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="6988da849e4f34626a6137159f91cfbb"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesTh.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="1565e58a376aa57944b2ddfd21e083c9"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesHu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="fe8b5404a210b936bd44b1e46b03bb31"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesVec.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="926f53ed71912eb5bb59fc545fdf3a0b"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesLt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="46f895eea140e5fc494e789b053cc6e8"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr_jl.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="4788e41a89d06678a8ad0757e6caeca1"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:02.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageZh_sg.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="f764310cc48e42e90156669c4be4b332"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="11588"
+   name="LanguageGn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-10-31T11:30:23.000000Z"
+   checksum="2ccae769c71c820443dd0ccc9fdbd7b0"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12108"
+   name="LanguageArc.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-15T20:28:07.000000Z"
+   checksum="e99c1900caf29480bd4d4fe9e6992197"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12956"
+   name="LanguageCs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-05T21:26:59.000000Z"
+   checksum="d278722a58ab301f702873b21b218a22"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageSc.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="a4260cb3ea295e23e25f5d997f977e72"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageKm.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="74644d0b5bb9145a5eaa24d5994b9e0c"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesTr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="99fbc7562e41cfadf3b71c06f5aedbba"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageKo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="f5d267d7536d0c50c6a985798a3ce744"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesAf.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="f2784810658a06aeda618bacf547cb6a"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="10532"
+   name="LanguageZh_sg.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-08-15T19:27:58.000000Z"
+   checksum="ec188a5889e67482c97aada34eca1dce"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesTt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="aaef8463bf5c35b69169f0b8205e9394"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageCy.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="3ecdcf5054466e0df7f3da9ec004ccc8"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12108"
+   name="LanguageKs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-15T20:28:07.000000Z"
+   checksum="65233d83f66c94e055d45c175f38dc66"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageSk.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="38e2105b7eb1862468000b0be2e2bccc"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesZh_tw.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="d314aac2d00c67c41fe003410edd53f9"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageKu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="d168d936ca44bfbf28563fe2053d2854"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="13536"
+   name="MessagesId.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-07T14:25:27.664948Z"
+   checksum="c22e47f538d3dc3f4904cb074a6843b6"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageOr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="c0aa8505b81b0622d3d0dc775f18cea7"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:03.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageCe.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="554bbf3c9f2ad4c8594d476dd575cb77"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageSq.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="32a7c5d78276bf1fc1c4e93fb9c70bcd"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageNds.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="ad7fceb65373a1f050a029e6f491b13d"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="13365"
+   name="MessagesAr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-27T19:23:27.000000Z"
+   checksum="da79506f4db9155f1ec82fb58b3afb53"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="13368"
+   name="MessagesEo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-27T20:03:21.000000Z"
+   checksum="3a9402d66abb2ee83bd81b5c036e2acb"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageSu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="1458bac174fc23f667b5895e3b70c1b6"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="12549"
+   name="LanguageTlh.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-09T20:39:32.000000Z"
+   checksum="8b6cc529b05df7de294b69e4a05cd940"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesMk.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="c06daf51d7c1180372769d6cff394e27"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="13440"
+   name="MessagesEs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-03T02:05:09.721277Z"
+   checksum="7f56f4e9f40e859458079e68e06a40b1"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageIi.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="e02b79d002d6ca74a88c1120a3be429f"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:04.000000Z"/>
+<entry
+   committed-rev="13347"
+   name="LanguageHe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-26T20:58:41.000000Z"
+   checksum="4e457fe49c6f387f6cd89b3282a692ae"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesEu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="7b3f1aab8c7461c74a48ae9b8695b50e"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="13396"
+   name="MessagesAz.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-30T00:39:18.000000Z"
+   checksum="f4f3d70d8b27669bc1d7765ec07bc267"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesIt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="12bfa603d353ab8d60ae31906f594b90"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageHi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="bee674cc60277187ed6465a3cb57a5e8"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageNah.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="9f8ea6d8a9c0befe8780527918c0e2f8"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguagePa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="0d0e2580a4285ba8e2c299cfef91b68c"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr_jc.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="0fd582cf8dec5d293fec33fb8e73c776"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageAy.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="11f78b7790d261c77185bfadcbdfd84b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="10532"
+   name="LanguageZh_hk.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-08-15T19:27:58.000000Z"
+   checksum="7ab543071a83c2ead94ee48e3b0fb609"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12890"
+   name="MessagesMs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-27T21:31:06.000000Z"
+   checksum="3f86628d7c8313e2c1212eeabd20ca23"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="13018"
+   name="MessagesUk.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-15T15:11:36.000000Z"
+   checksum="6b1525766d661bcf348e94e72006c20b"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageNap.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="c0b7a21b406e421df03853db57f2acf5"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12108"
+   name="LanguageDv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-15T20:28:07.000000Z"
+   checksum="46a16a71b97cbe54128ea2d59219283a"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesBe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="c1f0718a70c9e5cd8a3428d48eb5500a"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageTh.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="477a27f9eb7e215e6c6ea7b98498e18b"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageAb.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="33f4d0e09a5d5dc17cd490cce4c80947"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="13112"
+   name="LanguageHu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-26T15:55:27.000000Z"
+   checksum="1cff1dde25d6be8354ed6b155c54f99e"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:05.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesBg.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="d1abc8aed76be3075f6d895a32b079fd"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageDz.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="29fc2d0939ad8bc07c9260b296e6623e"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesJa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="1b50de72d976f46849def2ed2dca631c"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12812"
+   name="LanguageLt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-21T22:24:23.000000Z"
+   checksum="cc51269c6c8413743b0cf4ceb6beefad"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageUdm.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="4dfd92124288cac9b913276ea3a768d5"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="8079"
+   name="LanguagePs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-05T11:00:27.000000Z"
+   checksum="7e827c89fbfcd927c0f6ec796008726f"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="11935"
+   name="LanguageAb.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-03T23:44:41.000000Z"
+   checksum="6b70ced2b23112117a29dd8ba8d65d3a"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageXal.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="741d298094b0edbced15f71eb9057ad8"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageTr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="79883f74c2d3b098f2d3a3df8a899705"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="13008"
+   name="LanguageAf.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-13T09:09:54.000000Z"
+   checksum="d00d39acd3edca4a623103dc6f5675ba"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12549"
+   name="LanguageAst.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-09T20:39:32.000000Z"
+   checksum="50ea3737df1e846302669ef0da255b0e"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageTt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="b0032f8137f92781fdfeaaaa46686712"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="13479"
+   name="MessagesFr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-04T15:51:35.356771Z"
+   checksum="87933cb338b7a55af1c14a775adeffda"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageFur.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="61a096cbecb861e6117d2032f31199bf"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageId.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="afa58689842d4c2e6285b0bf8bf09b19"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:06.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesNl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="2b6c29f0690e1f5d193895ea61a079bf"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageGn.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="16bdc157b9f79225530ed7e2b1d04933"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="13349"
+   name="LanguagePms.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-26T21:27:40.000000Z"
+   checksum="93dee9d895efd585ad99a5388492ff74"
+   last-author="jeluf"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="13225"
+   name="MessagesNn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T19:12:25.000000Z"
+   checksum="aa44167f0de62d064a55aee4ebdf5045"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="13095"
+   name="LanguageGsw.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-24T21:15:33.000000Z"
+   checksum="7fd8d7817bd38b5d0710546fcca2c897"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageCv.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="ef12c0cd24afc80255c43a8f8fe6a8dc"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="13156"
+   name="LanguageAr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T15:51:42.000000Z"
+   checksum="216ddfd9558bcd9eb0e5d97800c7d1c8"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageEo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="45403d37f8be44c0948cd1da05205b4e"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="13528"
+   name="MessagesRo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-06T16:50:39.359237Z"
+   checksum="f944430e47814370c1e2fdd3533c3c0a"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="11935"
+   name="LanguageAv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-03T23:44:41.000000Z"
+   checksum="9a6ea4eef8d8e9ee5d050f6f67e503ad"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageMk.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="01f4f939891b9bc9c451ebac93e87ee4"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageEs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="a3a17165b908c8a03377263e0940f4bc"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageEu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="8351c1a8dfc5cb250a46bb97e64f1f9f"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageKv.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="38107ac5571a60e1f24d213d0ef8d60c"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="13396"
+   name="LanguageAz.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-30T00:39:18.000000Z"
+   checksum="12fe77dc7d6d310f8f621a0561679941"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:32:07.000000Z"/>
+<entry
+   committed-rev="13498"
+   name="MessagesRu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T09:56:58.031823Z"
+   checksum="e98bdce8ccec14c4dabf90de4f9392fe"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="12108"
+   name="LanguageUg.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-15T20:28:07.000000Z"
+   checksum="ede5106d9ff36d118a95bd079c0dbea4"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageZh.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="c4a31c25cdef2f200ea21601f37ffe5b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesGa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="9feae751bea793d58f11bb048a62a8a6"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageBa.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="79ac6e1646ff06b74cf9057d30e2d19b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageIt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="3eac6bb86821d881be4534b367c41c8c"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="12889"
+   name="LanguageMs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-27T21:29:49.000000Z"
+   checksum="8e392ab3a0f58efa9f4ebcad98e5e490"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="13461"
+   name="LanguageUk.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-04T08:01:19.246228Z"
+   checksum="2322024f5f4cacb9e0008a621086b607"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="13159"
+   name="MessagesSr_ec.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T23:23:30.000000Z"
+   checksum="296eb143280ba597ea51943a47b0e42b"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="11935"
+   name="LanguageBa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-03T23:44:41.000000Z"
+   checksum="5619dee3de022a81037abe41540a3345"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:08.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageUdm.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="aeecda6e765a35ad48b609b76de009b7"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageZh_tw.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="c138f8ecb34a6349196686d2c390b370"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="13225"
+   name="MessagesOc.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T19:12:25.000000Z"
+   checksum="8d17ac46990b7c57870c1c09265a98b0"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="13034"
+   name="LanguageBe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T16:47:22.000000Z"
+   checksum="9f04e719c793fe2caddcb6dd1fb64ab7"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12941"
+   name="LanguageBg.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-03T03:18:11.000000Z"
+   checksum="b5f5a3ff02dab5ffa72f7b80b6d68706"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="13361"
+   name="LanguagePms.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-27T18:25:02.000000Z"
+   checksum="9893167e6622998aef0112b59d3bd0d0"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageJa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="69f88764e0d5e98ff06276ded9d8ff13"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="13230"
+   name="MessagesWa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-17T00:08:18.000000Z"
+   checksum="f48c7858b3a038a8d8f78f6990604a84"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="13225"
+   name="MessagesCv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T19:12:25.000000Z"
+   checksum="093fcbd289322c4475fd0f86ca3c9edd"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesKn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="d2baf315a0fe4742d85338fc166b2e4d"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageBm.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="dfa7910125a5f8215ff457c2a3ad1a65"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageBo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="7c24b289771efb3ac9b7401e7fae859d"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12983"
+   name="MessagesSl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-08T23:47:17.000000Z"
+   checksum="9579c060433dce7c47da1eb2a1afb6b3"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageZa.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="85cca0d0894ec9d4b64419bbf52b6d3b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesOs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="eb845516eeee798df2caca62a182353f"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:09.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguagePt_br.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="50015f15d93bad030e15a7e25383b5c6"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="13137"
+   name="LanguageConverter.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-01T01:57:53.000000Z"
+   checksum="1b550d715825f3438af324920b62aaea"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageFr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="bf622c0c7f2f5e8401890b46c556eb6a"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="13158"
+   name="MessagesDa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T23:02:51.000000Z"
+   checksum="7de462267f9b26b292b32c8bc3e96460"
+   last-author="wegge"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="13227"
+   name="MessagesNds.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T20:42:09.000000Z"
+   checksum="a198b8c4a4b0bf96b80a4b5b91f58b51"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageNl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="0f7e40fe48a47c5a0465d4734b56be25"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="11935"
+   name="LanguageZa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-03T23:44:41.000000Z"
+   checksum="6091fd7dea8e898da2a3a40c9fc664d0"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageNn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="4fa223251c32ec567df34ca872333446"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="13528"
+   name="MessagesDe.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-06T16:50:39.359237Z"
+   checksum="ce2c810363d39954b67601223298912f"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:10.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesSv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="ce4ff1063feaf33823f14051340a4d8f"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageRo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="d382c6f38f0524c37ebe4542af5ca487"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesLa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="32e264504f7807c0119f57f8e9f9616c"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="13461"
+   name="LanguageNv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-04T08:01:19.246228Z"
+   checksum="39c951144ed2063ccc703655ca92d6b3"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageNon.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="7c11bfa54427633316d1a6b3c033c390"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="12907"
+   name="LanguageRu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-29T14:43:42.000000Z"
+   checksum="62fe678acdd0781b0865cb6ac536a348"
+   last-author="ajvol"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="12560"
+   name="LanguageUtf8.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-10T00:21:27.000000Z"
+   checksum="9cd13e402eedb9f6893c2e62108fc16d"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="13461"
+   name="LanguageGa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-04T08:01:19.246228Z"
+   checksum="7d8b237720a061f38623335f790dd847"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesLi.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="c48adc17a9f12b2fa04ee09e94a3a3f8"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="13225"
+   name="MessagesTa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T19:12:25.000000Z"
+   checksum="1b9968ce945a052d96c3f2d5dbf8ecfc"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageNon.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="86c8df8b2fe1b514a66d6e128006004d"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="13225"
+   name="MessagesHr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-16T19:12:25.000000Z"
+   checksum="26821b0bceb5c2c6f21bd85e6f1a7251"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:11.000000Z"/>
+<entry
+   committed-rev="13038"
+   name="MessagesPl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T19:03:54.000000Z"
+   checksum="d59e298f270e2e5718e930e45c36b390"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="13484"
+   name="Names.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T00:45:34.556462Z"
+   checksum="998acd2cbffb13c638ebf8437c7fafdc"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageOc.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="c2abd5497ef09ccb7d98eff2e16d8ab5"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageZh_cn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="066aaf99a08d261dbf248d5446270a4a"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="13165"
+   name="LanguageSr_el.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-04T21:32:04.000000Z"
+   checksum="2c7ca2dc2c266c224d5b175f145c98a8"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12108"
+   name="LanguageSd.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-15T20:28:07.000000Z"
+   checksum="da36a24246ffc7f6e625cebef6d3f598"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="LanguageVec.deps.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="d59bd1c3809801664617357523750cd8"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageWa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="03af8dc8d6737c9869ef8ba2081b9411"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="13351"
+   name="MessagesPt.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-26T21:56:11.000000Z"
+   checksum="50e47749cfcda63a99ecd68dc6c08ab7"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageKn.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="037f1070589e6f4a597c14bdd5767719"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageCv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="0cfa1c6f7535a4c3e20fcc73eb5c7200"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesXal.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="bf605c122962a95ce97c65f6054fd9a0"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="8187"
+   name="LanguageGu.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-04-09T06:44:31.000000Z"
+   checksum="9073d698ee1589fb37ad22712a1505e5"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesIa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="b36161e2b19cb23c1e84978bc5dd672b"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="13057"
+   name="LanguageSl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-19T05:47:35.000000Z"
+   checksum="06412b3a6b87d07b97cbb07037f45974"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="11935"
+   name="LanguageKv.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-12-03T23:44:41.000000Z"
+   checksum="148b691be639c1ba7e158235b480ad9d"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="MessagesFur.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="47d8089f791b39152f38cf5cc3892108"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageOs.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="ab8ba95890bde947693723ddca7cc61f"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="13157"
+   name="LanguageSr.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-02T22:22:18.000000Z"
+   checksum="121876c37bee8a637ec0c38d521ad8e5"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="12817"
+   name="LanguageDa.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-22T00:40:23.000000Z"
+   checksum="44dad89aa0f9829793e46a7e04176c28"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:32:12.000000Z"/>
+<entry
+   committed-rev="13028"
+   name="MessagesEl.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-02-17T00:44:50.000000Z"
+   checksum="155088c5fcda6d06e00827866d10f88d"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:32:13.000000Z"/>
+</wc-entries>

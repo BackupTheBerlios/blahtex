@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13489"
+   name=""
+   committed-date="2006-04-05T07:43:17.767663Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/skins/common"
+   last-author="brion"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="11853"
+   name="common.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-11-28T23:56:35.000000Z"
+   checksum="791c67fb8a57c28315f75dae722ffd60"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="5091"
+   name="sticky.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2004-09-05T03:33:26.000000Z"
+   checksum="877f0a120b67018aae0d00b37061396f"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="11853"
+   name="cologneblue.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-11-28T23:56:35.000000Z"
+   checksum="06412db906a729970e8ea9cf8f37246d"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="5091"
+   name="quickbar.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2004-09-05T03:33:26.000000Z"
+   checksum="9b0f1171f805d63b83f38d5db6c2e7e7"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="11666"
+   name="feed.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-11-05T10:38:46.000000Z"
+   checksum="9bff24412d89d650164568bf7be32d91"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="7309"
+   name="wikiprintable.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-01-30T15:56:15.000000Z"
+   checksum="948ef76302f709d9aff37adf18e87a95"
+   last-author="tomgilder"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="11853"
+   name="metadata.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-11-28T23:56:35.000000Z"
+   checksum="598282f0859e018dd76b96e3a553cb70"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="12207"
+   name="protect.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-12-22T05:41:06.000000Z"
+   checksum="56dc4dbac05eda61402b113fc68a9fb0"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="11859"
+   name="commonPrint.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-11-29T20:25:20.000000Z"
+   checksum="627697d01c35002a52c373dcb7105099"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="13067"
+   name="preview.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-02-20T21:18:11.000000Z"
+   checksum="dce71ab26b2f272dbd8a7c05befbb9a4"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="13364"
+   name="ajax.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-03-27T18:53:15.000000Z"
+   checksum="f45d36a81e7e9cf6821a93c7722925df"
+   last-author="jeluf"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="12329"
+   name="upload.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-01-01T01:05:21.000000Z"
+   checksum="21ed8394b984851c47937840e424dd6d"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="13212"
+   name="wikibits.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2006-03-16T01:34:07.000000Z"
+   checksum="8f10d18b9ef1a4569dd5044914a647a6"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="5091"
+   name="common_rtl.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2004-09-05T03:33:26.000000Z"
+   checksum="35f890bb67fd8bea52727d811f2e7022"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="9928"
+   name="quickbar-right.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-07-05T18:41:38.000000Z"
+   checksum="8c255351369f2f2697a0acc91f14c517"
+   last-author="kateturner"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   name="images"
+   kind="dir"/>
+<entry
+   committed-rev="11345"
+   name="IEFixes.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-10-13T19:32:35.000000Z"
+   checksum="0e00ed270466b6c3178a710bbeedc64b"
+   last-author="tomgilder"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+<entry
+   committed-rev="11853"
+   name="nostalgia.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-11-28T23:56:35.000000Z"
+   checksum="8210cb63846cbf6aedbbfb006410b886"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+<entry
+   committed-rev="11853"
+   name="wikistandard.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-11-28T23:56:35.000000Z"
+   checksum="86c28d7a3582693e01e803290d538acc"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+</wc-entries>

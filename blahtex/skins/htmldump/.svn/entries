@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="11482"
+   name=""
+   committed-date="2005-10-24T21:20:09.000000Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/skins/htmldump"
+   last-author="timstarling"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="11430"
+   name="md5.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-10-22T16:25:05.000000Z"
+   checksum="6d03025f455869185b57b5c138fd1c01"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+<entry
+   committed-rev="11430"
+   name="utf8.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-10-22T16:25:05.000000Z"
+   checksum="3bb58d9532b6c0d20dd42488d478797d"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+<entry
+   committed-rev="11482"
+   name="lookup.js"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-10-24T21:20:09.000000Z"
+   checksum="5430386cebef34e54869bc4eb3ff63b3"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+<entry
+   committed-rev="11443"
+   name="main.css"
+   text-time="2006-04-10T11:31:37.000000Z"
+   committed-date="2005-10-22T20:52:30.000000Z"
+   checksum="8b68386081acbd1a5a0b9b51b0a3e999"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+</wc-entries>

@@ -1,0 +1,13 @@
+K 10
+svn:ignore
+V 101
+LocalSettings.php
+AdminSettings.php
+*~
+.classpath
+.project
+project.index
+.metadata*
+.settings
+static*
+END

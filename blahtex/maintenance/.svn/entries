@@ -1,0 +1,1090 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13558"
+   name=""
+   committed-date="2006-04-10T07:21:40.154635Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/maintenance"
+   last-author="tstarling"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="9543"
+   name="redundanttrans.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-06-21T01:31:16.000000Z"
+   checksum="8e832a1dae74dd3c3fa6409fbf212a37"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:08.000000Z"/>
+<entry
+   committed-rev="12984"
+   name="rebuildInterwiki.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-02-09T01:48:24.000000Z"
+   checksum="3093a83281ca7b5515623416bcc9b3b9"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:08.000000Z"/>
+<entry
+   committed-rev="12896"
+   name="mctest.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-28T08:22:24.000000Z"
+   checksum="08d0cbdb701a5897745bf638ee8d3ed7"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:08.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="userDupes.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="a000dee3b2ba410a951f2e3d4a1466a3"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:08.000000Z"/>
+<entry
+   committed-rev="13459"
+   name="mcc.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T07:57:48.243819Z"
+   checksum="29ec0bf58c168d1092a1d57373634582"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:09.000000Z"/>
+<entry
+   committed-rev="12472"
+   name="splitLanguageFiles.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:09:30.000000Z"
+   checksum="c816fabeadd2c5dc06b8dda329d53eff"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:09.000000Z"/>
+<entry
+   committed-rev="13131"
+   name="clear_stats.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-02-28T05:24:52.000000Z"
+   checksum="19170a53ca478be442322e6c851c7106"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:09.000000Z"/>
+<entry
+   committed-rev="13467"
+   name="commandLine.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T10:19:19.194639Z"
+   checksum="834136eb55d73caf2834b202756ab698"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:09.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="addwiki.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="5d51d683d835d958cc53e97af26985e6"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:11.000000Z"/>
+<entry
+   committed-rev="12748"
+   name="dumpHTML.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-17T21:57:14.000000Z"
+   checksum="23862f1ca60f32b4229fa012ac567aba"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:11.000000Z"/>
+<entry
+   committed-rev="12476"
+   name="rebuildInterwiki.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:31:29.000000Z"
+   checksum="338c24c99448540f33ce3fb7665d7cb6"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:11.000000Z"/>
+<entry
+   committed-rev="9301"
+   name="interwiki.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-06-01T19:13:03.000000Z"
+   checksum="41f5af8390fb33fae950f63325fae81a"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:12.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="importPhase2.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="550a72a29c65ae776049503a782b7497"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:12.000000Z"/>
+<entry
+   name="storage"
+   kind="dir"/>
+<entry
+   name="archives"
+   kind="dir"/>
+<entry
+   committed-rev="13489"
+   name="userDupes.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="53a1faddac931d69ff2a0a11c6f5bc43"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:18.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="importLogs.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="95f3e979579dc24c49633cbd8f17c32e"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:18.000000Z"/>
+<entry
+   committed-rev="9301"
+   name="wikipedia-interwiki.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-06-01T19:13:03.000000Z"
+   checksum="37e3c61ab2ed62c40fc6f3c1aaa0bef9"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:18.000000Z"/>
+<entry
+   committed-rev="12472"
+   name="splitLanguageFiles.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:09:30.000000Z"
+   checksum="92eaddfdc090e97b2a52240bdeaa426b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:18.000000Z"/>
+<entry
+   committed-rev="12740"
+   name="update.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-17T11:48:18.000000Z"
+   checksum="0ff25dc44e4773f5934c00281456e6eb"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:18.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="transstat.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="fa5e6dade0841f77a3945a7c6777702e"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="12877"
+   name="reassignEdits.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-26T21:41:40.000000Z"
+   checksum="9e287cdf3901f02f90cdc4d0cdfa2a10"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="10525"
+   name="Makefile"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-08-15T12:54:55.000000Z"
+   checksum="00c6466680b8961183e6ed4064c3b271"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="12476"
+   name="dumpHTML.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:31:29.000000Z"
+   checksum="a571fb6b828b5040ab280d8d5a89cd88"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="deleteImageMemcached.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="48a0ae26d893ef137c06b76dbdcab78b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="6445"
+   name="changeuser.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2004-12-01T13:15:13.000000Z"
+   checksum="27aa92ea5b9683c54065cbe3040f442e"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="13558"
+   name="fixTimestamps.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-10T07:21:40.154635Z"
+   checksum="509f29299bc91905ea3502225830e6f5"
+   last-author="tstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="benchmarkPurge.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="d2d3483487f479e840034aedb78035df"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="12259"
+   name="stats.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-12-26T13:11:25.000000Z"
+   checksum="d2c7b34c134bd48e007e5dec58e94d27"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="12638"
+   name="importLogs.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-13T00:29:20.000000Z"
+   checksum="03766a7f56a09e3ca768e20e013137d9"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="checkUsernames.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="4e6f21d850d06c3670f04b12bd62855b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="12476"
+   name="portal.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:31:29.000000Z"
+   checksum="05045ff24f936d643483ff3b87ed2436"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="parserTests.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="a7e70ab845bad0317e7cd7fae4e6c338"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="13453"
+   name="rebuildrecentchanges.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T06:06:36.103996Z"
+   checksum="9dd30c055d9003ab60f0a2d8520f7ee8"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="lang2po.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="27305aa801ed4f3b3af9dfdc89214e14"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:19.000000Z"/>
+<entry
+   committed-rev="13459"
+   name="mwdocgen.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T07:57:48.243819Z"
+   checksum="85e7025f051aaf009ea4027df054ec15"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="12877"
+   name="reassignEdits.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-26T21:41:40.000000Z"
+   checksum="240eb8902815426523f54b44a573e066"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="langmemusage.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="d8beca960606a0013fa8ad4eec88d583"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="9193"
+   name="trivialCmdLine.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-05-25T04:14:19.000000Z"
+   checksum="81e309f26785e34738a11b35c72b7f50"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="13427"
+   name="cleanupSpam.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-02T04:15:37.651092Z"
+   checksum="b8128d0cc264280de5372e2c8d08cb0f"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="orphans.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="6cd8ab40a87b843a3ce30cd2c532ef5e"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="parserTestsParserTime.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="5401f7afaa5288bb4ed4d64f73c1cfa2"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="13551"
+   name="build-intl-wiki.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-08T21:11:13.552031Z"
+   checksum="7d6f8a466d052c0157407b690a1f7a11"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="13196"
+   name="generateSitemap.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-11T21:25:03.000000Z"
+   checksum="43c6d56605874e9db514e2a3a0f23920"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="parserTests.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="1508e740f47ee9237be532f3e4516928"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="11612"
+   name="counter.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-11-01T19:17:31.000000Z"
+   checksum="d92fa72da3e2ffce8dae0b0551405867"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="5132"
+   name="rebuildrecentchanges.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2004-09-07T02:20:02.000000Z"
+   checksum="327382717450c0d2428aa6a85ae7916d"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="9597"
+   name="alltrans.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-06-24T02:19:13.000000Z"
+   checksum="7383f3c527b2754ebb3000c747c68146"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="12874"
+   name="refreshLinks.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-26T13:29:14.000000Z"
+   checksum="448e8e04d0cd869c96ad407fef288eab"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="attachLatest.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="c0adc82ea66188435dda9ffc1b72d81e"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:20.000000Z"/>
+<entry
+   committed-rev="13455"
+   name="updateSearchIndex.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T06:37:17.096701Z"
+   checksum="4650497959eec7dd1980194dd3ee05de"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="13554"
+   name="initStats.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-08T22:02:51.519637Z"
+   checksum="105eb06abefe6b129b7407379ec051ac"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="13551"
+   name="FiveUpgrade.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-08T21:11:13.552031Z"
+   checksum="0cc86cf9f6d1263b0f106890d6093256"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="12476"
+   name="dumpReplayLog.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:31:29.000000Z"
+   checksum="974ae8179817b872f43e90587aee30bb"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="parserTestsStaticParserHook.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="8ef241033303c0c048776dfa9b38847f"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="12860"
+   name="deleteOldRevisions.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-25T21:08:29.000000Z"
+   checksum="d44555f31e535490e3175c5388fafc44"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="10430"
+   name="mwdoxygen.cfg"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-08-11T00:28:51.000000Z"
+   checksum="d7a14e387f3cda0b2dc12d2c1d6a31e9"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="12070"
+   name="entities2literals.pl"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-12-11T19:56:44.000000Z"
+   checksum="ec1e274f679abeb81d67c0e317b85a13"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="9758"
+   name="upgrade1_5.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-06-28T21:50:26.000000Z"
+   checksum="e34b92877dbfab7a264d600743110134"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="9075"
+   name="dumpMessages.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-05-16T06:47:24.000000Z"
+   checksum="074de695c3552642008e598610b2b8ba"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="cleanupCaps.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="8e6338c4aadf714f6ede1217a06bdc0d"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="12873"
+   name="refreshLinks.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-26T11:25:26.000000Z"
+   checksum="10231b5462b78167a46c585a3606724b"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="12472"
+   name="updateSearchIndex.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:09:30.000000Z"
+   checksum="53493c353746edfdb5ba29505b3b0aec"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="9651"
+   name="delete-idle-wiki-users.pl"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-06-25T14:24:08.000000Z"
+   checksum="36e8ea9782d2e19dc843ab72384128cd"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="12860"
+   name="deleteOldRevisions.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-25T21:08:29.000000Z"
+   checksum="7978e88443b4891f807717b428888996"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:21.000000Z"/>
+<entry
+   committed-rev="12476"
+   name="attribute.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:31:29.000000Z"
+   checksum="21e95054c72dbd08e6a471c7604f3347"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="11781"
+   name="rebuildtextindex.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-11-25T06:38:12.000000Z"
+   checksum="f4af0f4f4e032052dca3c1de96af9b74"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="dumpLinks.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="caa32e59c924e5f5c055c2c5ae51fff6"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13539"
+   name="parserTests.txt"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-08T04:40:09.330076Z"
+   checksum="a44b72955c708aaf972830681c4472cd"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="changePassword.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="2b377c5d54ab97587d21c13e465f3eb9"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="12472"
+   name="moveBatch.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:09:30.000000Z"
+   checksum="7abb14f0a38e1d86f41a0030104a6908"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="apache-ampersand.diff"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="78423bcc89ec56877ed94f6683ec560c"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="cleanupDupes.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="550fa2d3c7cd6067301d752c1d3fb30b"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13387"
+   name="refreshImageCount.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-28T21:56:12.000000Z"
+   checksum="fc0b621effc2c2ed9e1af9c21cbc61f1"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="6445"
+   name="wiktionary-interwiki.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2004-12-01T13:15:13.000000Z"
+   checksum="c7702b3d745a9bf4d15b53000c1a1aac"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   name="dtrace"
+   kind="dir"/>
+<entry
+   committed-rev="13489"
+   name="rebuildImages.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="61840eae836c90dde38b8f82e5a03aea"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="12804"
+   name="dumpInterwiki.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-21T13:25:41.000000Z"
+   checksum="f04ab4e432bb751d96852833d4e63538"
+   last-author="imsop"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13459"
+   name="rebuildMessages.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T07:57:48.243819Z"
+   checksum="a0dc515575e471c3ae7346cc5a3ed07a"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13109"
+   name="nukePage.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-02-26T02:07:50.000000Z"
+   checksum="fdc6572316f9d20f3a958535eb8be436"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13450"
+   name="removeUnusedAccounts.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T02:54:55.306635Z"
+   checksum="65ae36e8100ce0de7311805bba45f5c9"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="12472"
+   name="rebuildtextindex.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:09:30.000000Z"
+   checksum="f9d371c4920e0fc3854b1e50fbb41f9f"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="3253"
+   name=".htaccess"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2004-04-21T23:17:36.000000Z"
+   checksum="a1751e1f10a3b96b05d0401c97e72008"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13459"
+   name="eval.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T07:57:48.243819Z"
+   checksum="9b9b410c62239749bd9d8c880bb0ddaf"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="backup.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="2eb1fbbfaa3b2e3b53c29b012bad88d4"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="10574"
+   name="recount.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-08-17T07:52:21.000000Z"
+   checksum="f95b129060367646bbb0a58043358a01"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13506"
+   name="languages.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T13:28:55.991958Z"
+   checksum="2f9a995217d00b9415e5d04cec7d7508"
+   last-author="nikerabbit"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="cleanupDupes.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="17cc7be56593dbd042ed66b222a61504"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="13450"
+   name="userFunctions.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T02:54:55.306635Z"
+   checksum="7a615bffec13d752fcda24d0d8509e75"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:22.000000Z"/>
+<entry
+   committed-rev="12803"
+   name="dumpInterwiki.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-21T13:05:43.000000Z"
+   checksum="1cf181c7e582e6be666edcda72c24322"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="dumpBackup.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="e1125c70d45507caeb1c1ca9ec3f7b84"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="namespaceDupes.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="2e5f464320fa253d8fc9d067764d64a7"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="11443"
+   name="clear_interwiki_cache.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-10-22T20:52:30.000000Z"
+   checksum="356154fb087c1174cc29040eab4b528d"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="12373"
+   name="namespace2sql.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-03T11:59:39.000000Z"
+   checksum="5bf89f1f2bbfe2e2c202bf37ec96a09c"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="12860"
+   name="nukePage.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-25T21:08:29.000000Z"
+   checksum="f2a2999fba9d3bd5105c5e23be18900f"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="importDump.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="9f52f28701104ee0f7ef9e0f414849d3"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="dumpTextPass.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="6303898fc6a577dd4545d09fe674e74a"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="8098"
+   name="fetchInterwiki.pl"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-04-06T17:53:58.000000Z"
+   checksum="c238138227c5d4efb587a9f63686379e"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="12476"
+   name="convertLinks.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:31:29.000000Z"
+   checksum="fcfc6b0a57dc32850159979104e2627e"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="updateSpecialPages.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="932d257fb4e6576015dc4d143fbb074f"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   name="mysql5"
+   kind="dir"/>
+<entry
+   committed-rev="13459"
+   name="InitialiseMessages.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-04T07:57:48.243819Z"
+   checksum="0684a91b70a1994d4be99087a60a8251"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13376"
+   name="README"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-28T02:38:48.000000Z"
+   checksum="fbb911e9822eeccd64c4c520b54beeb6"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="12821"
+   name="backupPrefetch.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-22T04:05:30.000000Z"
+   checksum="e901e3e2bf2fcdfb51be97db4badfb47"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="12946"
+   name="purgeOldText.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-02-04T17:38:42.000000Z"
+   checksum="13d9138e176da20deb70c3cb41fe8042"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13551"
+   name="updaters.inc"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-08T21:11:13.552031Z"
+   checksum="76a890338ba5aa7bf4622af0becf353c"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13144"
+   name="users.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-02T02:21:12.000000Z"
+   checksum="4c9c5fc7cd220baed9424df20ef85987"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="cleanupWatchlist.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="128f7bfcd68780e0da02cd5e8164799f"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="importUseModWiki.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="47196599d4a33e2e21e4eb717ef14bc5"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="diffLanguage.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="5b05543701a39975c959504e75a2d967"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+<entry
+   committed-rev="13489"
+   name="cleanupTitles.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="1102a6b58a6ff8139af5bc6c9d900626"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="2319"
+   name="database.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2004-01-18T21:10:07.000000Z"
+   checksum="320158286704f67a68f0743b415ad87b"
+   last-author="eloquence"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="13122"
+   name="parserTestsParserHook.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-02-27T04:04:44.000000Z"
+   checksum="1ce137d9f2a84ef7a0c8e87cd4d0e268"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   name="oracle"
+   kind="dir"/>
+<entry
+   committed-rev="11050"
+   name="rebuildall.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-09-17T07:52:33.000000Z"
+   checksum="5e8b8c3ea1e42a235811cdd753e74470"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="5060"
+   name="convertLinks.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2004-09-03T20:33:01.000000Z"
+   checksum="9ac696ef28df078839429d5f296503a7"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="10428"
+   name="duplicatetrans.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-08-10T22:11:09.000000Z"
+   checksum="55efe355a4de7964627f820daaaca813"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="runJobs.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="315ab51f8b745f0ca865258013346ffb"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="13551"
+   name="tables.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-04-08T21:11:13.552031Z"
+   checksum="88506e216a55d958d0b3d74af44fbabc"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="9976"
+   name="checktrans.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-07-06T22:33:08.000000Z"
+   checksum="b06c05406b7e9f928679b38639c1d271"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="12860"
+   name="purgeOldText.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-25T21:08:29.000000Z"
+   checksum="9116ef4849beab8724d45cac07234097"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="12476"
+   name="fixSlaveDesync.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-01-07T13:31:29.000000Z"
+   checksum="beddac6fd892f13be55d23dc7a2ba946"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="ourusers.php"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="fe0406aa9ed11949fb799a4944cd7915"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+</wc-entries>

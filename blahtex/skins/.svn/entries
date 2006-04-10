@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13531"
+   name=""
+   committed-date="2006-04-06T23:03:14.557045Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/skins"
+   last-author="brion"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="12660"
+   name="Simple.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="4c511505be42eabf844ae6971ba3a8ad"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:25.000000Z"/>
+<entry
+   committed-rev="13531"
+   name="MonoBook.tpl"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-04-06T23:03:14.557045Z"
+   checksum="7118df8eb70bff7c6b2b4181e3c9ec7e"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:25.000000Z"/>
+<entry
+   name="chick"
+   kind="dir"/>
+<entry
+   name="monobook"
+   kind="dir"/>
+<entry
+   committed-rev="12660"
+   name="CologneBlue.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="b174b23449bbb998100e60cd6e96ab88"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="5022"
+   name="Skin.sample"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2004-09-02T03:24:01.000000Z"
+   checksum="947600e10c0f1f7f30125e166760ade0"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="Standard.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="90c82962cd908265f6af5d653c697206"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:26.000000Z"/>
+<entry
+   name="common"
+   kind="dir"/>
+<entry
+   name="simple"
+   kind="dir"/>
+<entry
+   committed-rev="12766"
+   name="MySkin.deps.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="b5ec5490f50d1b586b4276b6419bd15b"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+<entry
+   name="htmldump"
+   kind="dir"/>
+<entry
+   committed-rev="6300"
+   name="SkinPHPTal.sample"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2004-11-20T04:23:52.000000Z"
+   checksum="f01e34ced47be012ab14a95d3993520a"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:37.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="MySkin.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="085f4447993774119e64c16ddfc85c29"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:38.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="Chick.deps.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="3c5cccbc005aaf1ba448d8da8ccee46e"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:38.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="MonoBook.deps.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="6fd15448fa6e71c123e582e9e41aad33"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:38.000000Z"/>
+<entry
+   name="disabled"
+   kind="dir"/>
+<entry
+   committed-rev="12660"
+   name="Nostalgia.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="50f5d53399008f1f87b6d004db7ee280"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:38.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="Chick.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="6ac50211c218ba168cbc70920dccaa39"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:38.000000Z"/>
+<entry
+   committed-rev="12766"
+   name="Simple.deps.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-01-18T17:01:13.000000Z"
+   checksum="184c9d4e16a4509a80eba413b1f7b560"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:38.000000Z"/>
+<entry
+   committed-rev="13448"
+   name="MonoBook.php"
+   text-time="2006-04-10T11:31:38.000000Z"
+   committed-date="2006-04-04T02:22:14.270270Z"
+   checksum="a5289de0ed24fd58db361fd370849138"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:38.000000Z"/>
+<entry
+   name="myskin"
+   kind="dir"/>
+</wc-entries>

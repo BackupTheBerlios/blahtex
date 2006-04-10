@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="12904"
+   name=""
+   committed-date="2006-01-29T07:35:28.000000Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/includes/templates"
+   last-author="vibber"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="12660"
+   name="Confirmemail.php"
+   text-time="2006-04-10T11:31:55.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="983f71ac45c56a1dabcac3064a86e9e5"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+<entry
+   committed-rev="12904"
+   name="Userlogin.php"
+   text-time="2006-04-10T11:31:55.000000Z"
+   committed-date="2006-01-29T07:35:28.000000Z"
+   checksum="a53803c08dc2d6523e96b2bf71c7e869"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+</wc-entries>

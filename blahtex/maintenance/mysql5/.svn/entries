@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13551"
+   name=""
+   committed-date="2006-04-08T21:11:13.552031Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/maintenance/mysql5"
+   last-author="midom"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="13551"
+   name="tables.sql"
+   text-time="2006-04-10T11:31:23.000000Z"
+   committed-date="2006-04-08T21:11:13.552031Z"
+   checksum="23dc54269bf6a4daa4488695c7618591"
+   last-author="midom"
+   kind="file"
+   prop-time="2006-04-10T11:31:23.000000Z"/>
+</wc-entries>

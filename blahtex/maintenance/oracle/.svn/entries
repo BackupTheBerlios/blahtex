@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="10357"
+   name=""
+   committed-date="2005-08-02T13:49:01.000000Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/maintenance/oracle"
+   last-author="kateturner"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   revision="13558"/>
+<entry
+   committed-rev="10356"
+   name="interwiki.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-08-02T13:35:19.000000Z"
+   checksum="2cbfb794320450d37d32e8e29b0b8ef8"
+   last-author="kateturner"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   name="archives"
+   kind="dir"/>
+<entry
+   committed-rev="10356"
+   name="tables.sql"
+   text-time="2006-04-10T11:31:24.000000Z"
+   committed-date="2005-08-02T13:35:19.000000Z"
+   checksum="e14e320f9cd758a68b1876fcde8b2f7c"
+   last-author="kateturner"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+</wc-entries>

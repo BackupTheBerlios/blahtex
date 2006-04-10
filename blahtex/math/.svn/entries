@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13492"
+   name=""
+   committed-date="2006-04-05T08:23:27.163611Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3/math"
+   last-author="brion"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   prop-time="2006-04-10T11:31:40.000000Z"
+   revision="13558"/>
+<entry
+   committed-rev="1284"
+   name="texvc_tex.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="224c71abe1ab5f697b595dd016910936"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="tex.mli"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="e398051852932bde3d968d49f6288b7e"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="texvc_cgi.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="631a99fd3cb31eae760aa42627d8b397"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="util.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="752b4d55ef68bb86209abe7c34784ad5"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="html.mli"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="e750de169b04022301aeb16ab93062ac"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="8824"
+   name="render.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2005-05-03T08:17:21.000000Z"
+   checksum="09bec761ecac4648169c54e900acdd71"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="13400"
+   name=".svnignore"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2006-04-01T10:57:26.776862Z"
+   checksum="8cb520b1f4c12cfa7d11a9c59ca0bd37"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="mathml.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="50e41e731594829794ca5bc2fc8656ad"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="parser.mly"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="2d322a9e23ecb62f260982b91e57982e"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="12711"
+   name="README"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2006-01-16T06:53:48.000000Z"
+   checksum="966c2d9fcb5b0cd2ff2e75926c75cfd1"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="texvc_test.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="0945c6c262878debad9d44147ba1ea2f"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="texvc.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="1cdc73564c0a4d978c4eefbc260f29ec"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="7680"
+   name="lexer.mll"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2005-03-13T15:37:09.000000Z"
+   checksum="db9d25b6827b78c43bdb8f51e06cfb59"
+   last-author="jeluf"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="mathml.mli"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="24b8af1f205863ab7d50199dfc2c1367"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="12921"
+   name="texutil.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2006-01-31T01:13:04.000000Z"
+   checksum="92d9e5959a3138e168e8c80fecf7eed5"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="TODO"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="53525fe0a6726d535f4b660e3b6c1468"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="render_info.mli"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="938cfa3c74958f7558e4701f8e6e8dbb"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="8340"
+   name="html.ml"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2005-04-15T07:42:47.000000Z"
+   checksum="303d8e7db85d78bc5b36625d5c51d682"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="3253"
+   name=".htaccess"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2004-04-21T23:17:36.000000Z"
+   checksum="a1751e1f10a3b96b05d0401c97e72008"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="Makefile"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="2c578fd2e43999e9515911b524bb350f"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="1284"
+   name="texutil.mli"
+   text-time="2006-04-10T11:31:40.000000Z"
+   committed-date="2003-04-14T23:10:40.000000Z"
+   checksum="000c622243df68a17276bbdbd4d14959"
+   last-author="lcrocker"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+</wc-entries>

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="13558"
+   name=""
+   committed-date="2006-04-10T07:21:40.154635Z"
+   url="http://svn.wikimedia.org/svnroot/mediawiki/trunk/phase3"
+   last-author="tstarling"
+   kind="dir"
+   uuid="dd0e9695-b195-4be7-bd10-2dea1a65a6b6"
+   prop-time="2006-04-10T11:32:13.000000Z"
+   revision="13558"/>
+<entry
+   name="maintenance"
+   kind="dir"/>
+<entry
+   committed-rev="12660"
+   name="img_auth.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="bbe5d07e646bed29a170c8c55eb40c37"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="7338"
+   name="redirect.phtml"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-01-31T20:35:47.000000Z"
+   checksum="17ed5308c2ff5b6d5a0fe8459507e408"
+   last-author="tomgilder"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   committed-rev="7338"
+   name="wiki.phtml"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-01-31T20:35:47.000000Z"
+   checksum="d99cffbb1e23e0e0d35af39e0c5cfb14"
+   last-author="tomgilder"
+   kind="file"
+   prop-time="2006-04-10T11:31:24.000000Z"/>
+<entry
+   name="skins"
+   kind="dir"/>
+<entry
+   committed-rev="12744"
+   name="UPGRADE"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-17T19:54:04.000000Z"
+   checksum="8461d45b2980251d92309f0de59c748b"
+   last-author="hashar"
+   kind="file"
+   prop-time="2006-04-10T11:31:25.000000Z"/>
+<entry
+   committed-rev="12660"
+   name="redirect.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="0d76601cc39cbeaf03aa6b80feb154a0"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:25.000000Z"/>
+<entry
+   name="docs"
+   kind="dir"/>
+<entry
+   name="math"
+   kind="dir"/>
+<entry
+   committed-rev="9846"
+   name="AdminSettings.sample"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2005-07-03T02:22:09.000000Z"
+   checksum="75a3ef36b82a9f7a707d659bc345d03d"
+   last-author="kateturner"
+   kind="file"
+   prop-time="2006-04-10T11:31:39.000000Z"/>
+<entry
+   committed-rev="13369"
+   name="index.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-27T20:15:24.000000Z"
+   checksum="986da29255d9b3b036615ba2b578dcf7"
+   last-author="jeluf"
+   kind="file"
+   prop-time="2006-04-10T11:31:40.000000Z"/>
+<entry
+   committed-rev="13487"
+   name="README"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T07:19:09.620728Z"
+   checksum="154b5582c4037070df90142be49d8809"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:41.000000Z"/>
+<entry
+   name="locale"
+   kind="dir"/>
+<entry
+   name="extensions"
+   kind="dir"/>
+<entry
+   committed-rev="13497"
+   name="HISTORY"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T09:47:12.714461Z"
+   checksum="c0738ff71bb2fc67c56808ab2db3d46c"
+   last-author="tstarling"
+   kind="file"
+   prop-time="2006-04-10T11:31:41.000000Z"/>
+<entry
+   name="tests"
+   kind="dir"/>
+<entry
+   committed-rev="12660"
+   name="profileinfo.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-14T02:49:43.000000Z"
+   checksum="bfe6b022edf537224500f521ecf7486b"
+   last-author="vibber"
+   kind="file"
+   prop-time="2006-04-10T11:31:41.000000Z"/>
+<entry
+   name="config"
+   kind="dir"/>
+<entry
+   name="images"
+   kind="dir"/>
+<entry
+   committed-rev="13430"
+   name="thumb.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-02T04:20:33.801139Z"
+   checksum="7febe51c08e9bbdc9f1535c5f15030a7"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:42.000000Z"/>
+<entry
+   name="languages"
+   kind="dir"/>
+<entry
+   name="includes"
+   kind="dir"/>
+<entry
+   committed-rev="13553"
+   name="RELEASE-NOTES"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-08T21:19:10.822209Z"
+   checksum="927797da2a8882a2b40955b12dc85433"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+<entry
+   committed-rev="13488"
+   name="INSTALL"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T07:33:17.233617Z"
+   checksum="b222dabb0ec7d293d523792ab2699dd2"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:31:55.000000Z"/>
+<entry
+   committed-rev="12350"
+   name="FAQ"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-02T12:05:43.000000Z"
+   checksum="3c4dfe45c522364326e1f3bb9ad1959a"
+   last-author="robchurch"
+   kind="file"
+   prop-time="2006-04-10T11:32:13.000000Z"/>
+<entry
+   committed-rev="12645"
+   name="setup_message.html"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-13T12:10:59.000000Z"
+   checksum="2c054bff10969a69c13f37ca73b292c4"
+   last-author="magnus_manske"
+   kind="file"
+   prop-time="2006-04-10T11:32:13.000000Z"/>
+<entry
+   name="bin"
+   kind="dir"/>
+<entry
+   committed-rev="13489"
+   name="COPYING"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-04-05T07:43:17.767663Z"
+   checksum="4e068d050b28e4405b691fdc9d54afdd"
+   last-author="brion"
+   kind="file"
+   prop-time="2006-04-10T11:32:13.000000Z"/>
+<entry
+   committed-rev="13184"
+   name="trackback.php"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-03-07T13:32:27.000000Z"
+   checksum="c50b5d7c24e5fab0115226ed2da33f90"
+   last-author="avar"
+   kind="file"
+   prop-time="2006-04-10T11:32:13.000000Z"/>
+<entry
+   committed-rev="12740"
+   name="install-utils.inc"
+   text-time="2006-04-10T11:32:13.000000Z"
+   committed-date="2006-01-17T11:48:18.000000Z"
+   checksum="5013f8fd5fb71c4ad75fc29606d19ace"
+   last-author="timstarling"
+   kind="file"
+   prop-time="2006-04-10T11:32:13.000000Z"/>
+</wc-entries>
