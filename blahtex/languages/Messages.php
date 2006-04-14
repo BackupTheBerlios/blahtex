@@ -391,7 +391,7 @@ Your account has been created. Don't forget to change your {{SITENAME}} preferen
 'prefs-help-email-enotif' => 'This address is also used to send you e-mail notifications if you enabled the options.',
 'prefs-help-realname' 	=> '* Real name (optional): if you choose to provide it this will be used for giving you attribution for your work.',
 'loginerror'	=> 'Login error',
-'prefs-help-email'      => '* E-mail (optional): Enables others to contact you through your user or user_talk page without the need of revealing your identity.',
+'prefs-help-email'      => '* E-mail (optional): Enables others to contact you through your user or user_talk page without needing to reveal your identity.',
 'nocookiesnew'	=> 'The user account was created, but you are not logged in. {{SITENAME}} uses cookies to log in users. You have cookies disabled. Please enable them, then log in with your new username and password.',
 'nocookieslogin'	=> '{{SITENAME}} uses cookies to log in users. You have cookies disabled. Please enable them and try again.',
 'noname'		=> 'You have not specified a valid user name.',
@@ -463,7 +463,7 @@ format. Please enter a well-formatted address or empty that field.',
 'showpreview'	=> 'Show preview',
 'showlivepreview'	=> 'Live preview',
 'showdiff'	=> 'Show changes',
-'anoneditwarning' => 'You are not logged in. Your IP address will be recorded in this page\'s edit history.',
+'anoneditwarning' => "'''Warning:''' You are not logged in. Your IP address will be recorded in this page's edit history.",
 'missingsummary' => "'''Reminder:''' You have not provided an edit summary. If you click Save again, your edit will be saved without one.",
 'missingcommenttext' => 'Please enter a comment below.',
 'blockedtitle'	=> 'User is blocked',
@@ -1011,7 +1011,6 @@ The [http://meta.wikimedia.org/wiki/Help:Job_queue job queue] length is '''$7'''
 
 'doubleredirects'	=> 'Double redirects',
 'doubleredirectstext'	=> "Each row contains links to the first and second redirect, as well as the first line of the second redirect text, usually giving the \"real\" target page, which the first redirect should point to.",
-'doubleredirectsarrow'	=> '→',
 
 'brokenredirects'	=> 'Broken redirects',
 'brokenredirectstext'	=> 'The following redirects link to non-existent pages:',
@@ -1297,7 +1296,13 @@ See [[Special:Log/delete]] for a record of recent deletions and restorations.",
 'uclinks'       => "View the last $1 changes; view the last $2 days.",
 'uctop'         => ' (top)' ,
 'newbies'       => 'newbies',
-'contribs-showhideminor' => '$1 minor edits',
+
+'sp-contributions-newest' => 'Newest',
+'sp-contributions-oldest' => 'Oldest',
+'sp-contributions-newer'  => 'Newer $1',
+'sp-contributions-older'  => 'Older $1',
+'sp-contributions-newbies-sub' => 'For newbies',
+
 
 # What links here
 #
@@ -2069,6 +2074,9 @@ Please confirm that really want to recreate this article.',
 'searchnamed' => "Search for articles named ''$1''.",
 'articletitles' => "Articles starting with ''$1''",
 'hideresults' => 'Hide results',
+
+# DISPLAYTITLE
+'displaytitle' => '(Link to this page as [[$1]])',
 
 );
 

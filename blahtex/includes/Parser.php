@@ -2107,12 +2107,40 @@ class Parser
 				return $this->mTitle->getSubpageText();
 			case MAG_SUBPAGENAMEE:
 				return $this->mTitle->getSubpageUrlForm();
+			case MAG_TALKPAGENAME:
+				if( $this->mTitle->canTalk() ) {
+					$talkPage = $this->mTitle->getTalkPage();
+					return $talkPage->getPrefixedText();
+				} else {
+					return '';
+				}
+			case MAG_TALKPAGENAMEE:
+				if( $this->mTitle->canTalk() ) {
+					$talkPage = $this->mTitle->getTalkPage();
+					return $talkPage->getPrefixedUrl();
+				} else {
+					return '';
+				}
+			case MAG_SUBJECTPAGENAME:
+				$subjPage = $this->mTitle->getSubjectPage();
+				return $subjPage->getPrefixedText();
+			case MAG_SUBJECTPAGENAMEE:
+				$subjPage = $this->mTitle->getSubjectPage();
+				return $subjPage->getPrefixedUrl();
 			case MAG_REVISIONID:
 				return $this->mRevisionId;
 			case MAG_NAMESPACE:
 				return $wgContLang->getNsText( $this->mTitle->getNamespace() );
 			case MAG_NAMESPACEE:
 				return wfUrlencode( $wgContLang->getNsText( $this->mTitle->getNamespace() ) );
+			case MAG_TALKSPACE:
+				return $this->mTitle->canTalk() ? $this->mTitle->getTalkNsText() : '';
+			case MAG_TALKSPACEE:
+				return $this->mTitle->canTalk() ? wfUrlencode( $this->mTitle->getTalkNsText() ) : '';
+			case MAG_SUBJECTSPACE:
+				return $this->mTitle->getSubjectNsText();
+			case MAG_SUBJECTSPACEE:
+				return( wfUrlencode( $this->mTitle->getSubjectNsText() ) );
 			case MAG_CURRENTDAYNAME:
 				return $varCache[$index] = $wgContLang->getWeekdayName( date( 'w', $ts ) + 1 );
 			case MAG_CURRENTYEAR:
@@ -2451,7 +2479,7 @@ class Parser
 	 * @access private
 	 */
 	function braceSubstitution( $piece ) {
-		global $wgContLang;
+		global $wgContLang, $wgAllowDisplayTitle, $action;
 		$fname = 'Parser::braceSubstitution';
 		wfProfileIn( $fname );
 
@@ -2621,12 +2649,39 @@ class Parser
 				$found = true;
 			}
 		}
+		
+		# DISPLAYTITLE
+		if ( !$found && $argc == 1 && $wgAllowDisplayTitle && $action == "view" ) {
+			$mwDT =& MagicWord::get( MAG_DISPLAYTITLE );
+			if ( $mwDT->matchStartAndRemove( $part1 ) ) {
+				global $wgOut;
+				
+				# Only the first one counts...
+				if ( $wgOut->mPageLinkTitle == "" ) {
+					$param = $args[0];			
+					$parserOptions = new ParserOptions;
+					$local_parser = new Parser ();
+					$t2 = $local_parser->parse ( $param, $this->mTitle, $parserOptions, false );
+					$wgOut->mPageLinkTitle = $wgOut->getPageTitle();
+					$wgOut->mPagetitle = $t2->GetText();
+	
+					# Add subtitle
+					$t = $this->mTitle->getPrefixedText();
+					$st = trim ( $wgOut->getSubtitle () );
+					if ( $st != "" ) $st .= " ";
+					$st .= wfMsg('displaytitle', $t);
+					$wgOut->setSubtitle ( $st );
+				}
+				$text = "" ;
+				$found = true ;
+			}
+		}		
 
 		# Extensions
-		if ( !$found ) {
+		if ( !$found && substr( $part1, 0, 1 ) == '#' ) {
 			$colonPos = strpos( $part1, ':' );
 			if ( $colonPos !== false ) {
-				$function = strtolower( substr( $part1, 0, $colonPos ) );
+				$function = strtolower( substr( $part1, 1, $colonPos - 1 ) );
 				if ( isset( $this->mFunctionHooks[$function] ) ) {
 					$funcArgs = array_merge( array( &$this, substr( $part1, $colonPos + 1 ) ), $args );
 					$result = call_user_func_array( $this->mFunctionHooks[$function], $funcArgs );
@@ -4013,7 +4068,7 @@ class ParserOutput
 	}
 
 	function getText()                   { return $this->mText; }
-	function getLanguageLinks()          { return $this->mLanguageLinks; }
+	function &getLanguageLinks()          { return $this->mLanguageLinks; }
 	function getCategoryLinks()          { return array_keys( $this->mCategories ); }
 	function &getCategories()            { return $this->mCategories; }
 	function getCacheTime()              { return $this->mCacheTime; }
@@ -4053,16 +4108,6 @@ class ParserOutput
 		}
 		$this->mTemplates[$ns][$dbk] = $id;
 	}
-
-	/**
-	 * @deprecated
-	 */
-	/*
-	function merge( $other ) {
-		$this->mLanguageLinks = array_merge( $this->mLanguageLinks, $other->mLanguageLinks );
-		$this->mCategories = array_merge( $this->mCategories, $this->mLanguageLinks );
-		$this->mContainsOldMagic = $this->mContainsOldMagic || $other->mContainsOldMagic;
-	}*/
 
 	/**
 	 * Return true if this cached output object predates the global or
