@@ -1,13 +1,17 @@
 <?php
 /**
- * Contain everything related to <math> </math> parsing
- * @package MediaWiki
+ * @file Math.php
+ * Contains everything related to <math> </math> parsing.
+ * \sa math/README
  */
 
+/**
+ * %Parser for the blahtex's output. 
+ */
 class blahtexOutputParser  {
-	var $parser;
-	var $stack;
-	var $results;
+   var $parser;  /**< \private */
+	var $stack;   /**< \private */
+	var $results; /**< \private */
 
 	function blahtexOutputParser()
 	{
@@ -21,7 +25,21 @@ class blahtexOutputParser  {
 		xml_set_element_handler( $this->parser, "startElement", "stopElement" );
 		xml_set_character_data_handler( $this->parser, "characterData" );
 	}
-	
+
+	/**
+	 * Main function, which parses blahtex's output.
+	 * The format of blahtex's output is based on XML. This function
+	 * parses the XML and returns an array representing the tree
+	 * structure. For instance, if $retval denotes the return value,
+	 * then $retval["blahtex"]["error"] contains the text within the
+	 * <error> tag within the <blahtex> tag. If there is more than one
+	 * <error> tag within a <blahtex> tag, then
+	 * $retval["blahtex"]["error"] is an array of strings. As a special
+	 * case, $retval["mathmlMarkup"] contains the segment between
+	 * <markup> and </markup>.
+	 * @param $data String with output to be parsed.
+	 * @return Array representing XML tree.
+	 */
 	function parse( $data )
 	{
 		// We splice out any segment between <markup> and </markup>  
@@ -36,7 +54,8 @@ class blahtexOutputParser  {
 		xml_parse( $this->parser, $data );
 		return $this->results;
 	}
-	
+
+	/** @privatesection */
 	function startElement( $parser, $name, $attributes )
 	{
 		$this->prevCdata = false;
@@ -75,31 +94,68 @@ class blahtexOutputParser  {
 }
 
 /**
- * Takes LaTeX fragments, sends them to a helper program (texvc) for rendering
- * to rasterized PNG and HTML and MathML approximations. An appropriate
- * rendering form is picked and returned.
- * 
- * by Tomasz Wegrzanowski, with additions by Brion Vibber (2003, 2004)
+ * Render formulas to PNG, HTML and MathML.
+ * Takes LaTeX fragments, sends them to helper program (texvc and
+ * blahtex) for rendering to rasterized PNG and HTML and MathML
+ * approximations. An appropriate rendering form is picked, depending
+ * on the user's preferences, and returned. The rendering is cached in
+ * the @c math table in the database, and the PNG files are cached in
+ * @c $wgMathDirectory on the file system.
  *
- * @package MediaWiki
+ * @author Tomasz Wegrzanowski, with additions by Brion Vibber (2003, 2004)
  */
 class MathRenderer {
-	var $mode = MW_MATH_MODERN;
-	var $tex = '';
-	var $inputhash = '';
-	var $hash = '';
-	var $html = '';
-	var $mathml = '';
-	var $conservativeness = 0;
+	/** @privatesection */
+   var $mode = MW_MATH_MODERN; /**< @User preference for maths */
+	var $tex = '';              /**< LaTeX fragment */
+	var $inputhash = '';        /**< Hash value of $tex */
+	var $hash = '';             /**< Name of PNG file */
+	var $html = '';             /**< HTML rendering of $tex */
+	var $mathml = '';           /**< MathML rendering of $tex */
+	var $conservativeness = 0;  /**< How conservative the HTML rendering is */
 	
+	/**
+	 * Constructor.
+	 * @param $tex String containing LaTeX fragment to be rendered.
+	 * @public 
+	 */
 	function MathRenderer( $tex ) {
 		$this->tex = $tex;
 	 }
 	
+	/**
+	 * Set the preferred output mode.
+	 * The output mode specifies whether render() should output PNG,
+	 * HTML or MathML.
+	 * @param $mode Output mode, can be @c MW_MATH_PNG, 
+	 *    @c MW_MATH_SIMPLE, @c MW_MATH_HTML, @c MW_MATH_SOURCE,
+	 *    @c MW_MATH_MODERN, or @c MW_MATH_MATHML.
+	 * @public
+	 */
 	function setOutputMode( $mode ) {
 		$this->mode = $mode;
 	}
 
+	/**
+	 * Main function, which renders the LaTeX fragment.
+	 * This function renders the LaTeX fragment specified in the
+	 * constructor. The output depends on the output mode, set with
+	 * setOutputMode(), as follows:
+	 *  - @c MW_MATH_PNG : Output is in PNG format, fall back to HTML.
+	 *  - @c MW_MATH_SIMPLE : Output is in HTML format if the HTML is
+	 *       simple and in PNG otherwise.
+	 *  - @c MW_MATH_HTML : Output is in HTML format, fall back to PNG.
+	 *  - @c MW_MATH_SOURCE : Output the LaTeX fragment verbatim,
+	 *       surrounded by a pair of @c $ characters.
+	 *  - @c MW_MATH_MODERN : Output is in HTML format unless the HTML
+	 *       is complicated, fall back to PNG.
+	 *  - @c MW_MATH_MATHML : Output is in MathML format, fall back to
+	 *       PNG.
+	 *
+    * @return String containing HTML fragment, representing the
+    * formula in the given LaTeX fragment.
+	 * @public
+	 */
 	function render() {
 		global $wgBlahtex;
 		$fname = 'MathRenderer::render';
@@ -162,8 +218,9 @@ class MathRenderer {
 	}
 
 	/**
-	 * Test whether the necessary directories and executables exists.
-	 * Returns an error message if there is a problem, and false otherwise.
+	 * Test whether the necessary directories and executables exist.
+	 * @return String containing HTML fragment with error message if
+	 * there is a problem, @c false otherwise.
 	 */
 	function testEnvironment()
 	{
@@ -188,8 +245,15 @@ class MathRenderer {
 
 	/**
 	 * Invoke the texvc executable.
-	 * If there is an error, the return value is (false, error message).
-	 * If there is no error, the return value is (true, texvc output).
+	 * This function invokes the @c texvc helper program, whose
+	 * location is specified in $wgTexvc. 
+	 * @param $tex String containing the LaTeX fragment to be rendered.
+	 * @return A 2-tuple. 
+	 *  - If an error occurred, then the first element is @c false and
+	 *    the second element is a string containing an HTML fragment
+	 *    with the error message.
+	 *  - Otherwise, the first element is @c true and the second
+	 *    element s a string containing the output of @c texvc.
 	 */
 	function invokeTexvc( $tex )
 	{
@@ -218,9 +282,13 @@ class MathRenderer {
 	}
 
 	/**
-	 * Process texvc output: fill the mathml, html, hash, and conservativeness fields
-	 * in the database and move the PNG image to its final destination.
-	 * Returns an error message, or false if no error occurred.
+	 * Process texvc output.
+	 * Parse the output, fill the mathml, html, hash, and
+	 * conservativeness fields in the database and move the PNG image
+	 * to its final destination. 
+	 * @param $contents String containing texvc output.
+	 * @return String containing HTML fragment with error message if
+	 * an error occurred, @c false otherwise.
 	 */
 	function processTexvcOutput( $contents ) {
 		global $wgTmpDirectory;
@@ -288,8 +356,18 @@ class MathRenderer {
 
 	/**
 	 * Invoke the blahtex executable.
-	 * If there is an error, the return value is (false, error message).
-	 * If there is no error, the return value is (true, blatex output).
+	 * This function invokes the @c blahtex helper program. The
+	 * location of the program is specified in $wgBlahtex. Extra
+	 * options may be specified in $wgBlahtexOptions.
+	 * @param $tex String containing the LaTeX fragment to be rendered.
+	 * @param $makePNG Boolean specifying whether blahtex should
+	 * generate both MathML and PNG (@c true) or only MathML (@c false).
+	 * @return A 2-tuple. 
+	 *  - If an error occurred, then the first element is @c false and
+	 *    the second element is a string containing an HTML fragment
+	 *    with the error message.
+	 *  - Otherwise, the first element is @c true and the second
+	 *    element s a string containing the output of @c blahtex.
 	 */
 	function invokeBlahtex( $tex, $makePNG )
 	{
@@ -323,8 +401,13 @@ class MathRenderer {
 	}
 
 	/**
-	 * Process blahtex output and update the mathml and png fields.
-	 * Returns an error message, or false if no error occurred.
+	 * Process blahtex output.
+	 * Parse the output and fill the mathml field in the database. If
+	 * blahtex has also generated a PNG image, then update the hash
+	 * field as well move the PNG image to its final destination. 
+	 * @param $contents String containing blahtex output.
+	 * @return String containing HTML fragment with error message if
+	 * an error occurred, @c false otherwise.
 	 */
 	function processBlahtexOutput( $results )
 	{
@@ -359,8 +442,13 @@ class MathRenderer {
 	}
 
 	/**
-	 * Returns the error message stored in the $results parse tree
-	 * under the node $node.
+	 * Build an error message for blahtex.
+	 * @param $results Parse tree as returned by
+	 * blahtexOutputParser::parse() .
+	 * @param $node String representing the node in the tree that the
+	 * message is stored under.
+	 * @returns String containing HTML fragment with the error
+	 * message. 
 	 */
 	function blahtexError( $results, $node ) {
 		$id = 'math_' . $results[$node . ":id"];
@@ -388,9 +476,12 @@ class MathRenderer {
 	}
 		
 	/**
-	 * Move a file from $wgTmpDirectory to a directory under $wgMathDirectory.
-	 * Assumes that $this->hash is set.
-	 * Returns false or an error message.
+	 * Move a PNG image to its final destination.
+	 * The file is moved from $wgTmpDirectory to a directory under
+	 * $wgMathDirectory. This function assumes that $hash is set.
+	 * @param $fname String containing name of file to be moved.
+	 * @return String containing HTML fragment with error message if
+	 * an error occurred, @c false otherwise.
 	 */
 	function moveToMathDir( $fname ) {
 		global $wgTmpDirectory;
@@ -410,6 +501,17 @@ class MathRenderer {
 		return false;
 	}
 
+	/**
+	 * Build an error message in HTML.
+	 * @param $msg String containing lookup key for the message; will
+	 * be passed on to wfMsg() .
+	 * @param $arg1 String containing first argument for the message.
+	 * @param $arg2 String containing second argument for the message.
+	 * @param $arg3 String containing third argument for the message.
+	 * @param $fallback String containing a fallback message in case
+	 * the lookup key in $msg is not found.
+	 * @return String containing HTML fragment with the error message.
+	 */
 	function _error( $msg, $arg1 = '', $arg2 = '', $arg3 = '', $fallback = NULL ) {
 		$mf = htmlspecialchars( wfMsg( 'math_failure' ) );
 		if ( $msg ) {
@@ -424,7 +526,17 @@ class MathRenderer {
 		// Note: the str_replace above is because the return value must not contain newlines
 		return "<strong class='error'>$mf ($errmsg): $source</strong>\n";
 	}
-	
+
+	/**
+	 * Recall cached information from the database.
+	 * This function computes the hash value for the formula specified
+	 * in $tex and looks whether any information is stored in the @c
+	 * math table in the database. In that case, the $hash,
+	 * $conservativeness, $html and $mathml member variables are
+	 * updated. 
+	 * @return @c true if information was found in the database, @c
+	 * false if not.
+	 */
 	function _recall() {
 		global $wgMathDirectory;
 		$fname = 'MathRenderer::_recall';
@@ -489,7 +601,12 @@ class MathRenderer {
 	}
 
 	/**
-	 * Select among PNG, HTML, or MathML output depending on the user's preference
+	 * Do the actual rendering.
+	 * After all preliminaries are completed, this function chooses
+	 * between PNG, HTML, or MathML output depending on the output mode
+	 * stored in $mode and the available options and returns a
+	 * rendering of the specified formula.
+	 * @return String containing HTML fragment representing the formula.
 	 */
 	function _doRender() {
 
@@ -550,6 +667,11 @@ class MathRenderer {
 			return '<span class="texhtml">'.$this->html.'</span>';
 	}
 
+	/**
+	 * Construct a link to PNG file 
+	 * @return String containing HTML fragment with the PNG file
+	 * representing the formula. 
+	 */
 	function _linkToMathImage() {
 		global $wgMathPath;
 		$url = htmlspecialchars( "$wgMathPath/" . substr($this->hash, 0, 1)
@@ -559,6 +681,13 @@ class MathRenderer {
 		return "<img class='tex' src=\"$url\" alt=\"$alt\" />";
 	}
 
+	/**
+	 * Get directory to store PNG image in.
+	 * The PNG images are stored in a tiered directory tree under
+	 * $wgMathDirectory. This function compute the directory that the
+	 * PNG image for the specified formula should go in.
+	 * @return String with directory path.
+	 */
 	function _getHashPath() {
 		global $wgMathDirectory;
 		$path = $wgMathDirectory .'/'. substr($this->hash, 0, 1)
@@ -570,6 +699,12 @@ class MathRenderer {
 
 }
 
+/**
+ * Render a LaTeX fragment.
+ * @param $tex String containing the LaTeX fragment.
+ * @return String containing an HTML fragment representing the formula
+ * specified in $tex.
+ */
 function renderMath( $tex ) {
 	global $wgUser;
 	$math = new MathRenderer( $tex );
