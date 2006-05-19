@@ -29,6 +29,8 @@ class OutputPage {
 	var $mShowFeedLinks = false;
 	var $mEnableClientCache = true;
 	var $mArticleBodyOnly = false;
+	
+	var $mNewSectionLink = false;
 
 	/**
 	 * Constructor
@@ -52,6 +54,7 @@ class OutputPage {
 		$this->mScripts = '';
 		$this->mETag = false;
 		$this->mRevisionId = null;
+		$this->mNewSectionLink = false;
 	}
 
 	function addHeader( $name, $val ) { array_push( $this->mHeaders, $name.': '.$val ); }
@@ -89,16 +92,18 @@ class OutputPage {
 	 */
 	function checkLastModified ( $timestamp ) {
 		global $wgCachePages, $wgCacheEpoch, $wgUser;
+		$fname = 'OutputPage::checkLastModified';
+
 		if ( !$timestamp || $timestamp == '19700101000000' ) {
-			wfDebug( "CACHE DISABLED, NO TIMESTAMP\n" );
+			wfDebug( "$fname: CACHE DISABLED, NO TIMESTAMP\n" );
 			return;
 		}
 		if( !$wgCachePages ) {
-			wfDebug( "CACHE DISABLED\n", false );
+			wfDebug( "$fname: CACHE DISABLED\n", false );
 			return;
 		}
 		if( $wgUser->getOption( 'nocache' ) ) {
-			wfDebug( "USER DISABLED CACHE\n", false );
+			wfDebug( "$fname: USER DISABLED CACHE\n", false );
 			return;
 		}
 
@@ -112,23 +117,23 @@ class OutputPage {
 			$modsince = preg_replace( '/;.*$/', '', $_SERVER["HTTP_IF_MODIFIED_SINCE"] );
 			$modsinceTime = strtotime( $modsince );
 			$ismodsince = wfTimestamp( TS_MW, $modsinceTime ? $modsinceTime : 1 );
-			wfDebug( "-- client send If-Modified-Since: " . $modsince . "\n", false );
-			wfDebug( "--  we might send Last-Modified : $lastmod\n", false );
+			wfDebug( "$fname: -- client send If-Modified-Since: " . $modsince . "\n", false );
+			wfDebug( "$fname: --  we might send Last-Modified : $lastmod\n", false );
 			if( ($ismodsince >= $timestamp ) && $wgUser->validateCache( $ismodsince ) && $ismodsince >= $wgCacheEpoch ) {
 				# Make sure you're in a place you can leave when you call us!
 				header( "HTTP/1.0 304 Not Modified" );
 				$this->mLastModified = $lastmod;
 				$this->sendCacheControl();
-				wfDebug( "CACHED client: $ismodsince ; user: $wgUser->mTouched ; page: $timestamp ; site $wgCacheEpoch\n", false );
+				wfDebug( "$fname: CACHED client: $ismodsince ; user: $wgUser->mTouched ; page: $timestamp ; site $wgCacheEpoch\n", false );
 				$this->disable();
 				@ob_end_clean(); // Don't output compressed blob
 				return true;
 			} else {
-				wfDebug( "READY  client: $ismodsince ; user: $wgUser->mTouched ; page: $timestamp ; site $wgCacheEpoch\n", false );
+				wfDebug( "$fname: READY  client: $ismodsince ; user: $wgUser->mTouched ; page: $timestamp ; site $wgCacheEpoch\n", false );
 				$this->mLastModified = $lastmod;
 			}
 		} else {
-			wfDebug( "client did not send If-Modified-Since header\n", false );
+			wfDebug( "$fname: client did not send If-Modified-Since header\n", false );
 			$this->mLastModified = $lastmod;
 		}
 	}
@@ -291,9 +296,14 @@ class OutputPage {
 	function addParserOutputNoText( &$parserOutput ) {
 		$this->mLanguageLinks += $parserOutput->getLanguageLinks();
 		$this->addCategoryLinks( $parserOutput->getCategories() );
+		$this->mNewSectionLink = $parserOutput->getNewSection();
 		$this->addKeywords( $parserOutput );
 		if ( $parserOutput->getCacheTime() == -1 ) {
 			$this->enableClientCache( false );
+		}
+		if ( $parserOutput->mHTMLtitle != "" ) {
+			$this->mPagetitle = $parserOutput->mHTMLtitle ;
+			$this->mSubtitle .= $parserOutput->mSubtitle ;
 		}
 	}
 
@@ -348,12 +358,14 @@ class OutputPage {
 	}
 
 	/**
-	 * Parse wikitext and return the HTML. This is for special pages that add the text later
+	 * Parse wikitext and return the HTML.
 	 */
-	function parse( $text, $linestart = true ) {
+	function parse( $text, $linestart = true, $interface = false ) {
 		global $wgParser, $wgTitle;
+		if ( $interface) { $this->mParserOptions->setInterfaceMessage(true); }
 		$parserOutput = $wgParser->parse( $text, $wgTitle, $this->mParserOptions,
 			$linestart, true, $this->mRevisionId );
+		if ( $interface) { $this->mParserOptions->setInterfaceMessage(false); }
 		return $parserOutput->getText();
 	}
 
@@ -370,6 +382,7 @@ class OutputPage {
 			$this->mLanguageLinks += $parserOutput->getLanguageLinks();
 			$this->addCategoryLinks( $parserOutput->getCategories() );
 			$this->addKeywords( $parserOutput );
+			$this->mNewSectionLink = $parserOutput->getNewSection();
 			$text = $parserOutput->getText();
 			wfRunHooks( 'OutputPageBeforeHTML', array( &$this, &$text ) );
 			$this->addHTML( $text );
@@ -407,6 +420,7 @@ class OutputPage {
 
 	function sendCacheControl() {
 		global $wgUseSquid, $wgUseESI, $wgSquidMaxage;
+		$fname = 'OutputPage::sendCacheControl';
 
 		if ($this->mETag)
 			header("ETag: $this->mETag");
@@ -422,7 +436,7 @@ class OutputPage {
 					# We'll purge the proxy cache explicitly, but require end user agents
 					# to revalidate against the proxy on each visit.
 					# Surrogate-Control controls our Squid, Cache-Control downstream caches
-					wfDebug( "** proxy caching with ESI; {$this->mLastModified} **\n", false );
+					wfDebug( "$fname: proxy caching with ESI; {$this->mLastModified} **\n", false );
 					# start with a shorter timeout for initial testing
 					# header( 'Surrogate-Control: max-age=2678400+2678400, content="ESI/1.0"');
 					header( 'Surrogate-Control: max-age='.$wgSquidMaxage.'+'.$this->mSquidMaxage.', content="ESI/1.0"');
@@ -432,7 +446,7 @@ class OutputPage {
 					# to revalidate against the proxy on each visit.
 					# IMPORTANT! The Squid needs to replace the Cache-Control header with
 					# Cache-Control: s-maxage=0, must-revalidate, max-age=0
-					wfDebug( "** local proxy caching; {$this->mLastModified} **\n", false );
+					wfDebug( "$fname: local proxy caching; {$this->mLastModified} **\n", false );
 					# start with a shorter timeout for initial testing
 					# header( "Cache-Control: s-maxage=2678400, must-revalidate, max-age=0" );
 					header( 'Cache-Control: s-maxage='.$this->mSquidMaxage.', must-revalidate, max-age=0' );
@@ -440,17 +454,17 @@ class OutputPage {
 			} else {
 				# We do want clients to cache if they can, but they *must* check for updates
 				# on revisiting the page.
-				wfDebug( "** private caching; {$this->mLastModified} **\n", false );
-				header( "Expires: -1" );
+				wfDebug( "$fname: private caching; {$this->mLastModified} **\n", false );
+				header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', 0 ) . ' GMT' );
 				header( "Cache-Control: private, must-revalidate, max-age=0" );
 			}
 			if($this->mLastModified) header( "Last-modified: {$this->mLastModified}" );
 		} else {
-			wfDebug( "** no caching **\n", false );
+			wfDebug( "$fname: no caching **\n", false );
 
 			# In general, the absence of a last modified header should be enough to prevent
 			# the client from using its cache. We send a few other things just to make sure.
-			header( 'Expires: -1' );
+			header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', 0 ) . ' GMT' );
 			header( 'Cache-Control: no-cache, no-store, max-age=0, must-revalidate' );
 			header( 'Pragma: no-cache' );
 		}
@@ -640,7 +654,7 @@ class OutputPage {
 	 * Produce a "user is blocked" page
 	 */
 	function blockedPage() {
-		global $wgUser, $wgContLang;
+		global $wgUser, $wgContLang, $wgTitle;
 
 		$this->setPageTitle( wfMsg( 'blockedtitle' ) );
 		$this->setRobotpolicy( 'noindex,nofollow' );
@@ -658,7 +672,10 @@ class OutputPage {
 		$link = '[[' . $wgContLang->getNsText( NS_USER ) . ":{$name}|{$name}]]";
 
 		$this->addWikiText( wfMsg( 'blockedtext', $link, $reason, $ip, $name ) );
-		$this->returnToMain( false );
+		
+		# Don't auto-return to special pages
+		$return = $wgTitle->getNamespace() > -1 ? $wgTitle->getPrefixedText() : NULL;	
+		$this->returnToMain( false, $return );
 	}
 
 	/**
@@ -757,27 +774,24 @@ class OutputPage {
 		$this->returnToMain();
 	}
 
+	/**
+	 * Produce the stock "please login to use the wiki" page
+	 */
 	function loginToUse() {
 		global $wgUser, $wgTitle, $wgContLang;
-
+		$skin = $wgUser->getSkin();
+		
 		$this->setPageTitle( wfMsg( 'loginreqtitle' ) );
-		$this->setHTMLTitle( wfMsg( 'errorpagetitle' ) );
-		$this->setRobotpolicy( 'noindex,nofollow' );
+		$this->setHtmlTitle( wfMsg( 'errorpagetitle' ) );
+		$this->setRobotPolicy( 'noindex,nofollow' );
 		$this->setArticleFlag( false );
-		$this->mBodytext = '';
-		$loginpage = Title::makeTitle(NS_SPECIAL, 'Userlogin');
-		$sk = $wgUser->getSkin();
-		$loginlink = $sk->makeKnownLinkObj($loginpage, wfMsg('loginreqlink'),
-			'returnto=' . htmlspecialchars($wgTitle->getPrefixedDBkey()));
-		$this->addHTML( wfMsgHtml( 'loginreqpagetext', $loginlink ) );
-
-		# We put a comment in the .html file so a Sysop can diagnose the page the
-		# user can't see.
-		$this->addHTML( "\n<!--" .
-						$wgContLang->getNsText( $wgTitle->getNamespace() ) .
-						':' .
-						$wgTitle->getDBkey() . '-->' );
-		$this->returnToMain();		# Flip back to the main page after 10 seconds.
+		
+		$loginTitle = Title::makeTitle( NS_SPECIAL, 'Userlogin' );
+		$loginLink = $skin->makeKnownLinkObj( $loginTitle, wfMsgHtml( 'loginreqlink' ), 'returnto=' . $wgTitle->getPrefixedUrl() );
+		$this->addHtml( wfMsgWikiHtml( 'loginreqpagetext', $loginLink ) );
+		$this->addHtml( "\n<!--" . $wgTitle->getPrefixedUrl() . "-->" );
+		
+		$this->returnToMain();
 	}
 
 	function databaseError( $fname, $sql, $error, $errno ) {
@@ -820,7 +834,14 @@ class OutputPage {
 			$skin = $wgUser->getSkin();
 			$this->setPageTitle( wfMsg( 'viewsource' ) );
 			$this->setSubtitle( wfMsg( 'viewsourcefor', $skin->makeKnownLinkObj( $wgTitle ) ) );
-			$this->addWikiText( wfMsg( 'protectedtext' ) );
+			
+			# Determine if protection is due to the page being a system message
+			# and show an appropriate explanation
+			if( $wgTitle->getNamespace() == NS_MEDIAWIKI && !$wgUser->isAllowed( 'editinterface' ) ) {
+				$this->addWikiText( wfMsg( 'protectedinterface' ) );
+			} else {
+				$this->addWikiText( wfMsg( 'protectedtext' ) );
+			}
 		} else {
 			$this->setPageTitle( wfMsg( 'readonly' ) );
 			if ( $wgReadOnly ) {
@@ -840,9 +861,10 @@ class OutputPage {
 					$source = wfMsg( $wgUser->isLoggedIn() ? 'noarticletext' : 'noarticletextanon' );
 				}
 			}
-			$rows = $wgUser->getOption( 'rows' );
-			$cols = $wgUser->getOption( 'cols' );
-			$text = "\n<textarea cols='$cols' rows='$rows' readonly='readonly'>" .
+			$rows = $wgUser->getIntOption( 'rows' );
+			$cols = $wgUser->getIntOption( 'cols' );
+			
+			$text = "\n<textarea name='wpTextbox1' id='wpTextbox1' cols='$cols' rows='$rows' readonly='readonly'>" .
 				htmlspecialchars( $source ) . "\n</textarea>";
 			$this->addHTML( $text );
 		}
@@ -1044,6 +1066,15 @@ class OutputPage {
 		wfHttpError( 500, 'Internal Server Error',
 			'Sorry, the server has encountered an internal error. ' .
 			'Please wait a moment and hit "refresh" to submit the request again.' );
+	}
+	
+	/**
+	 * Show an "add new section" link?
+	 *
+	 * @return bool True if the parser output instructs us to add one
+	 */
+	function showNewSectionLink() {
+		return $this->mNewSectionLink;
 	}
 
 }
